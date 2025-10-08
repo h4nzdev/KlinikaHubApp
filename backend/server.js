@@ -1,5 +1,7 @@
 import cors from "cors";
 import express from "express";
+import patientRouter from "./routes/patientRoutes.js";
+import patientAuthRouter from "./routes/patientAuthRoutes.js";
 
 const app = express();
 
@@ -68,6 +70,9 @@ const mockDoctors = [
     reviews: 89,
   },
 ];
+
+app.use("/api", patientRouter);
+app.use("/patients", patientAuthRouter);
 
 app.get("/", (req, res) => {
   res.json({

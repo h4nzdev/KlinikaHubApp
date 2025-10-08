@@ -27,8 +27,7 @@ const BottomNavbar = () => {
   const moreMenuItems = [
     { icon: "file-text", label: "Medical Records", id: "MedicalRecords" },
     { icon: "bell", label: "Reminders", id: "Reminders" },
-    { icon: "receipt", label: "Invoices", id: "Invoices" },
-    { icon: "user", label: "Profile", id: "Profile" },
+    { icon: "credit-card", label: "Invoices", id: "Invoices" },
   ];
 
   const handleTabPress = (tabId) => {
@@ -101,7 +100,7 @@ const BottomNavbar = () => {
 
       {/* Drop-up More Menu */}
       {showMoreMenu && (
-        <View className="absolute bottom-24 right-4 bg-white/95 rounded-2xl shadow-2xl border border-slate-200/50 z-40 min-w-[160px]">
+        <View className="absolute bottom-24 mb-2 right-4 bg-white/95 rounded-2xl shadow-2xl border border-slate-200/50 z-40 min-w-[160px] pb-4">
           <View className="p-2">
             {moreMenuItems.map((item, index) => (
               <TouchableOpacity

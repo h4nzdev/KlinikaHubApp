@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { View, StyleSheet } from "react-native";
@@ -16,10 +16,26 @@ import MedicalRecords from "../screens/MedicalRecords/MedicalRecords";
 
 // Import bottom navigation
 import BottomNavbar from "../components/BottomNavbar";
+import SplashScreen from "../screens/SplashScreen"; // Import your splash screen
 
 const Stack = createStackNavigator();
 
 const AppNavigation = () => {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show splash screen while showSplash is true
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
   return (
     <NavigationContainer>
       <View className="flex-1">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -9,10 +9,13 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { AuthenticationContext } from "../context/AuthenticationContext";
+import Toast from "react-native-toast-message";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notificationCount] = useState(5);
+  const { setUser } = useContext(AuthenticationContext);
   const navigation = useNavigation();
 
   // Mock user data
@@ -24,8 +27,12 @@ const Header = () => {
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
+    setUser(false);
+    Toast.show({
+      type: "success",
+      text1: "Logged out successfully",
+    });
     // Add your logout logic here
-    console.log("Logout pressed");
   };
 
   const handleNavigate = (screen) => {
@@ -122,7 +129,6 @@ const Header = () => {
                       Profile
                     </Text>
                   </TouchableOpacity>
-
                   <TouchableOpacity
                     onPress={() => handleNavigate("Calendar")}
                     className="flex-row items-center px-4 py-2.5"
@@ -133,7 +139,6 @@ const Header = () => {
                       Calendar
                     </Text>
                   </TouchableOpacity>
-
                   <TouchableOpacity
                     onPress={() => handleNavigate("Settings")}
                     className="flex-row items-center px-4 py-2.5"

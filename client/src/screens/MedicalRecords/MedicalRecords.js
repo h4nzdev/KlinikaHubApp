@@ -181,6 +181,8 @@ const MedicalRecords = ({ navigation }) => {
                       <View className="flex-row items-center justify-between">
                         <View className="flex-1 min-w-0">
                           <Text
+                            ellipsizeMode="tail"
+                            numberOfLines={2}
                             className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-3 opacity-80`}
                           >
                             {stat.title}

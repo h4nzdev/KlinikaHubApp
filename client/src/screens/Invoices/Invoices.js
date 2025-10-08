@@ -156,7 +156,7 @@ const Invoices = ({ navigation }) => {
       textColor: "text-emerald-700",
     },
     {
-      title: "Pending/Overdue",
+      title: "Pending",
       value: unpaidInvoices.length + overdueInvoices.length,
       icon: "alert-circle",
       color: "bg-amber-50",
@@ -200,19 +200,30 @@ const Invoices = ({ navigation }) => {
                     <View
                       className={`${stat.color} border border-white/20 rounded-2xl p-6 shadow-lg`}
                     >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1 min-w-0">
+                      <View className="flex-row items-center">
+                        <View
+                          className="flex-shrink mr-3"
+                          style={{ flexShrink: 1 }}
+                        >
+                          {" "}
+                          {/* Force shrink */}
                           <Text
+                            ellipsizeMode="tail"
+                            numberOfLines={1}
                             className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-3 opacity-80`}
                           >
                             {stat.title}
                           </Text>
-                          <Text className="text-2xl font-bold text-slate-800">
+                          <Text
+                            ellipsizeMode="tail"
+                            numberOfLines={1}
+                            className="text-2xl font-bold text-slate-800"
+                          >
                             {stat.value}
                           </Text>
                         </View>
                         <View
-                          className={`p-3 rounded-xl ${stat.iconBg} ml-3 shadow-md`}
+                          className={`p-3 rounded-xl ${stat.iconBg} shadow-md flex-shrink-0`}
                         >
                           <Feather
                             name={stat.icon}
