@@ -9,13 +9,13 @@ import Profile from "../screens/Profile/Profile";
 import Appointments from "../screens/Appointments/Appointments";
 import AIChat from "../screens/AIChat/AIChat";
 import Doctors from "../screens/Doctors/Doctors";
-
-// Import bottom navigation
-import BottomNavbar from "../components/BottomNavbar";
-import MedicalRecords from "../screens/MedicalRecords";
 import Invoices from "../screens/Invoices/Invoices";
 import Reminders from "../screens/Reminders/Reminders";
 import DoctorProfile from "../screens/DoctorProfile/DoctorProfile";
+import MedicalRecords from "../screens/MedicalRecords/MedicalRecords";
+
+// Import bottom navigation
+import BottomNavbar from "../components/BottomNavbar";
 
 const Stack = createStackNavigator();
 
