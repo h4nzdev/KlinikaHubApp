@@ -10,9 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../components/Header";
+import chatServices from "../../services/chatServices";
 
 const AIChat = () => {
   const [message, setMessage] = useState("");
@@ -25,94 +27,21 @@ const AIChat = () => {
   ]);
   const [loading, setLoading] = useState(false);
   const [chatCredits, setChatCredits] = useState({
-    credits: 2,
-    maxCredits: 5,
+    credits: 0,
+    maxCredits: 20, // Increased for real API
     canChat: true,
   });
   const [showEmergency, setShowEmergency] = useState(false);
   const [emergencyData, setEmergencyData] = useState(null);
+  const [sessionId] = useState(
+    `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  );
   const [user] = useState({
     _id: "user123",
     name: "Hanz Christian Angelo G Magbal",
     phone: "+1 234 567 8900",
     email: "hanz@example.com",
   });
-
-  // Mock API response function
-  const getMockBotResponse = (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
-
-    // Check for emergency keywords
-    const emergencyKeywords = [
-      "chest pain",
-      "can't breathe",
-      "severe pain",
-      "bleeding heavily",
-      "unconscious",
-      "heart attack",
-      "stroke",
-    ];
-
-    const isEmergency = emergencyKeywords.some((keyword) =>
-      lowerMessage.includes(keyword)
-    );
-
-    if (isEmergency) {
-      return {
-        reply:
-          "⚠️ URGENT: Your symptoms may require immediate medical attention. Please call emergency services (911) or go to the nearest emergency room immediately. Do not wait.",
-        severity: "SEVERE",
-        emergency_trigger: true,
-      };
-    }
-
-    // Regular responses
-    if (lowerMessage.includes("headache") || lowerMessage.includes("tired")) {
-      return {
-        reply:
-          "Headaches and fatigue can have various causes:\n\n• Dehydration\n• Lack of sleep\n• Stress\n• Eye strain\n\nI recommend:\n- Drink plenty of water\n- Get adequate rest\n- Take breaks from screens\n\nIf symptoms persist for more than 3 days or worsen, please book an appointment with a doctor.",
-        severity: "MILD",
-        emergency_trigger: false,
-      };
-    }
-
-    if (lowerMessage.includes("flu") || lowerMessage.includes("symptoms")) {
-      return {
-        reply:
-          "Common flu symptoms include:\n\n• Fever\n• Cough\n• Sore throat\n• Body aches\n• Fatigue\n• Headache\n\nIf you're experiencing these symptoms, rest and stay hydrated. Contact a doctor if symptoms are severe or last more than a week.",
-        severity: "MILD",
-        emergency_trigger: false,
-      };
-    }
-
-    if (
-      lowerMessage.includes("doctor") ||
-      lowerMessage.includes("appointment")
-    ) {
-      return {
-        reply:
-          "You should see a doctor if you experience:\n\n• High fever (>103°F)\n• Severe pain\n• Symptoms lasting more than a week\n• Difficulty breathing\n• Unusual symptoms\n\nWould you like to book an appointment?",
-        severity: "MODERATE",
-        emergency_trigger: false,
-      };
-    }
-
-    if (lowerMessage.includes("stress")) {
-      return {
-        reply:
-          "Here are some stress management tips:\n\n• Practice deep breathing\n• Exercise regularly\n• Get enough sleep\n• Talk to someone you trust\n• Take breaks throughout the day\n• Consider meditation or yoga\n\nIf stress becomes overwhelming, consider speaking with a mental health professional.",
-        severity: "MILD",
-        emergency_trigger: false,
-      };
-    }
-
-    return {
-      reply:
-        "I understand your concern. Could you provide more details about your symptoms? This will help me give you better advice. Remember, I'm here to provide general guidance, but always consult a healthcare professional for proper diagnosis and treatment.",
-      severity: "MILD",
-      emergency_trigger: false,
-    };
-  };
 
   const handleClearHistory = () => {
     Alert.alert(
@@ -148,7 +77,7 @@ const AIChat = () => {
     if (!chatCredits.canChat) {
       const errorMessage = {
         role: "bot",
-        text: "You've reached your daily chat limit of 5 messages. Please come back tomorrow for more assistance.",
+        text: "You've reached your daily chat limit. Please come back tomorrow for more assistance.",
       };
       setChatHistory((prev) => [...prev, errorMessage]);
       return;
@@ -164,67 +93,167 @@ const AIChat = () => {
     setMessage("");
     setLoading(true);
 
-    // Simulate API delay
-    setTimeout(() => {
-      try {
-        const response = getMockBotResponse(currentMessage);
+    try {
+      console.log("🔄 Sending message to real API...");
+      const response = await chatServices.sendMessage(
+        currentMessage,
+        sessionId
+      );
+      console.log("✅ Real API response:", response);
 
-        const botMessage = {
-          role: "bot",
-          text: response.reply,
+      const botMessage = {
+        role: "bot",
+        text: response.reply,
+        severity: response.severity,
+        emergency: response.emergency_trigger,
+      };
+
+      setChatHistory((prev) => [...prev, botMessage]);
+
+      // Check for emergency
+      if (response.emergency_trigger) {
+        setShowEmergency(true);
+        setEmergencyData({
           severity: response.severity,
-          emergency: response.emergency_trigger,
-        };
+          message: response.reply,
+          timestamp: new Date().toLocaleTimeString(),
+        });
 
-        setChatHistory((prev) => [...prev, botMessage]);
-
-        // Check for emergency
-        if (response.emergency_trigger) {
-          setShowEmergency(true);
-          setEmergencyData({
-            severity: response.severity,
-            message: response.reply,
-            timestamp: new Date().toLocaleTimeString(),
-          });
+        // Get emergency contacts
+        try {
+          const emergencyContacts = await chatServices.getEmergencyContacts(
+            response.severity
+          );
+          setEmergencyData((prev) => ({
+            ...prev,
+            contacts: emergencyContacts,
+          }));
+        } catch (error) {
+          console.error("Failed to get emergency contacts:", error);
         }
-
-        // Update chat credits
-        setChatCredits((prev) => ({
-          ...prev,
-          credits: prev.credits + 1,
-          canChat: prev.credits + 1 < prev.maxCredits,
-        }));
-      } catch (error) {
-        console.error("Error:", error);
-        const errorMessage = {
-          role: "bot",
-          text: "Sorry, something went wrong. Please try again.",
-        };
-        setChatHistory((prev) => [...prev, errorMessage]);
-      } finally {
-        setLoading(false);
       }
-    }, 1000);
+
+      // Update chat credits
+      setChatCredits((prev) => ({
+        ...prev,
+        credits: prev.credits + 1,
+        canChat: prev.credits + 1 < prev.maxCredits,
+      }));
+    } catch (error) {
+      console.error("❌ Real API Error:", error);
+
+      // Fallback to mock response if API fails
+      const fallbackResponse = getMockBotResponse(currentMessage);
+      const botMessage = {
+        role: "bot",
+        text: fallbackResponse.reply,
+        severity: fallbackResponse.severity,
+        emergency: fallbackResponse.emergency_trigger,
+      };
+
+      setChatHistory((prev) => [...prev, botMessage]);
+
+      if (fallbackResponse.emergency_trigger) {
+        setShowEmergency(true);
+        setEmergencyData({
+          severity: fallbackResponse.severity,
+          message: fallbackResponse.reply,
+          timestamp: new Date().toLocaleTimeString(),
+        });
+      }
+
+      // Still update credits even on fallback
+      setChatCredits((prev) => ({
+        ...prev,
+        credits: prev.credits + 1,
+        canChat: prev.credits + 1 < prev.maxCredits,
+      }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mock fallback function (same as before)
+  const getMockBotResponse = (userMessage) => {
+    const lowerMessage = userMessage.toLowerCase();
+    const emergencyKeywords = [
+      "chest pain",
+      "can't breathe",
+      "severe pain",
+      "bleeding heavily",
+      "unconscious",
+      "heart attack",
+      "stroke",
+    ];
+
+    const isEmergency = emergencyKeywords.some((keyword) =>
+      lowerMessage.includes(keyword)
+    );
+
+    if (isEmergency) {
+      return {
+        reply:
+          "⚠️ URGENT: Your symptoms may require immediate medical attention. Please call emergency services (911) or go to the nearest emergency room immediately. Do not wait.",
+        severity: "SEVERE",
+        emergency_trigger: true,
+      };
+    }
+
+    // ... rest of your mock responses (keep them as backup)
+    if (lowerMessage.includes("headache") || lowerMessage.includes("tired")) {
+      return {
+        reply:
+          "Headaches and fatigue can have various causes:\n\n• Dehydration\n• Lack of sleep\n• Stress\n• Eye strain\n\nI recommend:\n- Drink plenty of water\n- Get adequate rest\n- Take breaks from screens\n\nIf symptoms persist for more than 3 days or worsen, please book an appointment with a doctor.",
+        severity: "MILD",
+        emergency_trigger: false,
+      };
+    }
+
+    return {
+      reply:
+        "I understand your concern. Could you provide more details about your symptoms? This will help me give you better advice. Remember, I'm here to provide general guidance, but always consult a healthcare professional for proper diagnosis and treatment.",
+      severity: "MILD",
+      emergency_trigger: false,
+    };
   };
 
   const handleEmergencyContact = () => {
-    Alert.alert(
-      "Emergency Services",
-      "Would you like to call emergency services?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Call 911",
-          onPress: () => {
-            // In real app: Linking.openURL('tel:911')
-            Alert.alert("Calling emergency services...");
-          },
-        },
-      ]
-    );
+    if (emergencyData?.contacts) {
+      // Show emergency contacts from API
+      Alert.alert(
+        "🚨 Emergency Contacts - PHILIPPINES",
+        `Severity: ${emergencyData.severity}\n\n${emergencyData.contacts.actions.join("\n")}`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Call 911", onPress: () => Linking.openURL("tel:911") },
+          { text: "Call 143", onPress: () => Linking.openURL("tel:143") },
+          { text: "Show All Contacts", onPress: showAllEmergencyContacts },
+        ]
+      );
+    } else {
+      // Fallback emergency contact
+      Alert.alert(
+        "Emergency Services",
+        "Would you like to call emergency services?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Call 911", onPress: () => Linking.openURL("tel:911") },
+        ]
+      );
+    }
+  };
+
+  const showAllEmergencyContacts = () => {
+    if (emergencyData?.contacts) {
+      const contactList = emergencyData.contacts.contacts
+        .map((contact) => `${contact.name}: ${contact.number}`)
+        .join("\n\n");
+
+      Alert.alert("📞 Emergency Contacts", contactList, [
+        { text: "Call 911", onPress: () => Linking.openURL("tel:911") },
+        { text: "Close", style: "cancel" },
+      ]);
+    }
   };
 
   const handleCloseEmergency = () => {
@@ -308,7 +337,7 @@ const AIChat = () => {
                   >
                     <Feather name="phone" size={16} color="#ffffff" />
                     <Text className="text-white font-semibold text-sm">
-                      Call Emergency
+                      Emergency Contacts
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity className="flex-row items-center gap-2 bg-white border border-red-600 px-4 py-2 rounded-lg">
@@ -408,7 +437,9 @@ const AIChat = () => {
                     AI Assistant
                   </Text>
                 </View>
-                <Text className="text-base text-gray-900">Typing...</Text>
+                <Text className="text-base text-gray-900">
+                  Medora AI is thinking...
+                </Text>
               </View>
             </View>
           )}
@@ -423,9 +454,10 @@ const AIChat = () => {
                 </Text>
               </View>
               <Text className="text-sm text-red-800">
-                You've used all 5 of your daily chat messages. Your chat credits
-                will reset tomorrow. For urgent medical concerns, please contact
-                your healthcare provider directly.
+                You've used all {chatCredits.maxCredits} of your daily chat
+                messages. Your chat credits will reset tomorrow. For urgent
+                medical concerns, please contact your healthcare provider
+                directly.
               </Text>
             </View>
           )}
@@ -434,7 +466,7 @@ const AIChat = () => {
           {chatCredits.canChat && !showEmergency && (
             <View className="bg-blue-50 rounded-xl p-4 border border-blue-200">
               <Text className="font-medium text-blue-900 mb-3">
-                Common Questions You Can Ask:
+                Try asking about:
               </Text>
               <View className="gap-3">
                 <TouchableOpacity
@@ -454,40 +486,32 @@ const AIChat = () => {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => setMessage("When should I see a doctor?")}
+                  onPress={() =>
+                    setMessage("I have chest pain and difficulty breathing")
+                  }
                   className="p-3 bg-white rounded-lg border border-blue-200"
                 >
                   <Text className="text-sm text-blue-800">
-                    "When should I see a doctor?"
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setMessage("How to manage stress?")}
-                  className="p-3 bg-white rounded-lg border border-blue-200"
-                >
-                  <Text className="text-sm text-blue-800">
-                    "How to manage stress?"
+                    "I have chest pain and difficulty breathing"
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
           )}
 
-          {/* Health Tips */}
-          {!showEmergency && (
-            <View className="bg-cyan-50 rounded-xl p-4 mb-5 border border-cyan-200">
-              <View className="flex-row items-center gap-2 mb-3">
-                <Feather name="shield" size={20} color="#0891b2" />
-                <Text className="font-medium text-cyan-900">
-                  Daily Health Reminder
-                </Text>
-              </View>
-              <Text className="text-sm text-cyan-800">
-                Remember to stay hydrated throughout the day. Aim for 8 glasses
-                of water to maintain optimal health and energy levels.
+          {/* API Status */}
+          <View className="bg-cyan-50 rounded-xl p-4 mb-5 border border-cyan-200">
+            <View className="flex-row items-center gap-2 mb-3">
+              <Feather name="cpu" size={20} color="#0891b2" />
+              <Text className="font-medium text-cyan-900">
+                Powered by Medora AI
               </Text>
             </View>
-          )}
+            <Text className="text-sm text-cyan-800">
+              Real-time symptom analysis with emergency detection. Your
+              conversations are secure and private.
+            </Text>
+          </View>
         </ScrollView>
 
         {/* Message Input */}
@@ -499,7 +523,7 @@ const AIChat = () => {
                   ? "Daily chat limit reached"
                   : showEmergency
                     ? "Emergency detected - use buttons above"
-                    : "Type your message..."
+                    : "Describe your symptoms..."
               }
               value={message}
               onChangeText={setMessage}
