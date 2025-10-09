@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,30 +10,14 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import clinicServices from "../../../services/clinicServices";
 
-// Mock doctor data
-const mockDoctor = {
-  _id: "1",
-  name: "Dr. Sarah Johnson",
-  specialty: "Cardiology",
-  qualification: "MD, FACC",
-  experience: 12,
-  gender: "Female",
-  status: "Active",
-  email: "sarah.johnson@kinika.com",
-  phone: "+1 234 567 8900",
-  profileImage: "https://randomuser.me/api/portraits/women/1.jpg",
-  availability: [
-    { day: "Monday", startTime: "09:00 AM", endTime: "05:00 PM" },
-    { day: "Wednesday", startTime: "09:00 AM", endTime: "05:00 PM" },
-    { day: "Friday", startTime: "09:00 AM", endTime: "02:00 PM" },
-  ],
-};
-
-// Mock reviews data
+// Mock reviews data for clinic (we'll replace this with real data later)
 const mockReviews = [
   {
     _id: "1",
@@ -43,7 +27,7 @@ const mockReviews = [
     },
     rating: 5,
     comment:
-      "Excellent doctor! Very professional and caring. Highly recommend!",
+      "Excellent diagnostic services! Very professional staff and quick results.",
     createdAt: "2024-01-15T10:00:00",
   },
   {
@@ -53,19 +37,44 @@ const mockReviews = [
       patientPicture: "https://randomuser.me/api/portraits/women/2.jpg",
     },
     rating: 4,
-    comment: "Great experience. Dr. Johnson explained everything clearly.",
+    comment: "Great experience. Clean facility and friendly staff.",
     createdAt: "2024-01-10T14:00:00",
   },
 ];
 
-const DoctorProfile = ({ route, navigation }) => {
-  const [doctor] = useState(mockDoctor);
+const ClinicProfile = () => {
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { clinicId } = route.params; // Get clinic ID from navigation
+
+  const [clinic, setClinic] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState(mockReviews);
   const [isBookingModalVisible, setIsBookingModalVisible] = useState(false);
   const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
-  const [hasUnpaid] = useState(false);
+
+  // Fetch clinic data from our API
+  useEffect(() => {
+    const fetchClinic = async () => {
+      try {
+        setLoading(true);
+        // Using our actual clinicServices
+        const clinicData = await clinicServices.getClinicById(clinicId);
+        setClinic(clinicData);
+      } catch (error) {
+        console.error("Error fetching clinic:", error);
+        Alert.alert("Error", "Failed to load clinic details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (clinicId) {
+      fetchClinic();
+    }
+  }, [clinicId]);
 
   // Format date
   const formatDate = (dateString) => {
@@ -84,13 +93,6 @@ const DoctorProfile = ({ route, navigation }) => {
   };
 
   const handleBookAppointment = () => {
-    if (hasUnpaid) {
-      Alert.alert(
-        "Unpaid Balance",
-        "You have an unpaid balance. Please settle it before booking."
-      );
-      return;
-    }
     setIsBookingModalVisible(true);
   };
 
@@ -122,26 +124,56 @@ const DoctorProfile = ({ route, navigation }) => {
     Alert.alert("Success", "Review submitted successfully!");
   };
 
-  if (!doctor) {
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar barStyle="dark-content" />
+        <Header />
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#0891b2" />
+          <Text className="text-slate-600 mt-4 text-lg">
+            Loading clinic details...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!clinic) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50">
         <Header />
         <View className="flex-1 items-center justify-center p-4">
           <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-12 items-center max-w-md">
             <View className="bg-slate-100 rounded-2xl p-6 mb-6">
-              <Feather name="activity" size={64} color="#9ca3af" />
+              <Feather name="home" size={64} color="#9ca3af" />
             </View>
             <Text className="text-xl font-bold text-slate-700 mb-2">
-              Doctor not found
+              Clinic not found
             </Text>
             <Text className="text-slate-500 text-lg text-center">
-              The requested doctor profile could not be found.
+              The requested clinic could not be found.
             </Text>
           </View>
         </View>
       </SafeAreaView>
     );
   }
+
+  // Default clinic data structure based on our model
+  const clinicData = {
+    name: clinic.institute_name || "Clinic Name",
+    email: clinic.institute_email || "Not provided",
+    phone: clinic.mobileno || "Not provided",
+    address: clinic.address || "Not provided",
+    workingHours: clinic.working_hours || "Mon-Sat: 8:00 AM - 5:00 PM",
+    description:
+      "A trusted healthcare facility providing comprehensive diagnostic and medical services.",
+    facilities: ["Laboratory", "Pharmacy", "Consultation", "Emergency Care"],
+    established: 2015,
+    status: "Open Now",
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
@@ -157,53 +189,44 @@ const DoctorProfile = ({ route, navigation }) => {
         contentContainerStyle={{ paddingBottom: 20 }}
       >
         <View className="p-4 gap-6">
-          {/* Doctor Header Card */}
+          {/* Clinic Header Card */}
           <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-6">
             <View className="items-center mb-6">
-              {/* Doctor Image */}
+              {/* Clinic Image */}
               <View className="relative mb-4">
-                <Image
-                  source={{ uri: doctor.profileImage }}
-                  className="w-32 h-32 rounded-2xl"
-                  style={{ backgroundColor: "#e0f2fe" }}
-                />
+                <View className="w-32 h-32 rounded-2xl bg-cyan-100 items-center justify-center">
+                  <Feather name="home" size={48} color="#0891b2" />
+                </View>
                 <View className="absolute -bottom-2 -right-2 bg-green-500 w-8 h-8 rounded-full border-4 border-white items-center justify-center">
                   <View className="w-3 h-3 bg-white rounded-full" />
                 </View>
               </View>
 
-              {/* Doctor Name */}
+              {/* Clinic Name */}
               <Text className="text-3xl font-bold text-slate-800 text-center mb-4">
-                {doctor.name}
+                {clinicData.name}
               </Text>
 
-              {/* Doctor Info Grid */}
+              {/* Clinic Info Grid */}
               <View className="w-full gap-3 mb-4">
                 <View className="flex-row items-center justify-center">
                   <Feather name="activity" size={20} color="#0891b2" />
                   <Text className="text-slate-600 font-medium ml-3 text-base">
-                    {doctor.specialty}
+                    Diagnostic Center
                   </Text>
                 </View>
 
                 <View className="flex-row items-center justify-center">
                   <Feather name="award" size={20} color="#059669" />
                   <Text className="text-slate-600 font-medium ml-3 text-base">
-                    {doctor.qualification}
+                    Established {clinicData.established}
                   </Text>
                 </View>
 
                 <View className="flex-row items-center justify-center">
-                  <Feather name="briefcase" size={20} color="#d97706" />
-                  <Text className="text-slate-600 font-medium ml-3 text-base">
-                    {doctor.experience} years experience
-                  </Text>
-                </View>
-
-                <View className="flex-row items-center justify-center">
-                  <Feather name="user" size={20} color="#9333ea" />
-                  <Text className="text-slate-600 font-medium ml-3 text-base">
-                    {doctor.gender}
+                  <Feather name="map-pin" size={20} color="#d97706" />
+                  <Text className="text-slate-600 font-medium ml-3 text-base text-center">
+                    {clinicData.address}
                   </Text>
                 </View>
               </View>
@@ -214,29 +237,15 @@ const DoctorProfile = ({ route, navigation }) => {
                   <Feather key={star} name="star" size={18} color="#eab308" />
                 ))}
                 <Text className="text-slate-600 font-semibold ml-2">
-                  4.9 (150+ reviews)
+                  4.8 (200+ reviews)
                 </Text>
               </View>
 
               {/* Status Badge */}
-              <View
-                className={`flex-row items-center gap-2 px-4 py-2 rounded-full ${
-                  doctor.status === "Active" ? "bg-green-100" : "bg-red-100"
-                }`}
-              >
-                <Feather
-                  name="award"
-                  size={16}
-                  color={doctor.status === "Active" ? "#059669" : "#dc2626"}
-                />
-                <Text
-                  className={`font-semibold ${
-                    doctor.status === "Active"
-                      ? "text-green-700"
-                      : "text-red-700"
-                  }`}
-                >
-                  {doctor.status}
+              <View className="flex-row items-center gap-2 px-4 py-2 rounded-full bg-green-100">
+                <Feather name="clock" size={16} color="#059669" />
+                <Text className="font-semibold text-green-700">
+                  {clinicData.status}
                 </Text>
               </View>
             </View>
@@ -258,7 +267,7 @@ const DoctorProfile = ({ route, navigation }) => {
                     Email
                   </Text>
                   <Text className="text-slate-700 font-medium">
-                    {doctor.email}
+                    {clinicData.email}
                   </Text>
                 </View>
               </View>
@@ -272,39 +281,95 @@ const DoctorProfile = ({ route, navigation }) => {
                     Phone
                   </Text>
                   <Text className="text-slate-700 font-medium">
-                    {doctor.phone}
+                    {clinicData.phone}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row items-center gap-4 p-4 bg-slate-50/80 rounded-xl">
+                <View className="p-3 bg-orange-100 rounded-xl">
+                  <Feather name="map-pin" size={20} color="#ea580c" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-xs text-slate-500 uppercase tracking-wide font-semibold">
+                    Address
+                  </Text>
+                  <Text className="text-slate-700 font-medium">
+                    {clinicData.address}
                   </Text>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Availability */}
+          {/* Operating Hours */}
           <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-6">
             <Text className="text-2xl font-bold text-slate-800 mb-6">
-              Availability
+              Operating Hours
             </Text>
 
             <View className="gap-3">
-              {doctor.availability.map((schedule, index) => (
-                <View
-                  key={index}
-                  className="flex-row items-center justify-between p-4 bg-slate-50/80 rounded-xl"
-                >
-                  <View className="flex-row items-center gap-3">
-                    <View className="p-2 bg-purple-100 rounded-lg">
-                      <Feather name="calendar" size={16} color="#9333ea" />
-                    </View>
-                    <Text className="font-semibold text-slate-700">
-                      {schedule.day}
-                    </Text>
+              <View className="flex-row items-center justify-between p-4 bg-slate-50/80 rounded-xl">
+                <View className="flex-row items-center gap-3">
+                  <View className="p-2 bg-purple-100 rounded-lg">
+                    <Feather name="calendar" size={16} color="#9333ea" />
                   </View>
-                  <View className="flex-row items-center gap-2">
-                    <Feather name="clock" size={16} color="#64748b" />
-                    <Text className="font-medium text-slate-600 text-sm">
-                      {schedule.startTime} - {schedule.endTime}
-                    </Text>
+                  <Text className="font-semibold text-slate-700">
+                    Monday - Friday
+                  </Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="clock" size={16} color="#64748b" />
+                  <Text className="font-medium text-slate-600 text-sm">
+                    7:00 AM - 8:00 PM
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row items-center justify-between p-4 bg-slate-50/80 rounded-xl">
+                <View className="flex-row items-center gap-3">
+                  <View className="p-2 bg-blue-100 rounded-lg">
+                    <Feather name="calendar" size={16} color="#2563eb" />
                   </View>
+                  <Text className="font-semibold text-slate-700">Saturday</Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="clock" size={16} color="#64748b" />
+                  <Text className="font-medium text-slate-600 text-sm">
+                    8:00 AM - 4:00 PM
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row items-center justify-between p-4 bg-slate-50/80 rounded-xl">
+                <View className="flex-row items-center gap-3">
+                  <View className="p-2 bg-red-100 rounded-lg">
+                    <Feather name="calendar" size={16} color="#dc2626" />
+                  </View>
+                  <Text className="font-semibold text-slate-700">Sunday</Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="clock" size={16} color="#64748b" />
+                  <Text className="font-medium text-slate-600 text-sm">
+                    9:00 AM - 2:00 PM
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Facilities & Services */}
+          <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-6">
+            <Text className="text-2xl font-bold text-slate-800 mb-6">
+              Facilities & Services
+            </Text>
+
+            <View className="flex-row flex-wrap gap-3">
+              {clinicData.facilities.map((facility, index) => (
+                <View key={index} className="bg-cyan-100 px-4 py-3 rounded-xl">
+                  <Text className="text-cyan-700 font-semibold text-sm">
+                    {facility}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -313,7 +378,7 @@ const DoctorProfile = ({ route, navigation }) => {
           {/* About Section */}
           <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-6">
             <Text className="text-2xl font-bold text-slate-800 mb-6">
-              About Dr. {doctor.name.split(" ")[0]}
+              About {clinicData.name}
             </Text>
 
             <View className="gap-4 mb-6">
@@ -322,10 +387,10 @@ const DoctorProfile = ({ route, navigation }) => {
                   <Feather name="award" size={32} color="#0891b2" />
                 </View>
                 <Text className="text-2xl font-bold text-slate-800 mb-1">
-                  {doctor.experience}+
+                  {clinicData.established}+
                 </Text>
                 <Text className="text-cyan-700 font-semibold">
-                  Years Experience
+                  Years Serving
                 </Text>
               </View>
 
@@ -335,10 +400,10 @@ const DoctorProfile = ({ route, navigation }) => {
                     <Feather name="users" size={32} color="#059669" />
                   </View>
                   <Text className="text-2xl font-bold text-slate-800 mb-1">
-                    500+
+                    10K+
                   </Text>
                   <Text className="text-emerald-700 font-semibold text-center">
-                    Happy Patients
+                    Patients Served
                   </Text>
                 </View>
 
@@ -347,7 +412,7 @@ const DoctorProfile = ({ route, navigation }) => {
                     <Feather name="star" size={32} color="#d97706" />
                   </View>
                   <Text className="text-2xl font-bold text-slate-800 mb-1">
-                    4.9
+                    4.8
                   </Text>
                   <Text className="text-amber-700 font-semibold text-center">
                     Patient Rating
@@ -358,10 +423,9 @@ const DoctorProfile = ({ route, navigation }) => {
 
             <View className="p-6 bg-slate-50/80 rounded-xl">
               <Text className="text-slate-600 leading-relaxed">
-                Dr. {doctor.name} is a dedicated {doctor.specialty} with{" "}
-                {doctor.experience} years of experience in providing quality
-                healthcare services. Known for compassionate care and expertise
-                in the field.
+                {clinicData.description} We are committed to providing
+                high-quality healthcare services with state-of-the-art
+                facilities and experienced medical professionals.
               </Text>
             </View>
           </View>
@@ -435,7 +499,7 @@ const DoctorProfile = ({ route, navigation }) => {
                     No Reviews Yet
                   </Text>
                   <Text className="text-slate-500 text-center px-4">
-                    Be the first to share your experience with this doctor.
+                    Be the first to share your experience with this clinic.
                   </Text>
                 </View>
               )}
@@ -448,13 +512,11 @@ const DoctorProfile = ({ route, navigation }) => {
               Ready to schedule your appointment?
             </Text>
             <Text className="text-slate-600 mb-6 text-center">
-              Book a consultation with Dr. {doctor.name} today
+              Book your visit at {clinicData.name} today
             </Text>
             <TouchableOpacity
               onPress={handleBookAppointment}
-              className={`flex-row items-center justify-center px-8 py-4 rounded-2xl shadow-lg ${
-                hasUnpaid ? "bg-gray-400" : "bg-cyan-500"
-              }`}
+              className="flex-row items-center justify-center px-8 py-4 rounded-2xl shadow-lg bg-cyan-500"
               activeOpacity={0.8}
             >
               <Feather name="calendar" size={20} color="#ffffff" />
@@ -487,8 +549,8 @@ const DoctorProfile = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
             <Text className="text-slate-600 mb-6">
-              Select your preferred date and time to book an appointment with
-              Dr. {doctor.name}.
+              Select your preferred date and time to book an appointment at{" "}
+              {clinicData.name}.
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -554,7 +616,7 @@ const DoctorProfile = ({ route, navigation }) => {
                   Comment
                 </Text>
                 <TextInput
-                  placeholder="Share your experience..."
+                  placeholder="Share your experience with this clinic..."
                   value={reviewComment}
                   onChangeText={setReviewComment}
                   multiline
@@ -582,4 +644,4 @@ const DoctorProfile = ({ route, navigation }) => {
   );
 };
 
-export default DoctorProfile;
+export default ClinicProfile;

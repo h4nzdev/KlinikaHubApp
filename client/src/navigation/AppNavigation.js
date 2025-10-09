@@ -8,16 +8,17 @@ import Dashboard from "../screens/Main/Dashboard/Dashboard";
 import Profile from "../screens/Main/Profile/Profile";
 import Appointments from "../screens/Main/Appointments/Appointments";
 import AIChat from "../screens/Main/AIChat/AIChat";
-import Doctors from "../screens/Main/Doctors/Doctors";
+import Clinics from "../screens/Main/Clinics/Clinics";
 import Invoices from "../screens/Main/Invoices/Invoices";
 import Reminders from "../screens/Main/Reminders/Reminders";
-import DoctorProfile from "../screens/Main/DoctorProfile/DoctorProfile";
+
 import MedicalRecords from "../screens/Main/MedicalRecords/MedicalRecords";
 import Notifications from "../screens/Main/Notification/Notifications";
 
 // Import bottom navigation
 import BottomNavbar from "../components/BottomNavbar";
 import SplashScreen from "../screens/SplashScreen"; // Import your splash screen
+import ClinicProfile from "../screens/Main/ClinicProfile/ClinicProfile";
 
 const Stack = createStackNavigator();
 
@@ -57,11 +58,11 @@ const AppNavigation = () => {
           <Stack.Screen name="Profile" component={Profile} />
           <Stack.Screen name="Appointments" component={Appointments} />
           <Stack.Screen name="AIChat" component={AIChat} />
-          <Stack.Screen name="Doctors" component={Doctors} />
+          <Stack.Screen name="Clinics" component={Clinics} />
           <Stack.Screen name="MedicalRecords" component={MedicalRecords} />
           <Stack.Screen name="Invoices" component={Invoices} />
           <Stack.Screen name="Reminders" component={Reminders} />
-          <Stack.Screen name="DoctorProfile" component={DoctorProfile} />
+          <Stack.Screen name="ClinicProfile" component={ClinicProfile} />
           <Stack.Screen name="Notifications" component={Notifications} />
         </Stack.Navigator>
         <BottomNavbar />

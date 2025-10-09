@@ -2,8 +2,10 @@ import cors from "cors";
 import express from "express";
 import patientRouter from "./routes/patientRoutes.js";
 import chatRouter from "./routes/chatRoutes.js";
-import patientController from "./controller/patientController.js"; // Add this
+import patientController from "./controller/patientController.js";
+import clinicController from "./controller/clinicController.js"; // Add this
 import authRouter from "./routes/authRoutes.js";
+import clinicRouter from "./routes/clinicRoutes.js"; // Add this
 
 const app = express();
 
@@ -14,6 +16,7 @@ app.use(express.json());
 const initializeDatabase = async () => {
   try {
     await patientController.initTable();
+    await clinicController.initTable(); // Add this
     console.log("✅ Database initialized successfully");
   } catch (error) {
     console.log("❌ Database initialization failed:", error);
@@ -30,6 +33,7 @@ const mockDoctors = [
 app.use("/api/patients", patientRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/clinics", clinicRouter); // Add this
 
 app.get("/", (req, res) => {
   res.json({

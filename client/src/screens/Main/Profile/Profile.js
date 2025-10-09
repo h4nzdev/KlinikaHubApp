@@ -21,11 +21,12 @@ const Profile = () => {
   const { user } = useContext(AuthenticationContext);
   const [appointmentHistory, setAppointmentHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [activeTab, setActiveTab] = useState("personal");
 
-  // Get the actual patient data from your login response
+  // Extract patient data - handle both nested and flat structures
   const patient = user?.patient || user;
 
-  // REAL USER DATA - Using the correct structure from your API
+  // User state with ALL fields from your data structure
   const [updatedUser, setUpdatedUser] = useState({
     name: "",
     age: "",
@@ -33,26 +34,75 @@ const Profile = () => {
     email: "",
     phone: "",
     address: "",
+    role: "",
+    patientId: "",
+    birthday: "",
+    bloodGroup: "",
+    bloodPressure: "",
+    height: "",
+    weight: "",
+    maritalStatus: "",
+    guardian: "",
+    relationship: "",
+    guardianPhone: "",
+    category: "",
+    source: "",
+    createdAt: "",
+    updatedAt: "",
   });
 
-  // FIX: Sync updatedUser with context user data
+  // Sync with context data - MAP ALL FIELDS
   useEffect(() => {
     if (patient) {
+      console.log("Full patient data:", patient);
+
       setUpdatedUser({
         name:
           patient?.first_name && patient?.last_name
             ? `${patient.first_name} ${patient.last_name}`.trim()
-            : "Not provided",
+            : patient?.name || "Not provided",
         age: patient?.age || "Not provided",
-        gender: patient?.gender || "Not provided",
+        gender: patient?.sex || patient?.gender || "Not provided",
         email: patient?.email || "Not provided",
-        phone: patient?.mobileno || "Not provided",
+        phone: patient?.mobileno || patient?.phone || "Not provided",
         address: patient?.address || "Not provided",
+        role: patient?.role || "patient",
+        patientId: patient?.patient_id || patient?.id || "N/A",
+        birthday: patient?.birthday || "Not provided",
+        bloodGroup: patient?.blood_group || "Not provided",
+        bloodPressure: patient?.blood_pressure || "Not provided",
+        height: patient?.height || "Not provided",
+        weight: patient?.weight || "Not provided",
+        maritalStatus:
+          patient?.marital_status === "1"
+            ? "Single"
+            : patient?.marital_status === "2"
+              ? "Married"
+              : patient?.marital_status || "Not provided",
+        guardian: patient?.guardian || "Not provided",
+        relationship: patient?.relationship || "Not provided",
+        guardianPhone: patient?.gua_mobileno || "Not provided",
+        category:
+          patient?.category_id === 1
+            ? "Individual"
+            : patient?.category_id === 2
+              ? "Corporate"
+              : "Not specified",
+        source:
+          patient?.source === 1
+            ? "Online Registration"
+            : patient?.source === 2
+              ? "Doctor Referral"
+              : patient?.source === 3
+                ? "Walk-in"
+                : "Not specified",
+        createdAt: patient?.created_at || "Not available",
+        updatedAt: patient?.updated_at || "Not available",
       });
     }
-  }, [patient]); // Add patient as dependency
+  }, [patient]);
 
-  // Mock appointment history (as requested)
+  // Mock appointment history
   useEffect(() => {
     setLoadingHistory(true);
     setTimeout(() => {
@@ -72,14 +122,6 @@ const Profile = () => {
           status: "scheduled",
           doctor: "Dr. Mike Chen",
           clinic: "Dental Care Clinic",
-        },
-        {
-          id: "3",
-          date: "2024-01-05",
-          type: "Eye Examination",
-          status: "completed",
-          doctor: "Dr. Emily Rodriguez",
-          clinic: "Vision Plus Center",
         },
       ]);
       setLoadingHistory(false);
@@ -107,7 +149,6 @@ const Profile = () => {
 
   const handleSaveChanges = () => {
     setIsLoading(true);
-    // TODO: Implement actual API call to update user
     setTimeout(() => {
       setIsLoading(false);
       setIsEditMode(false);
@@ -116,110 +157,67 @@ const Profile = () => {
   };
 
   const handleCancelEdit = () => {
-    // Reset to ACTUAL user data from context
     if (patient) {
       setUpdatedUser({
         name:
           patient?.first_name && patient?.last_name
             ? `${patient.first_name} ${patient.last_name}`.trim()
-            : "Not provided",
+            : patient?.name || "Not provided",
         age: patient?.age || "Not provided",
-        gender: patient?.gender || "Not provided",
+        gender: patient?.sex || patient?.gender || "Not provided",
         email: patient?.email || "Not provided",
-        phone: patient?.mobileno || "Not provided",
+        phone: patient?.mobileno || patient?.phone || "Not provided",
         address: patient?.address || "Not provided",
+        role: patient?.role || "patient",
+        patientId: patient?.patient_id || patient?.id || "N/A",
+        birthday: patient?.birthday || "Not provided",
+        bloodGroup: patient?.blood_group || "Not provided",
+        bloodPressure: patient?.blood_pressure || "Not provided",
+        height: patient?.height || "Not provided",
+        weight: patient?.weight || "Not provided",
+        maritalStatus:
+          patient?.marital_status === "1"
+            ? "Single"
+            : patient?.marital_status === "2"
+              ? "Married"
+              : patient?.marital_status || "Not provided",
+        guardian: patient?.guardian || "Not provided",
+        relationship: patient?.relationship || "Not provided",
+        guardianPhone: patient?.gua_mobileno || "Not provided",
+        category:
+          patient?.category_id === 1
+            ? "Individual"
+            : patient?.category_id === 2
+              ? "Corporate"
+              : "Not specified",
+        source:
+          patient?.source === 1
+            ? "Online Registration"
+            : patient?.source === 2
+              ? "Doctor Referral"
+              : patient?.source === 3
+                ? "Walk-in"
+                : "Not specified",
+        createdAt: patient?.created_at || "Not available",
+        updatedAt: patient?.updated_at || "Not available",
       });
     }
     setIsEditMode(false);
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "Not available";
-
+    if (!dateString || dateString === "Not available") return "Not available";
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString("en-US", {
+        year: "numeric",
         month: "short",
         day: "numeric",
-        year: "numeric",
       });
     } catch (error) {
       return "Invalid date";
     }
   };
-
-  // REAL STATS based on actual user data
-  const stats = [
-    {
-      title: "Full Name",
-      value: updatedUser?.name || "Not provided",
-      icon: "user",
-      color: "#475569",
-      bgColor: "bg-slate-50",
-      borderColor: "border-slate-200",
-      name: "name",
-    },
-    {
-      title: "Age",
-      value: updatedUser?.age ? `${updatedUser.age} years` : "Not provided",
-      icon: "calendar",
-      color: "#0891b2",
-      bgColor: "bg-cyan-50",
-      borderColor: "border-cyan-200",
-      name: "age",
-    },
-    {
-      title: "Gender",
-      value: updatedUser?.gender || "Not provided",
-      icon: "user-check",
-      color: "#059669",
-      bgColor: "bg-emerald-50",
-      borderColor: "border-emerald-200",
-      name: "gender",
-    },
-    {
-      title: "Role",
-      value: patient?.role
-        ? patient.role.charAt(0).toUpperCase() + patient.role.slice(1)
-        : "Patient",
-      icon: "user",
-      color: "#9333ea",
-      bgColor: "bg-purple-50",
-      borderColor: "border-purple-200",
-      name: "role",
-      isEditable: false,
-    },
-  ];
-
-  const contactInfo = [
-    {
-      title: "Email Address",
-      value: updatedUser?.email || "Not provided",
-      icon: "mail",
-      color: "#2563eb",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-200",
-      name: "email",
-    },
-    {
-      title: "Phone Number",
-      value: updatedUser?.phone || "Not provided",
-      icon: "phone",
-      color: "#16a34a",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
-      name: "phone",
-    },
-    {
-      title: "Address",
-      value: updatedUser?.address || "Not provided",
-      icon: "map-pin",
-      color: "#ea580c",
-      bgColor: "bg-orange-50",
-      borderColor: "border-orange-200",
-      name: "address",
-    },
-  ];
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -234,8 +232,191 @@ const Profile = () => {
     }
   };
 
-  // FIX: Enhanced loading state - check both user and updatedUser
-  if (!user || !updatedUser.name) {
+  // Information organized by tabs
+  const personalInfo = [
+    {
+      title: "Full Name",
+      value: updatedUser.name,
+      icon: "user",
+      color: "#475569",
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-200",
+      name: "name",
+    },
+    {
+      title: "Age",
+      value: updatedUser.age ? `${updatedUser.age} years` : "Not provided",
+      icon: "calendar",
+      color: "#0891b2",
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-200",
+      name: "age",
+    },
+    {
+      title: "Gender",
+      value: updatedUser.gender,
+      icon: "user-check",
+      color: "#059669",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      name: "gender",
+    },
+    {
+      title: "Birthday",
+      value: formatDate(updatedUser.birthday),
+      icon: "gift",
+      color: "#f43f5e",
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-200",
+      name: "birthday",
+    },
+    {
+      title: "Marital Status",
+      value: updatedUser.maritalStatus,
+      icon: "heart",
+      color: "#ec4899",
+      bgColor: "bg-pink-50",
+      borderColor: "border-pink-200",
+      name: "maritalStatus",
+    },
+  ];
+
+  const medicalInfo = [
+    {
+      title: "Blood Group",
+      value: updatedUser.bloodGroup,
+      icon: "droplet",
+      color: "#dc2626",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+      name: "bloodGroup",
+    },
+    {
+      title: "Blood Pressure",
+      value: updatedUser.bloodPressure,
+      icon: "activity",
+      color: "#ea580c",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      name: "bloodPressure",
+    },
+    {
+      title: "Height",
+      value: updatedUser.height,
+      icon: "maximize",
+      color: "#16a34a",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      name: "height",
+    },
+    {
+      title: "Weight",
+      value: updatedUser.weight,
+      icon: "minimize",
+      color: "#9333ea",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
+      name: "weight",
+    },
+  ];
+
+  const contactInfo = [
+    {
+      title: "Email Address",
+      value: updatedUser.email,
+      icon: "mail",
+      color: "#2563eb",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      name: "email",
+    },
+    {
+      title: "Phone Number",
+      value: updatedUser.phone,
+      icon: "phone",
+      color: "#16a34a",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      name: "phone",
+    },
+    {
+      title: "Address",
+      value: updatedUser.address,
+      icon: "map-pin",
+      color: "#ea580c",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      name: "address",
+    },
+  ];
+
+  const guardianInfo = [
+    {
+      title: "Guardian Name",
+      value: updatedUser.guardian,
+      icon: "users",
+      color: "#7c3aed",
+      bgColor: "bg-violet-50",
+      borderColor: "border-violet-200",
+      name: "guardian",
+    },
+    {
+      title: "Relationship",
+      value: updatedUser.relationship,
+      icon: "link",
+      color: "#0891b2",
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-200",
+      name: "relationship",
+    },
+    {
+      title: "Guardian Phone",
+      value: updatedUser.guardianPhone,
+      icon: "phone-call",
+      color: "#059669",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      name: "guardianPhone",
+    },
+  ];
+
+  const systemInfo = [
+    {
+      title: "Patient Category",
+      value: updatedUser.category,
+      icon: "tag",
+      color: "#6b7280",
+      bgColor: "bg-gray-50",
+      borderColor: "border-gray-200",
+    },
+    {
+      title: "Registration Source",
+      value: updatedUser.source,
+      icon: "download",
+      color: "#8b5cf6",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+    },
+    {
+      title: "Member Since",
+      value: formatDate(updatedUser.createdAt),
+      icon: "clock",
+      color: "#f59e0b",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-200",
+    },
+    {
+      title: "Last Updated",
+      value: formatDate(updatedUser.updatedAt),
+      icon: "refresh-cw",
+      color: "#10b981",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-200",
+    },
+  ];
+
+  // Loading state
+  if (!user) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50">
         <StatusBar barStyle="dark-content" />
@@ -243,337 +424,327 @@ const Profile = () => {
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0891b2" />
           <Text className="text-slate-600 mt-4 text-lg">
-            {!user ? "Loading user data..." : "Preparing profile..."}
+            Loading user data...
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // Tab navigation component
+  const TabButton = ({ title, tabName, icon }) => (
+    <TouchableOpacity
+      onPress={() => setActiveTab(tabName)}
+      className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-lg mx-1 ${
+        activeTab === tabName ? "bg-cyan-600" : "bg-slate-100"
+      }`}
+      activeOpacity={0.7}
+    >
+      <Feather
+        name={icon}
+        size={16}
+        color={activeTab === tabName ? "#ffffff" : "#64748b"}
+        className="mr-2"
+      />
+      <Text
+        className={`font-medium text-sm ${
+          activeTab === tabName ? "text-white" : "text-slate-600"
+        }`}
+      >
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  // Info card component for column layout
+  const InfoCard = ({ info }) => (
+    <View
+      className="bg-white rounded-xl border border-slate-200 p-4 mb-3"
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 2,
+      }}
+    >
+      <View className="flex-row items-center mb-2">
+        <View className={`p-2 rounded-lg ${info.bgColor} mr-3`}>
+          <Feather name={info.icon} size={18} color={info.color} />
+        </View>
+        <Text className="text-sm text-slate-600 font-medium">{info.title}</Text>
+      </View>
+      {isEditMode && info.name ? (
+        <TextInput
+          value={info.value === "Not provided" ? "" : String(info.value)}
+          onChangeText={(text) => handleInputChange(info.name, text)}
+          className="text-base font-semibold text-slate-800 border-2 border-cyan-300 rounded-lg px-3 py-2 mt-1"
+          multiline={info.name === "address"}
+          style={{ minHeight: info.name === "address" ? 60 : 40 }}
+        />
+      ) : (
+        <Text className="text-base font-semibold text-slate-800 ml-11">
+          {info.value}
+        </Text>
+      )}
+    </View>
+  );
+
+  // Render content based on active tab
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "personal":
+        return (
+          <View className="mt-4">
+            {personalInfo.map((info, index) => (
+              <InfoCard key={index} info={info} />
+            ))}
+          </View>
+        );
+      case "medical":
+        return (
+          <View className="mt-4">
+            {medicalInfo.map((info, index) => (
+              <InfoCard key={index} info={info} />
+            ))}
+          </View>
+        );
+      case "contact":
+        return (
+          <View className="mt-4">
+            {contactInfo.map((info, index) => (
+              <InfoCard key={index} info={info} />
+            ))}
+          </View>
+        );
+      case "emergency":
+        return (
+          <View className="mt-4">
+            {guardianInfo.map((info, index) => (
+              <InfoCard key={index} info={info} />
+            ))}
+          </View>
+        );
+      case "system":
+        return (
+          <View className="mt-4">
+            {systemInfo.map((info, index) => (
+              <InfoCard key={index} info={info} />
+            ))}
+          </View>
+        );
+      case "appointments":
+        return (
+          <View className="mt-4">
+            <View
+              className="bg-white rounded-xl border border-slate-200 overflow-hidden"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+                elevation: 2,
+              }}
+            >
+              {loadingHistory ? (
+                <View className="p-6 items-center">
+                  <ActivityIndicator size="small" color="#0891b2" />
+                  <Text className="text-slate-600 mt-3 text-sm">
+                    Loading appointments...
+                  </Text>
+                </View>
+              ) : appointmentHistory.length === 0 ? (
+                <View className="p-8 items-center">
+                  <View className="bg-slate-100 rounded-xl p-4 mb-3">
+                    <Feather name="calendar" size={32} color="#cbd5e1" />
+                  </View>
+                  <Text className="text-base font-bold text-slate-700 mb-1">
+                    No appointments yet
+                  </Text>
+                  <Text className="text-slate-500 text-center text-sm">
+                    Your appointment history will appear here
+                  </Text>
+                </View>
+              ) : (
+                appointmentHistory.map((appointment, index) => (
+                  <View
+                    key={appointment.id}
+                    className={`p-4 ${index !== appointmentHistory.length - 1 ? "border-b border-slate-100" : ""}`}
+                  >
+                    <View className="flex-row justify-between items-start mb-2">
+                      <Text className="font-bold text-slate-800 text-base flex-1">
+                        {appointment.type}
+                      </Text>
+                      <View
+                        className={`px-2 py-1 rounded-full border ${getStatusColor(appointment.status)}`}
+                      >
+                        <Text className="text-xs font-semibold capitalize">
+                          {appointment.status}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="gap-1">
+                      <Text className="text-slate-700 font-semibold text-sm">
+                        {appointment.doctor}
+                      </Text>
+                      <Text className="text-slate-500 text-sm">
+                        {appointment.clinic}
+                      </Text>
+                      <Text className="text-slate-500 text-xs mt-1">
+                        {formatDate(appointment.date)}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
       <Header />
 
-      {/* Main Content */}
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
       >
-        <View className="p-4 gap-8">
+        <View className="p-4">
           {/* Header Section */}
-          <View className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
-            <View className="gap-6">
-              {/* Avatar and Name */}
-              <View className="flex-column items-center gap-6">
-                <View className="w-28 h-28 rounded-full bg-cyan-700 items-center justify-center shadow-lg">
-                  {patient?.patientPicture ? (
-                    <Image
-                      source={{ uri: patient.patientPicture }}
-                      className="w-full h-full rounded-full"
-                    />
-                  ) : (
-                    <Text className="text-3xl font-bold text-white tracking-wide">
-                      {initials}
-                    </Text>
-                  )}
-                </View>
+          <View
+            className="bg-white rounded-xl border border-slate-200 p-6 mb-6"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
+          >
+            <View className="flex-row items-center mb-4">
+              <View className="w-20 h-20 rounded-full bg-cyan-600 items-center justify-center mr-4">
+                {patient?.photo ? (
+                  <Image
+                    source={{ uri: patient.photo }}
+                    className="w-full h-full rounded-full"
+                  />
+                ) : (
+                  <Text className="text-2xl font-bold text-white">
+                    {initials}
+                  </Text>
+                )}
+              </View>
 
-                <View className="flex-1">
-                  <Text className="text-3xl font-bold text-slate-800 tracking-tight text-center">
-                    {updatedUser.name}
-                  </Text>
-                  <Text className="text-slate-600 mt-2 text-lg font-medium text-center">
-                    {updatedUser.email}
-                  </Text>
-                  <View className="flex-row flex-wrap gap-3 mt-3 justify-center">
-                    <View className="bg-cyan-100 px-4 py-2 rounded-lg border border-cyan-200">
-                      <Text className="text-cyan-700 font-semibold text-sm uppercase tracking-wide">
-                        {patient?.role
-                          ? patient.role.charAt(0).toUpperCase() +
-                            patient.role.slice(1)
-                          : "Patient"}
-                      </Text>
-                    </View>
-                    <View className="bg-emerald-100 px-4 py-2 rounded-lg border border-emerald-200">
-                      <Text className="text-emerald-700 font-semibold text-sm tracking-wide">
-                        Active
-                      </Text>
-                    </View>
+              <View className="flex-1">
+                <Text className="text-2xl font-bold text-slate-800 mb-1">
+                  {updatedUser.name}
+                </Text>
+                <Text className="text-slate-600 text-base mb-2">
+                  {updatedUser.email}
+                </Text>
+                <View className="flex-row">
+                  <View className="bg-cyan-100 px-3 py-1 rounded-md mr-2">
+                    <Text className="text-cyan-700 font-medium text-xs">
+                      Patient
+                    </Text>
+                  </View>
+                  <View className="bg-emerald-100 px-3 py-1 rounded-md">
+                    <Text className="text-emerald-700 font-medium text-xs">
+                      Active
+                    </Text>
                   </View>
                 </View>
               </View>
+            </View>
 
-              {/* Registration Info and Edit Button */}
-              <View className="border-t border-slate-200 pt-6 gap-4">
-                <View className="flex-row justify-between">
-                  <View>
-                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                      Patient ID
-                    </Text>
-                    <Text className="text-lg font-bold text-slate-800 mt-1">
-                      #
-                      {patient?.id
-                        ? patient.id.toString().padStart(4, "0")
-                        : "N/A"}
-                    </Text>
-                  </View>
-                  <View>
-                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                      Status
-                    </Text>
-                    <Text className="text-base font-bold text-emerald-600 mt-1">
-                      Verified
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  onPress={isEditMode ? handleCancelEdit : handleEditClick}
-                  disabled={isLoading}
-                  className="flex-row items-center justify-center bg-cyan-600 px-4 py-3 rounded-lg gap-2"
-                  activeOpacity={0.8}
-                >
-                  <Feather name="edit" size={18} color="#ffffff" />
-                  <Text className="text-white font-semibold text-base">
-                    {isEditMode ? "Cancel" : "Edit Profile"}
+            <View className="border-t border-slate-200 pt-4">
+              <View className="flex-row justify-between mb-4">
+                <View>
+                  <Text className="text-sm text-slate-600 font-medium mb-1">
+                    Patient ID
                   </Text>
-                </TouchableOpacity>
+                  <Text className="text-base font-bold text-cyan-700">
+                    #{updatedUser.patientId}
+                  </Text>
+                </View>
+                <View>
+                  <Text className="text-sm text-slate-600 font-medium mb-1">
+                    Member Since
+                  </Text>
+                  <Text className="text-base font-bold text-slate-800">
+                    {formatDate(updatedUser.createdAt)}
+                  </Text>
+                </View>
               </View>
-            </View>
-          </View>
 
-          {/* Personal Information Section */}
-          <View>
-            <Text className="text-2xl font-bold text-slate-800 tracking-tight mb-6">
-              Personal Information
-            </Text>
-            <View className="flex-row flex-wrap gap-4">
-              {stats.map((stat, index) => (
-                <View key={index} className="w-full">
-                  <View
-                    className={`${stat.bgColor} rounded-xl p-4 border ${stat.borderColor} shadow-sm`}
-                  >
-                    <View className="gap-3 flex-row">
-                      <View
-                        className={`p-3 ${stat.bgColor} rounded-lg border ${stat.borderColor} self-start`}
-                      >
-                        <Feather
-                          name={stat.icon}
-                          size={24}
-                          color={stat.color}
-                        />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                          {stat.title}
-                        </Text>
-                        {isEditMode && stat.name !== "role" ? (
-                          <TextInput
-                            value={stat.value}
-                            onChangeText={(text) =>
-                              handleInputChange(stat.name, text)
-                            }
-                            className="text-xl font-bold mt-2 bg-white/70 border-2 border-slate-300 rounded px-3 py-2"
-                            style={{ color: stat.color }}
-                            editable={!isLoading}
-                          />
-                        ) : (
-                          <Text
-                            className="text-xl font-bold mt-2 capitalize flex-wrap"
-                            style={{ color: stat.color }}
-                            numberOfLines={2}
-                          >
-                            {stat.value}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Contact Information Section */}
-          <View>
-            <Text className="text-2xl font-bold text-slate-800 tracking-tight mb-6">
-              Contact Information
-            </Text>
-            <View className="gap-6">
-              {contactInfo.map((contact, index) => (
-                <View
-                  key={index}
-                  className="bg-white/80 rounded-xl border border-slate-200/50 shadow-lg p-6"
-                >
-                  <View className="flex-row gap-4">
-                    <View
-                      className={`p-4 ${contact.bgColor} rounded-lg border ${contact.borderColor}`}
-                    >
-                      <Feather
-                        name={contact.icon}
-                        size={28}
-                        color={contact.color}
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                        {contact.title}
-                      </Text>
-                      {isEditMode ? (
-                        <TextInput
-                          value={contact.value}
-                          onChangeText={(text) =>
-                            handleInputChange(contact.name, text)
-                          }
-                          multiline={contact.name === "address"}
-                          numberOfLines={contact.name === "address" ? 2 : 1}
-                          className="text-lg font-semibold mt-2 bg-white/70 border-2 border-slate-300 rounded px-3 py-2"
-                          style={{
-                            color: contact.color,
-                            textAlignVertical: "top",
-                          }}
-                          editable={!isLoading}
-                        />
-                      ) : (
-                        <Text
-                          className="text-lg font-semibold mt-2"
-                          style={{ color: contact.color }}
-                          numberOfLines={contact.name === "address" ? 2 : 1}
-                        >
-                          {contact.value}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Save/Cancel Buttons */}
-          {isEditMode && (
-            <View className="flex-row justify-end gap-4">
               <TouchableOpacity
-                onPress={handleCancelEdit}
-                disabled={isLoading}
-                className="bg-gray-600 px-6 py-3 rounded-lg"
+                onPress={isEditMode ? handleCancelEdit : handleEditClick}
+                className="flex-row items-center justify-center gap-2 bg-cyan-600 px-4 py-3 rounded-lg"
                 activeOpacity={0.8}
               >
-                <Text className="text-white font-semibold text-lg">Cancel</Text>
+                <Feather name="edit" size={18} color="#ffffff" />
+                <Text className="text-white font-semibold text-base">
+                  {isEditMode ? "Cancel" : "Edit Profile"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Tab Navigation */}
+          <View className="mb-4">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="mb-2"
+            >
+              <View className="flex-row">
+                <TabButton title="Personal" tabName="personal" icon="user" />
+                <TabButton title="Medical" tabName="medical" icon="heart" />
+                <TabButton title="Contact" tabName="contact" icon="phone" />
+                <TabButton title="Emergency" tabName="emergency" icon="users" />
+                <TabButton title="System" tabName="system" icon="settings" />
+                <TabButton
+                  title="Appointments"
+                  tabName="appointments"
+                  icon="calendar"
+                />
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Tab Content */}
+          {renderTabContent()}
+
+          {/* Save Buttons */}
+          {isEditMode && (
+            <View className="flex-row gap-4 mt-6">
+              <TouchableOpacity
+                onPress={handleCancelEdit}
+                className="flex-1 bg-gray-600 py-4 rounded-xl"
+                activeOpacity={0.8}
+              >
+                <Text className="text-white font-semibold text-center text-base">
+                  Cancel
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleSaveChanges}
                 disabled={isLoading}
-                className="bg-cyan-600 px-6 py-3 rounded-lg"
+                className="flex-1 bg-cyan-600 py-4 rounded-xl"
                 activeOpacity={0.8}
               >
-                <Text className="text-white font-semibold text-lg">
+                <Text className="text-white font-semibold text-center text-base">
                   {isLoading ? "Saving..." : "Save Changes"}
                 </Text>
               </TouchableOpacity>
             </View>
           )}
-
-          {/* Appointment History Section */}
-          <View>
-            <View className="gap-2">
-              <Text className="text-2xl font-bold text-slate-800 tracking-tight">
-                Appointment History
-              </Text>
-              <Text className="text-lg text-slate-600 font-medium">
-                {loadingHistory
-                  ? "Loading..."
-                  : `Total ${appointmentHistory.length} Appointments`}
-              </Text>
-            </View>
-
-            <View className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
-              {loadingHistory ? (
-                <View className="p-6 items-center">
-                  <ActivityIndicator size="small" color="#0891b2" />
-                  <Text className="text-slate-600 mt-2">
-                    Loading appointments...
-                  </Text>
-                </View>
-              ) : appointmentHistory.length === 0 ? (
-                <View className="p-6 items-center">
-                  <Feather name="calendar" size={48} color="#cbd5e1" />
-                  <Text className="text-slate-600 text-lg text-center mt-2">
-                    No appointment history yet.
-                  </Text>
-                  <Text className="text-slate-500 text-center">
-                    Book your first appointment to get started!
-                  </Text>
-                </View>
-              ) : (
-                <View className="gap-px bg-slate-100">
-                  {appointmentHistory.map((record) => (
-                    <View
-                      key={record.id}
-                      className="bg-white p-4 border-b border-slate-100"
-                    >
-                      <View className="gap-3">
-                        <View className="flex-row items-center justify-between">
-                          <View className="flex-row items-center gap-2">
-                            <Feather
-                              name="calendar"
-                              size={18}
-                              color="#64748b"
-                            />
-                            <Text className="text-base font-semibold text-slate-700">
-                              {formatDate(record.date)}
-                            </Text>
-                          </View>
-                          <View
-                            className={`px-3 py-1.5 rounded-full border ${getStatusColor(
-                              record.status
-                            )}`}
-                          >
-                            <Text className="text-sm font-semibold capitalize">
-                              {record.status}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View className="gap-2">
-                          <View>
-                            <Text className="text-sm text-slate-500 uppercase font-medium">
-                              Type
-                            </Text>
-                            <Text className="text-base font-semibold text-slate-700">
-                              {record.type}
-                            </Text>
-                          </View>
-                          <View className="flex-row gap-4">
-                            <View className="flex-1">
-                              <Text className="text-sm text-slate-500 uppercase font-medium">
-                                Doctor
-                              </Text>
-                              <Text className="text-sm font-medium text-slate-800">
-                                {record.doctor}
-                              </Text>
-                            </View>
-                            <View className="flex-1">
-                              <Text className="text-sm text-slate-500 uppercase font-medium">
-                                Clinic
-                              </Text>
-                              <Text className="text-sm font-medium text-slate-800">
-                                {record.clinic}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

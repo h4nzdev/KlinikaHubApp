@@ -15,15 +15,8 @@ import Toast from "react-native-toast-message";
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notificationCount] = useState(5);
-  const { setUser } = useContext(AuthenticationContext);
+  const { setUser, user } = useContext(AuthenticationContext);
   const navigation = useNavigation();
-
-  // Mock user data
-  const user = {
-    name: "Hanz Christian Angelo G Magbal",
-    clinicName: "Kinika",
-    patientPicture: "https://randomuser.me/api/portraits/men/1.jpg",
-  };
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
@@ -48,7 +41,8 @@ const Header = () => {
           <View className="flex-row items-center justify-between">
             {/* Logo/Clinic Name */}
             <Text className="text-2xl font-bold text-cyan-600">
-              {user.clinicName}
+              <Text className="text-cyan-800">Klinika</Text>
+              <Text className="text-green-800">Hub</Text>
             </Text>
 
             {/* Right side actions */}
@@ -84,7 +78,7 @@ const Header = () => {
                   }}
                 >
                   <Image
-                    source={{ uri: user.patientPicture }}
+                    source={{ uri: user.photo }}
                     className="w-full h-full"
                     style={{ backgroundColor: "#e0f2fe" }}
                   />
@@ -112,7 +106,7 @@ const Header = () => {
                     className="text-sm font-semibold text-slate-900"
                     numberOfLines={1}
                   >
-                    {user.name}
+                    {user.first_name}
                   </Text>
                   <Text className="text-xs text-slate-500">Client</Text>
                 </View>

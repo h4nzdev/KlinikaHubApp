@@ -155,13 +155,13 @@ const BottomNavbar = () => {
           {/* Center plus button */}
           <View className="flex-shrink-0 mx-2">
             <TouchableOpacity
-              onPress={() => handleTabPress("Doctors")}
+              onPress={() => handleTabPress("Clinics")}
               className="flex-col items-center justify-center relative"
               activeOpacity={0.8}
             >
               <View
                 className={`relative p-3 rounded-full ${
-                  activeTab === "Doctors"
+                  activeTab === "Clinics"
                     ? "bg-cyan-600 shadow-lg scale-110"
                     : "bg-cyan-500 shadow-lg"
                 }`}
@@ -173,19 +173,19 @@ const BottomNavbar = () => {
                   elevation: 8,
                 }}
               >
-                <Feather name="plus" size={24} color="#ffffff" />
-                {activeTab === "Doctors" && (
+                <Feather name="activity" size={24} color="#ffffff" />
+                {activeTab === "Clinics" && (
                   <View className="absolute -inset-2 bg-cyan-400/30 rounded-full -z-10" />
                 )}
               </View>
               <Text
                 className={`text-xs text-center leading-tight mt-1 ${
-                  activeTab === "Doctors"
+                  activeTab === "Clinics"
                     ? "font-semibold text-cyan-700"
                     : "font-medium text-slate-600"
                 }`}
               >
-                Doctors
+                {activeTab === "Clinics" ? "" : "Clinics"}
               </Text>
             </TouchableOpacity>
           </View>

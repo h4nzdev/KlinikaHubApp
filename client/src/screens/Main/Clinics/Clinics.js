@@ -13,10 +13,10 @@ import {
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import { useNavigation } from "@react-navigation/native";
-import doctorServices from "../../../services/doctorServices"; // Import your service
+import clinicServices from "../../../services/clinicServices";
 
-const Doctors = () => {
-  const [doctors, setDoctors] = useState([]);
+const Clinics = () => {
+  const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -24,64 +24,60 @@ const Doctors = () => {
   const [user] = useState({
     _id: "user123",
     name: "Hanz Christian Angelo G Magbal",
-    clinicId: { _id: "clinic123" },
   });
 
-  // Fetch doctors from API
-  const fetchDoctors = async () => {
+  // Fetch clinics from API
+  const fetchClinics = async () => {
     try {
       setError(null);
-      const data = await doctorServices.getAllDoctors();
-      setDoctors(data);
+      const data = await clinicServices.getAllClinics();
+      setClinics(data);
     } catch (err) {
-      console.error("Error fetching doctors:", err);
-      setError("Failed to load doctors. Please try again.");
+      console.error("Error fetching clinics:", err);
+      setError("Failed to load clinics. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  console.log(doctors);
+  console.log(clinics);
 
   // Initial load
   useEffect(() => {
-    fetchDoctors();
+    fetchClinics();
   }, []);
 
   // Pull to refresh
   const onRefresh = () => {
     setRefreshing(true);
-    fetchDoctors();
+    fetchClinics();
   };
-
-  // Calculate unique specialties
-  const uniqueSpecialties = new Set(doctors.map((d) => d.specialty)).size;
 
   // Stats data
   const stats = [
     {
-      title: "Total Doctors",
-      value: doctors.length,
-      icon: "user",
+      title: "Total Clinics",
+      value: clinics.length,
+      icon: "home",
       color: "bg-cyan-50",
       iconBg: "bg-cyan-100",
       iconColor: "#0891b2",
       textColor: "text-cyan-700",
     },
     {
-      title: "Specialties",
-      value: uniqueSpecialties,
-      icon: "activity",
+      title: "Available",
+      value: clinics.length,
+      icon: "check-circle",
       color: "bg-emerald-50",
       iconBg: "bg-emerald-100",
       iconColor: "#059669",
       textColor: "text-emerald-700",
     },
     {
-      title: "Available",
-      value: doctors.length,
-      icon: "star",
+      title: "Services",
+      value: "All",
+      icon: "heart",
       color: "bg-purple-50",
       iconBg: "bg-purple-100",
       iconColor: "#9333ea",
@@ -89,9 +85,8 @@ const Doctors = () => {
     },
   ];
 
-  const handleDoctorPress = (doctorId) => {
-    // Navigate to doctor details
-    navigation.navigate("DoctorDetails", { doctorId });
+  const handleClinicPress = (clinicId) => {
+    navigation.navigate("ClinicProfile", { clinicId });
   };
 
   // Loading State
@@ -103,7 +98,7 @@ const Doctors = () => {
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0891b2" />
           <Text className="text-slate-600 mt-4 text-lg">
-            Loading doctors...
+            Loading clinics...
           </Text>
         </View>
       </SafeAreaView>
@@ -111,7 +106,7 @@ const Doctors = () => {
   }
 
   // Error State
-  if (error && doctors.length === 0) {
+  if (error && clinics.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50">
         <StatusBar barStyle="dark-content" />
@@ -121,13 +116,13 @@ const Doctors = () => {
             <Feather name="alert-triangle" size={64} color="#dc2626" />
           </View>
           <Text className="text-xl font-bold text-slate-700 mb-2 text-center">
-            Unable to Load Doctors
+            Unable to Load Clinics
           </Text>
           <Text className="text-slate-500 text-lg text-center mb-6">
             {error}
           </Text>
           <TouchableOpacity
-            onPress={fetchDoctors}
+            onPress={fetchClinics}
             className="flex-row items-center justify-center px-6 py-3 bg-cyan-500 rounded-xl"
           >
             <Feather name="refresh-cw" size={16} color="#ffffff" />
@@ -165,7 +160,7 @@ const Doctors = () => {
             <View className="bg-red-50 border border-red-200 rounded-xl p-4 flex-row items-center">
               <Feather name="alert-circle" size={20} color="#dc2626" />
               <Text className="text-red-700 ml-2 flex-1">{error}</Text>
-              <TouchableOpacity onPress={fetchDoctors}>
+              <TouchableOpacity onPress={fetchClinics}>
                 <Feather name="x" size={20} color="#dc2626" />
               </TouchableOpacity>
             </View>
@@ -174,11 +169,10 @@ const Doctors = () => {
           {/* Header Section */}
           <View>
             <Text className="text-3xl font-bold text-slate-800 mb-2">
-              Our Doctors
+              Our Clinics
             </Text>
             <Text className="text-slate-600 text-lg">
-              Meet our team of experienced healthcare professionals ready to
-              serve you.
+              Choose from our network of trusted healthcare facilities.
             </Text>
           </View>
 
@@ -195,6 +189,8 @@ const Doctors = () => {
                       <View className="flex-row items-center justify-between">
                         <View className="flex-1 min-w-0">
                           <Text
+                            ellipsizeMode="tail"
+                            numberOfLines={1}
                             className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-2 opacity-80`}
                           >
                             {stat.title}
@@ -256,89 +252,95 @@ const Doctors = () => {
           {/* Section Header */}
           <View>
             <Text className="text-2xl font-bold text-slate-800 mb-2">
-              Available Doctors
+              Available Clinics
             </Text>
             <Text className="text-slate-600 text-lg">
-              {doctors.length} doctor{doctors.length !== 1 ? "s" : ""} ready to
-              help you
+              {clinics.length} clinic{clinics.length !== 1 ? "s" : ""} ready to
+              serve you
             </Text>
           </View>
 
-          {/* Doctors List */}
-          {doctors.length > 0 ? (
+          {/* Clinics List */}
+          {clinics.length > 0 ? (
             <View className="gap-6">
-              {doctors.map((doctor) => (
+              {clinics.map((clinic) => (
                 <View
-                  key={doctor._id}
+                  key={clinic.id}
                   className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-6"
                 >
-                  {/* Doctor Header */}
+                  {/* Clinic Header */}
                   <View className="flex-row gap-4 mb-4">
                     <View className="relative">
-                      <Image
-                        source={{ uri: doctor.profileImage }}
-                        className="w-16 h-16 rounded-xl"
-                        style={{ backgroundColor: "#e0f2fe" }}
-                      />
+                      <View className="w-16 h-16 rounded-xl bg-cyan-100 items-center justify-center">
+                        <Feather name="home" size={24} color="#0891b2" />
+                      </View>
                       <View className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white bg-green-500" />
                     </View>
                     <View className="flex-1">
                       <Text className="text-xl font-bold text-slate-800 mb-1">
-                        {doctor.name}
+                        {clinic.institute_name}
                       </Text>
                       <Text className="text-slate-600 font-medium text-sm mb-2">
-                        {doctor.specialty}
+                        Diagnostic Center
                       </Text>
                       <View className="flex-row items-center gap-1">
-                        <Feather name="star" size={16} color="#eab308" />
-                        <Text className="font-semibold text-slate-700 text-sm">
-                          {doctor.rating}
-                        </Text>
+                        <Feather name="phone" size={14} color="#64748b" />
                         <Text className="text-slate-500 text-sm">
-                          ({doctor.reviews}+)
+                          {clinic.mobileno}
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  {/* Doctor Info Card */}
+                  {/* Clinic Info Card */}
                   <View className="bg-slate-50/80 rounded-xl p-4 mb-4">
-                    <View className="gap-2">
-                      <View className="flex-row items-center justify-between">
-                        <Text className="text-slate-600 text-sm">
-                          Experience:
+                    <View className="gap-3">
+                      {/* Address - Stack on mobile */}
+                      <View className="flex-col space-y-1">
+                        <Text className="text-slate-600 text-sm font-medium">
+                          Address
                         </Text>
-                        <Text className="font-semibold text-slate-700 text-sm">
-                          {doctor.experience}
-                        </Text>
-                      </View>
-                      <View className="flex-row items-center justify-between">
-                        <Text className="text-slate-600 text-sm">
-                          Consultation:
-                        </Text>
-                        <Text className="font-semibold text-emerald-600 text-sm">
-                          {doctor.consultation}
+                        <Text className="font-semibold text-slate-700 text-sm leading-5">
+                          {clinic.address}
                         </Text>
                       </View>
-                      <View className="flex-row items-center justify-between">
-                        <Text className="text-slate-600 text-sm">Status:</Text>
-                        <Text className="font-semibold text-green-600 text-sm">
-                          Available Today
-                        </Text>
+
+                      {/* Hours and Status - Side by side on larger screens, stacked on mobile */}
+                      <View className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+                        {/* Hours */}
+                        <View className="flex-1">
+                          <Text className="text-slate-600 text-sm font-medium mb-1">
+                            Operating Hours
+                          </Text>
+                          <Text className="font-semibold text-slate-700 text-sm">
+                            {clinic.working_hours ||
+                              "Mon-Sat: 8:00 AM - 5:00 PM"}
+                          </Text>
+                        </View>
+
+                        {/* Status with badge */}
+                        <View className="flex-row items-center justify-between sm:justify-start sm:flex-col sm:items-end sm:space-y-1">
+                          <Text className="text-slate-600 text-sm font-medium sm:hidden">
+                            Status
+                          </Text>
+                          <View className="flex-row items-center bg-green-100 px-3 py-1 rounded-full">
+                            <View className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                            <Text className="font-semibold text-green-800 text-xs">
+                              Open Now
+                            </Text>
+                          </View>
+                        </View>
                       </View>
                     </View>
                   </View>
 
                   {/* Action Button */}
                   <TouchableOpacity
-                    onPress={() => handleDoctorPress(doctor._id)}
+                    onPress={() => handleClinicPress(clinic.id)}
                     className="flex-row items-center justify-center px-4 py-3 bg-cyan-500 rounded-xl shadow-lg"
                   >
-                    <Feather name="calendar" size={16} color="#ffffff" />
-                    <Text
-                      onPress={() => navigation.navigate("DoctorProfile")}
-                      className="text-white font-semibold ml-2"
-                    >
+                    <Feather name="info" size={16} color="#ffffff" />
+                    <Text className="text-white font-semibold ml-2">
                       View Full Details
                     </Text>
                     <Feather
@@ -355,10 +357,10 @@ const Doctors = () => {
             // Empty State (when API returns empty array)
             <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-12 items-center">
               <View className="bg-slate-100 rounded-2xl p-6 mb-6">
-                <Feather name="activity" size={64} color="#9ca3af" />
+                <Feather name="home" size={64} color="#9ca3af" />
               </View>
               <Text className="text-xl font-bold text-slate-700 mb-2">
-                No doctors available
+                No clinics available
               </Text>
               <Text className="text-slate-500 text-lg text-center">
                 Please check back later or contact support.
@@ -371,4 +373,4 @@ const Doctors = () => {
   );
 };
 
-export default Doctors;
+export default Clinics;

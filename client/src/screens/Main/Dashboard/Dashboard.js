@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
+import { AuthenticationContext } from "../../../context/AuthenticationContext";
 
 // Static data for the dashboard
 const healthTips = [
@@ -39,9 +40,7 @@ const mockAppointments = [
 ];
 
 const Dashboard = ({ navigation }) => {
-  const [user] = useState({
-    name: "Hanz Christian Angelo G Magbal",
-  });
+  const { user } = useContext(AuthenticationContext);
   const randomTip = healthTips[Math.floor(Math.random() * healthTips.length)];
 
   // Format date for display
@@ -117,7 +116,7 @@ const Dashboard = ({ navigation }) => {
               </View>
               <View className="flex-1">
                 <Text className="text-2xl font-semibold text-slate-800">
-                  Welcome, {user.name}!
+                  Welcome, {user.first_name}!
                 </Text>
                 <Text className="text-slate-600 mt-1">
                   Here's a summary of your health journey today.
