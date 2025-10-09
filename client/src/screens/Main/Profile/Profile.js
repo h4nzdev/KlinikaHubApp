@@ -12,8 +12,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Header from "../../components/Header";
-import { AuthenticationContext } from "../../context/AuthenticationContext";
+import Header from "../../../components/Header";
+import { AuthenticationContext } from "../../../context/AuthenticationContext";
 
 const Profile = () => {
   const [isEditMode, setIsEditMode] = useState(false);

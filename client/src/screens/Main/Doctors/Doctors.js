@@ -11,9 +11,9 @@ import {
   RefreshControl,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Header from "../../components/Header";
+import Header from "../../../components/Header";
 import { useNavigation } from "@react-navigation/native";
-import doctorServices from "../../services/doctorServices"; // Import your service
+import doctorServices from "../../../services/doctorServices"; // Import your service
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);

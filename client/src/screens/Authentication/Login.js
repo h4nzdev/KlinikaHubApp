@@ -121,7 +121,7 @@ const Login = () => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50 pt-4">
       <StatusBar barStyle="dark-content" />
 
       <ScrollView className="flex-1">

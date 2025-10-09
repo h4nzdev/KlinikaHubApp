@@ -11,7 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Header from "../../components/Header";
+import Header from "../../../components/Header";
 
 // Mock invoices data
 const mockInvoices = [
@@ -205,8 +205,6 @@ const Invoices = ({ navigation }) => {
                           className="flex-shrink mr-3"
                           style={{ flexShrink: 1 }}
                         >
-                          {" "}
-                          {/* Force shrink */}
                           <Text
                             ellipsizeMode="tail"
                             numberOfLines={1}

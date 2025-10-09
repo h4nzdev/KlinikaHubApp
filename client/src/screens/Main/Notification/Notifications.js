@@ -10,7 +10,7 @@ import {
   Modal,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Header from "../../components/Header";
+import Header from "../../../components/Header";
 
 // Mock notifications data
 const mockNotifications = [

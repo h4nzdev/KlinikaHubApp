@@ -67,13 +67,10 @@ class AuthController {
             resolve({
               success: true,
               patient: {
-                id: patient.id,
-                first_name: patient.first_name,
-                last_name: patient.last_name,
-                email: patient.email,
-                mobileno: patient.mobileno,
-                age: patient.age,
-                address: patient.address,
+                // Copy ALL properties from patient
+                ...patient,
+                // But explicitly remove password
+                password: undefined,
                 role: "patient",
               },
             });
