@@ -1,11 +1,57 @@
 import database from "../config/database.js";
+import Patient from "../model/Patient.js";
 
 class AuthController {
   constructor() {
     this.db = database.getDatabase();
   }
 
-  // Patient Login (Simple - just check email/password)
+  // Patient Registration (with all model fields)
+  async register(patientData) {
+    return new Promise((resolve, reject) => {
+      // Filter out id and timestamp fields (auto-generated)
+      const insertableColumns = Object.keys(Patient.columns).filter(
+        (key) => !["id", "created_at", "updated_at"].includes(key)
+      );
+
+      const columns = insertableColumns.join(", ");
+      const placeholders = insertableColumns.map(() => "?").join(", ");
+
+      const values = insertableColumns.map((key) => {
+        // Provide default values for required fields if missing
+        if (key === "patient_id" && !patientData[key]) {
+          return `PAT${Date.now()}`; // Generate unique patient ID
+        }
+        if (key === "category_id" && !patientData[key]) {
+          return 1; // Default category
+        }
+        if (key === "source" && !patientData[key]) {
+          return 1; // Default source
+        }
+        return patientData[key] || null;
+      });
+
+      const sql = `INSERT INTO patients (${columns}) VALUES (${placeholders})`;
+
+      this.db.run(sql, values, function (err) {
+        if (err) {
+          console.log("❌ Patient registration error:", err);
+          reject(err);
+        } else {
+          console.log("✅ Patient registered with ID:", this.lastID);
+          resolve({
+            success: true,
+            patient: {
+              id: this.lastID,
+              ...patientData,
+            },
+          });
+        }
+      });
+    });
+  }
+
+  // Patient Login (unchanged)
   async login(email, password) {
     return new Promise((resolve, reject) => {
       this.db.get(
@@ -18,14 +64,16 @@ class AuthController {
           } else if (!patient) {
             reject(new Error("Invalid email or password"));
           } else {
-            // Success - return patient data (without password)
             resolve({
               success: true,
               patient: {
                 id: patient.id,
-                name: `${patient.first_name} ${patient.last_name}`,
+                first_name: patient.first_name,
+                last_name: patient.last_name,
                 email: patient.email,
                 mobileno: patient.mobileno,
+                age: patient.age,
+                address: patient.address,
                 role: "patient",
               },
             });
@@ -35,7 +83,7 @@ class AuthController {
     });
   }
 
-  // Check if patient exists (for registration)
+  // Check if patient exists
   async checkPatientExists(email) {
     return new Promise((resolve, reject) => {
       this.db.get(

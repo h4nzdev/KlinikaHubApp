@@ -13,13 +13,15 @@ import { Feather } from "@expo/vector-icons";
 import { AuthenticationContext } from "../../context/AuthenticationContext";
 import patientAuthServices from "../../services/patientAuthServices";
 import Toast from "react-native-toast-message";
+import { useNavigation } from "@react-navigation/native";
 
-const Login = ({ navigation }) => {
+const Login = () => {
   const [selectedClinic, setSelectedClinic] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { setUser } = useContext(AuthenticationContext);
+  const navigation = useNavigation();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -308,7 +310,10 @@ const Login = ({ navigation }) => {
           <View className="items-center">
             <Text className="text-sm text-slate-600">
               New patient?{" "}
-              <Text className="text-cyan-600 font-semibold">
+              <Text
+                onPress={() => navigation.navigate("Register")}
+                className="text-cyan-600 font-semibold"
+              >
                 Create account
               </Text>
             </Text>

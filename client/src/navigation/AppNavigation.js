@@ -17,6 +17,7 @@ import MedicalRecords from "../screens/MedicalRecords/MedicalRecords";
 // Import bottom navigation
 import BottomNavbar from "../components/BottomNavbar";
 import SplashScreen from "../screens/SplashScreen"; // Import your splash screen
+import Notifications from "../screens/Notification/Notifications";
 
 const Stack = createStackNavigator();
 
@@ -53,6 +54,7 @@ const AppNavigation = () => {
           <Stack.Screen name="Invoices" component={Invoices} />
           <Stack.Screen name="Reminders" component={Reminders} />
           <Stack.Screen name="DoctorProfile" component={DoctorProfile} />
+          <Stack.Screen name="Notifications" component={Notifications} />
         </Stack.Navigator>
         <BottomNavbar />
       </View>

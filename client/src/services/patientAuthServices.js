@@ -25,6 +25,19 @@ export const patientAuthServices = {
       throw error;
     }
   },
+
+  patientRegister: async (patientData) => {
+    try {
+      console.log("🔄 Registering patient:", patientData.email);
+      const response = await api.post("/auth/register", patientData);
+      console.log("✅ Registration Success! Patient:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("❌ Registration Error:", error.message);
+      console.log("Full error details:", error.response?.data || error);
+      throw error;
+    }
+  },
 };
 
 export default patientAuthServices;

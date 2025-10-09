@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,58 +9,90 @@ import {
   TextInput,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../components/Header";
+import { AuthenticationContext } from "../../context/AuthenticationContext";
 
 const Profile = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useContext(AuthenticationContext);
+  const [appointmentHistory, setAppointmentHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-  // Mock static data
-  const [user] = useState({
-    name: "Hanz Christian Angelo G Magbal",
-    email: "hanz@example.com",
-    role: "Patient",
-    _id: "PAT123456",
-    createdAt: "2024-01-01",
-    patientPicture: null,
-  });
+  // Get the actual patient data from your login response
+  const patient = user?.patient || user;
 
+  // REAL USER DATA - Using the correct structure from your API
   const [updatedUser, setUpdatedUser] = useState({
-    name: user.name,
-    age: "28",
-    gender: "Male",
-    email: user.email,
-    phone: "+1 234 567 8900",
-    address: "123 Main Street, City, State 12345",
+    name: "",
+    age: "",
+    gender: "",
+    email: "",
+    phone: "",
+    address: "",
   });
 
-  const initials = user.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+  // FIX: Sync updatedUser with context user data
+  useEffect(() => {
+    if (patient) {
+      setUpdatedUser({
+        name:
+          patient?.first_name && patient?.last_name
+            ? `${patient.first_name} ${patient.last_name}`.trim()
+            : "Not provided",
+        age: patient?.age || "Not provided",
+        gender: patient?.gender || "Not provided",
+        email: patient?.email || "Not provided",
+        phone: patient?.mobileno || "Not provided",
+        address: patient?.address || "Not provided",
+      });
+    }
+  }, [patient]); // Add patient as dependency
 
-  // Mock appointment history
-  const [appointmentHistory] = useState([
-    {
-      id: "1",
-      date: "2024-01-15",
-      type: "Checkup",
-      status: "completed",
-      clinicId: { _id: "CLINIC001" },
-      doctorId: { _id: "DOC001" },
-    },
-    {
-      id: "2",
-      date: "2024-01-10",
-      type: "Consultation",
-      status: "scheduled",
-      clinicId: { _id: "CLINIC001" },
-      doctorId: { _id: "DOC002" },
-    },
-  ]);
+  // Mock appointment history (as requested)
+  useEffect(() => {
+    setLoadingHistory(true);
+    setTimeout(() => {
+      setAppointmentHistory([
+        {
+          id: "1",
+          date: "2024-01-15",
+          type: "General Checkup",
+          status: "completed",
+          doctor: "Dr. Sarah Johnson",
+          clinic: "Main Health Center",
+        },
+        {
+          id: "2",
+          date: "2024-01-10",
+          type: "Dental Consultation",
+          status: "scheduled",
+          doctor: "Dr. Mike Chen",
+          clinic: "Dental Care Clinic",
+        },
+        {
+          id: "3",
+          date: "2024-01-05",
+          type: "Eye Examination",
+          status: "completed",
+          doctor: "Dr. Emily Rodriguez",
+          clinic: "Vision Plus Center",
+        },
+      ]);
+      setLoadingHistory(false);
+    }, 1000);
+  }, []);
+
+  const initials = updatedUser?.name
+    ? updatedUser.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "U";
 
   const handleEditClick = () => {
     setIsEditMode(!isEditMode);
@@ -75,6 +107,7 @@ const Profile = () => {
 
   const handleSaveChanges = () => {
     setIsLoading(true);
+    // TODO: Implement actual API call to update user
     setTimeout(() => {
       setIsLoading(false);
       setIsEditMode(false);
@@ -83,30 +116,43 @@ const Profile = () => {
   };
 
   const handleCancelEdit = () => {
-    setUpdatedUser({
-      name: user.name,
-      age: "28",
-      gender: "Male",
-      email: user.email,
-      phone: "+1 234 567 8900",
-      address: "123 Main Street, City, State 12345",
-    });
+    // Reset to ACTUAL user data from context
+    if (patient) {
+      setUpdatedUser({
+        name:
+          patient?.first_name && patient?.last_name
+            ? `${patient.first_name} ${patient.last_name}`.trim()
+            : "Not provided",
+        age: patient?.age || "Not provided",
+        gender: patient?.gender || "Not provided",
+        email: patient?.email || "Not provided",
+        phone: patient?.mobileno || "Not provided",
+        address: patient?.address || "Not provided",
+      });
+    }
     setIsEditMode(false);
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    if (!dateString) return "Not available";
+
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (error) {
+      return "Invalid date";
+    }
   };
 
+  // REAL STATS based on actual user data
   const stats = [
     {
       title: "Full Name",
-      value: updatedUser?.name || "",
+      value: updatedUser?.name || "Not provided",
       icon: "user",
       color: "#475569",
       bgColor: "bg-slate-50",
@@ -115,7 +161,7 @@ const Profile = () => {
     },
     {
       title: "Age",
-      value: `${updatedUser?.age || ""} years`,
+      value: updatedUser?.age ? `${updatedUser.age} years` : "Not provided",
       icon: "calendar",
       color: "#0891b2",
       bgColor: "bg-cyan-50",
@@ -124,7 +170,7 @@ const Profile = () => {
     },
     {
       title: "Gender",
-      value: updatedUser?.gender || "",
+      value: updatedUser?.gender || "Not provided",
       icon: "user-check",
       color: "#059669",
       bgColor: "bg-emerald-50",
@@ -133,7 +179,9 @@ const Profile = () => {
     },
     {
       title: "Role",
-      value: user.role || "",
+      value: patient?.role
+        ? patient.role.charAt(0).toUpperCase() + patient.role.slice(1)
+        : "Patient",
       icon: "user",
       color: "#9333ea",
       bgColor: "bg-purple-50",
@@ -146,7 +194,7 @@ const Profile = () => {
   const contactInfo = [
     {
       title: "Email Address",
-      value: updatedUser?.email || "",
+      value: updatedUser?.email || "Not provided",
       icon: "mail",
       color: "#2563eb",
       bgColor: "bg-blue-50",
@@ -155,7 +203,7 @@ const Profile = () => {
     },
     {
       title: "Phone Number",
-      value: updatedUser?.phone || "",
+      value: updatedUser?.phone || "Not provided",
       icon: "phone",
       color: "#16a34a",
       bgColor: "bg-green-50",
@@ -164,7 +212,7 @@ const Profile = () => {
     },
     {
       title: "Address",
-      value: updatedUser?.address || "",
+      value: updatedUser?.address || "Not provided",
       icon: "map-pin",
       color: "#ea580c",
       bgColor: "bg-orange-50",
@@ -186,6 +234,22 @@ const Profile = () => {
     }
   };
 
+  // FIX: Enhanced loading state - check both user and updatedUser
+  if (!user || !updatedUser.name) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar barStyle="dark-content" />
+        <Header />
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#0891b2" />
+          <Text className="text-slate-600 mt-4 text-lg">
+            {!user ? "Loading user data..." : "Preparing profile..."}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar barStyle="dark-content" />
@@ -206,9 +270,9 @@ const Profile = () => {
               {/* Avatar and Name */}
               <View className="flex-column items-center gap-6">
                 <View className="w-28 h-28 rounded-full bg-cyan-700 items-center justify-center shadow-lg">
-                  {user.patientPicture ? (
+                  {patient?.patientPicture ? (
                     <Image
-                      source={{ uri: user.patientPicture }}
+                      source={{ uri: patient.patientPicture }}
                       className="w-full h-full rounded-full"
                     />
                   ) : (
@@ -219,16 +283,19 @@ const Profile = () => {
                 </View>
 
                 <View className="flex-1">
-                  <Text className="text-3xl font-bold text-slate-800 tracking-tight">
-                    {user.name}
+                  <Text className="text-3xl font-bold text-slate-800 tracking-tight text-center">
+                    {updatedUser.name}
                   </Text>
-                  <Text className="text-slate-600 mt-2 text-lg font-medium">
-                    {user.email}
+                  <Text className="text-slate-600 mt-2 text-lg font-medium text-center">
+                    {updatedUser.email}
                   </Text>
-                  <View className="flex-row flex-wrap gap-3 mt-3">
+                  <View className="flex-row flex-wrap gap-3 mt-3 justify-center">
                     <View className="bg-cyan-100 px-4 py-2 rounded-lg border border-cyan-200">
                       <Text className="text-cyan-700 font-semibold text-sm uppercase tracking-wide">
-                        {user.role}
+                        {patient?.role
+                          ? patient.role.charAt(0).toUpperCase() +
+                            patient.role.slice(1)
+                          : "Patient"}
                       </Text>
                     </View>
                     <View className="bg-emerald-100 px-4 py-2 rounded-lg border border-emerald-200">
@@ -245,18 +312,21 @@ const Profile = () => {
                 <View className="flex-row justify-between">
                   <View>
                     <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                      Registered Date
+                      Patient ID
                     </Text>
                     <Text className="text-lg font-bold text-slate-800 mt-1">
-                      {formatDate(user.createdAt)}
+                      #
+                      {patient?.id
+                        ? patient.id.toString().padStart(4, "0")
+                        : "N/A"}
                     </Text>
                   </View>
                   <View>
                     <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                      Patient ID
+                      Status
                     </Text>
-                    <Text className="text-base font-bold text-cyan-700 mt-1">
-                      {user._id}
+                    <Text className="text-base font-bold text-emerald-600 mt-1">
+                      Verified
                     </Text>
                   </View>
                 </View>
@@ -298,18 +368,28 @@ const Profile = () => {
                         />
                       </View>
                       <View className="flex-1">
-                        {" "}
-                        {/* Add flex-1 here */}
                         <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
                           {stat.title}
                         </Text>
-                        <Text
-                          className="text-xl font-bold mt-2 capitalize flex-wrap"
-                          style={{ color: stat.color }}
-                          numberOfLines={0}
-                        >
-                          {stat.value}
-                        </Text>
+                        {isEditMode && stat.name !== "role" ? (
+                          <TextInput
+                            value={stat.value}
+                            onChangeText={(text) =>
+                              handleInputChange(stat.name, text)
+                            }
+                            className="text-xl font-bold mt-2 bg-white/70 border-2 border-slate-300 rounded px-3 py-2"
+                            style={{ color: stat.color }}
+                            editable={!isLoading}
+                          />
+                        ) : (
+                          <Text
+                            className="text-xl font-bold mt-2 capitalize flex-wrap"
+                            style={{ color: stat.color }}
+                            numberOfLines={2}
+                          >
+                            {stat.value}
+                          </Text>
+                        )}
                       </View>
                     </View>
                   </View>
@@ -362,6 +442,7 @@ const Profile = () => {
                         <Text
                           className="text-lg font-semibold mt-2"
                           style={{ color: contact.color }}
+                          numberOfLines={contact.name === "address" ? 2 : 1}
                         >
                           {contact.value}
                         </Text>
@@ -399,27 +480,40 @@ const Profile = () => {
 
           {/* Appointment History Section */}
           <View>
-            <View className="mb-6 gap-2">
+            <View className="gap-2">
               <Text className="text-2xl font-bold text-slate-800 tracking-tight">
                 Appointment History
               </Text>
               <Text className="text-lg text-slate-600 font-medium">
-                Total {appointmentHistory.length} Appointments
+                {loadingHistory
+                  ? "Loading..."
+                  : `Total ${appointmentHistory.length} Appointments`}
               </Text>
             </View>
 
             <View className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
-              {appointmentHistory.length === 0 ? (
+              {loadingHistory ? (
                 <View className="p-6 items-center">
-                  <Text className="text-slate-600 text-lg text-center">
+                  <ActivityIndicator size="small" color="#0891b2" />
+                  <Text className="text-slate-600 mt-2">
+                    Loading appointments...
+                  </Text>
+                </View>
+              ) : appointmentHistory.length === 0 ? (
+                <View className="p-6 items-center">
+                  <Feather name="calendar" size={48} color="#cbd5e1" />
+                  <Text className="text-slate-600 text-lg text-center mt-2">
                     No appointment history yet.
+                  </Text>
+                  <Text className="text-slate-500 text-center">
+                    Book your first appointment to get started!
                   </Text>
                 </View>
               ) : (
                 <View className="gap-px bg-slate-100">
-                  {appointmentHistory.map((record, index) => (
+                  {appointmentHistory.map((record) => (
                     <View
-                      key={index}
+                      key={record.id}
                       className="bg-white p-4 border-b border-slate-100"
                     >
                       <View className="gap-3">
@@ -457,18 +551,18 @@ const Profile = () => {
                           <View className="flex-row gap-4">
                             <View className="flex-1">
                               <Text className="text-sm text-slate-500 uppercase font-medium">
-                                Clinic ID
+                                Doctor
                               </Text>
                               <Text className="text-sm font-medium text-slate-800">
-                                {record.clinicId._id}
+                                {record.doctor}
                               </Text>
                             </View>
                             <View className="flex-1">
                               <Text className="text-sm text-slate-500 uppercase font-medium">
-                                Doctor ID
+                                Clinic
                               </Text>
                               <Text className="text-sm font-medium text-slate-800">
-                                {record.doctorId._id}
+                                {record.clinic}
                               </Text>
                             </View>
                           </View>
