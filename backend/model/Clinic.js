@@ -15,6 +15,10 @@ class Clinic {
     twitter_url: "TEXT",
     linkedin_url: "TEXT",
     youtube_url: "TEXT",
+    // NEW: Category fields
+    primary_category: "TEXT DEFAULT 'general'",
+    categories: "TEXT DEFAULT '[\"general\"]'", // JSON array as string
+    specialties: "TEXT",
     created_at: "DATETIME DEFAULT CURRENT_TIMESTAMP",
     updated_at: "DATETIME DEFAULT CURRENT_TIMESTAMP",
   };

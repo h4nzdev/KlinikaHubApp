@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,17 +11,14 @@ import {
   ImageBackground,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { AuthenticationContext } from "../../context/AuthenticationContext";
-import patientAuthServices from "../../services/patientAuthServices";
-import Toast from "react-native-toast-message";
 import { useNavigation } from "@react-navigation/native";
 import klinikahub from "../../../assets/klinikahub.png";
+import { useLogin } from "../../hooks/useLogin";
 
 const Login = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { setUser } = useContext(AuthenticationContext);
   const navigation = useNavigation();
+  const { handleLogin, isLoading } = useLogin();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -29,28 +26,11 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async () => {
-    setIsLoading(true);
+  const onLogin = async () => {
     try {
-      const auth = await patientAuthServices.patientLogin(
-        formData.email,
-        formData.password
-      );
-      setUser(auth.patient);
-      setTimeout(() => {
-        Toast.show({
-          type: "success",
-          text1: "Logged in successfully",
-        });
-      }, 3500);
+      await handleLogin(formData.email, formData.password);
     } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Login failed",
-        text2: error.message || "Please check your credentials",
-      });
-    } finally {
-      setIsLoading(false);
+      console.log(error);
     }
   };
 
@@ -58,17 +38,8 @@ const Login = () => {
     <SafeAreaView className="flex-1 bg-gray-50 pt-4">
       <StatusBar barStyle="dark-content" />
 
-      <ScrollView className="flex-1">
+      <ScrollView className="flex-1 pt-6">
         <View className="p-6 gap-6">
-          {/* Back Button */}
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="flex-row items-center gap-2"
-          >
-            <Feather name="arrow-left" size={20} color="#475569" />
-            <Text className="text-slate-600 font-medium">Back to Home</Text>
-          </TouchableOpacity>
-
           {/* KlinikaHub Header */}
           <View className="items-center mb-8">
             <View className="flex-row items-center mb-4">
@@ -173,7 +144,7 @@ const Login = () => {
 
             {/* Login Button */}
             <TouchableOpacity
-              onPress={handleLogin}
+              onPress={onLogin}
               disabled={isLoading}
               className={`w-full py-4 rounded-2xl items-center ${isLoading ? "bg-cyan-400" : "bg-cyan-600"}`}
             >
@@ -184,7 +155,7 @@ const Login = () => {
           </View>
 
           {/* Divider */}
-          <View className="my-8 flex-row items-center">
+          <View className="flex-row items-center">
             <View className="flex-1 border-t border-slate-300" />
             <Text className="px-4 text-xs text-slate-500 font-medium">
               KLINIKAHUB PORTAL
@@ -206,7 +177,7 @@ const Login = () => {
           </View>
 
           {/* Security Features */}
-          <View className="mt-8 gap-3">
+          <View className="mt-8 gap-3 pb-16">
             <View className="flex-row items-center gap-2">
               <Feather name="shield" size={16} color="#10b981" />
               <Text className="text-sm text-slate-600">

@@ -222,13 +222,13 @@ const Profile = () => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "scheduled":
-        return "bg-cyan-100 text-cyan-700 border-cyan-200";
+        return "bg-cyan-100 text-cyan-700";
       case "completed":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200";
+        return "bg-emerald-100 text-emerald-700";
       case "cancelled":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-red-100 text-red-700";
       default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
+        return "bg-slate-100 text-slate-700";
     }
   };
 
@@ -238,45 +238,30 @@ const Profile = () => {
       title: "Full Name",
       value: updatedUser.name,
       icon: "user",
-      color: "#475569",
-      bgColor: "bg-slate-50",
-      borderColor: "border-slate-200",
       name: "name",
     },
     {
       title: "Age",
       value: updatedUser.age ? `${updatedUser.age} years` : "Not provided",
       icon: "calendar",
-      color: "#0891b2",
-      bgColor: "bg-cyan-50",
-      borderColor: "border-cyan-200",
       name: "age",
     },
     {
       title: "Gender",
       value: updatedUser.gender,
       icon: "user-check",
-      color: "#059669",
-      bgColor: "bg-emerald-50",
-      borderColor: "border-emerald-200",
       name: "gender",
     },
     {
       title: "Birthday",
       value: formatDate(updatedUser.birthday),
       icon: "gift",
-      color: "#f43f5e",
-      bgColor: "bg-rose-50",
-      borderColor: "border-rose-200",
       name: "birthday",
     },
     {
       title: "Marital Status",
       value: updatedUser.maritalStatus,
       icon: "heart",
-      color: "#ec4899",
-      bgColor: "bg-pink-50",
-      borderColor: "border-pink-200",
       name: "maritalStatus",
     },
   ];
@@ -286,36 +271,24 @@ const Profile = () => {
       title: "Blood Group",
       value: updatedUser.bloodGroup,
       icon: "droplet",
-      color: "#dc2626",
-      bgColor: "bg-red-50",
-      borderColor: "border-red-200",
       name: "bloodGroup",
     },
     {
       title: "Blood Pressure",
       value: updatedUser.bloodPressure,
       icon: "activity",
-      color: "#ea580c",
-      bgColor: "bg-orange-50",
-      borderColor: "border-orange-200",
       name: "bloodPressure",
     },
     {
       title: "Height",
       value: updatedUser.height,
       icon: "maximize",
-      color: "#16a34a",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
       name: "height",
     },
     {
       title: "Weight",
       value: updatedUser.weight,
       icon: "minimize",
-      color: "#9333ea",
-      bgColor: "bg-purple-50",
-      borderColor: "border-purple-200",
       name: "weight",
     },
   ];
@@ -325,27 +298,18 @@ const Profile = () => {
       title: "Email Address",
       value: updatedUser.email,
       icon: "mail",
-      color: "#2563eb",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-200",
       name: "email",
     },
     {
       title: "Phone Number",
       value: updatedUser.phone,
       icon: "phone",
-      color: "#16a34a",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
       name: "phone",
     },
     {
       title: "Address",
       value: updatedUser.address,
       icon: "map-pin",
-      color: "#ea580c",
-      bgColor: "bg-orange-50",
-      borderColor: "border-orange-200",
       name: "address",
     },
   ];
@@ -355,27 +319,18 @@ const Profile = () => {
       title: "Guardian Name",
       value: updatedUser.guardian,
       icon: "users",
-      color: "#7c3aed",
-      bgColor: "bg-violet-50",
-      borderColor: "border-violet-200",
       name: "guardian",
     },
     {
       title: "Relationship",
       value: updatedUser.relationship,
       icon: "link",
-      color: "#0891b2",
-      bgColor: "bg-cyan-50",
-      borderColor: "border-cyan-200",
       name: "relationship",
     },
     {
       title: "Guardian Phone",
       value: updatedUser.guardianPhone,
       icon: "phone-call",
-      color: "#059669",
-      bgColor: "bg-emerald-50",
-      borderColor: "border-emerald-200",
       name: "guardianPhone",
     },
   ];
@@ -385,40 +340,28 @@ const Profile = () => {
       title: "Patient Category",
       value: updatedUser.category,
       icon: "tag",
-      color: "#6b7280",
-      bgColor: "bg-gray-50",
-      borderColor: "border-gray-200",
     },
     {
       title: "Registration Source",
       value: updatedUser.source,
       icon: "download",
-      color: "#8b5cf6",
-      bgColor: "bg-indigo-50",
-      borderColor: "border-indigo-200",
     },
     {
       title: "Member Since",
       value: formatDate(updatedUser.createdAt),
       icon: "clock",
-      color: "#f59e0b",
-      bgColor: "bg-amber-50",
-      borderColor: "border-amber-200",
     },
     {
       title: "Last Updated",
       value: formatDate(updatedUser.updatedAt),
       icon: "refresh-cw",
-      color: "#10b981",
-      bgColor: "bg-teal-50",
-      borderColor: "border-teal-200",
     },
   ];
 
   // Loading state
   if (!user) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView className="flex-1 bg-white">
         <StatusBar barStyle="dark-content" />
         <Header />
         <View className="flex-1 justify-center items-center">
@@ -435,8 +378,8 @@ const Profile = () => {
   const TabButton = ({ title, tabName, icon }) => (
     <TouchableOpacity
       onPress={() => setActiveTab(tabName)}
-      className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-lg mx-1 ${
-        activeTab === tabName ? "bg-cyan-600" : "bg-slate-100"
+      className={`flex-row items-center justify-center py-3 px-4 rounded-2xl mx-1 ${
+        activeTab === tabName ? "bg-cyan-500" : "bg-slate-50"
       }`}
       activeOpacity={0.7}
     >
@@ -447,7 +390,7 @@ const Profile = () => {
         className="mr-2"
       />
       <Text
-        className={`font-medium text-sm ${
+        className={`font-semibold text-sm ${
           activeTab === tabName ? "text-white" : "text-slate-600"
         }`}
       >
@@ -456,37 +399,34 @@ const Profile = () => {
     </TouchableOpacity>
   );
 
-  // Info card component for column layout
+  // Info card component for modern layout
   const InfoCard = ({ info }) => (
-    <View
-      className="bg-white rounded-xl border border-slate-200 p-4 mb-3"
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 2,
-      }}
-    >
-      <View className="flex-row items-center mb-2">
-        <View className={`p-2 rounded-lg ${info.bgColor} mr-3`}>
-          <Feather name={info.icon} size={18} color={info.color} />
+    <View className="bg-white rounded-2xl p-4 mb-3 border border-slate-100">
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center flex-1">
+          <View className="w-10 h-10 rounded-xl bg-cyan-50 items-center justify-center mr-3">
+            <Feather name={info.icon} size={18} color="#0891b2" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm text-slate-500 font-medium mb-1">
+              {info.title}
+            </Text>
+            {isEditMode && info.name ? (
+              <TextInput
+                value={info.value === "Not provided" ? "" : String(info.value)}
+                onChangeText={(text) => handleInputChange(info.name, text)}
+                className="text-base font-semibold text-slate-800 border-2 border-cyan-200 rounded-xl px-3 py-2"
+                multiline={info.name === "address"}
+                style={{ minHeight: info.name === "address" ? 60 : 40 }}
+              />
+            ) : (
+              <Text className="text-base font-semibold text-slate-800">
+                {info.value}
+              </Text>
+            )}
+          </View>
         </View>
-        <Text className="text-sm text-slate-600 font-medium">{info.title}</Text>
       </View>
-      {isEditMode && info.name ? (
-        <TextInput
-          value={info.value === "Not provided" ? "" : String(info.value)}
-          onChangeText={(text) => handleInputChange(info.name, text)}
-          className="text-base font-semibold text-slate-800 border-2 border-cyan-300 rounded-lg px-3 py-2 mt-1"
-          multiline={info.name === "address"}
-          style={{ minHeight: info.name === "address" ? 60 : 40 }}
-        />
-      ) : (
-        <Text className="text-base font-semibold text-slate-800 ml-11">
-          {info.value}
-        </Text>
-      )}
     </View>
   );
 
@@ -536,68 +476,64 @@ const Profile = () => {
       case "appointments":
         return (
           <View className="mt-4">
-            <View
-              className="bg-white rounded-xl border border-slate-200 overflow-hidden"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 3,
-                elevation: 2,
-              }}
-            >
-              {loadingHistory ? (
-                <View className="p-6 items-center">
-                  <ActivityIndicator size="small" color="#0891b2" />
-                  <Text className="text-slate-600 mt-3 text-sm">
-                    Loading appointments...
-                  </Text>
+            {loadingHistory ? (
+              <View className="bg-white rounded-2xl p-6 items-center">
+                <ActivityIndicator size="small" color="#0891b2" />
+                <Text className="text-slate-600 mt-3 text-sm">
+                  Loading appointments...
+                </Text>
+              </View>
+            ) : appointmentHistory.length === 0 ? (
+              <View className="bg-white rounded-2xl p-8 items-center">
+                <View className="bg-slate-100 rounded-xl p-4 mb-3">
+                  <Feather name="calendar" size={32} color="#cbd5e1" />
                 </View>
-              ) : appointmentHistory.length === 0 ? (
-                <View className="p-8 items-center">
-                  <View className="bg-slate-100 rounded-xl p-4 mb-3">
-                    <Feather name="calendar" size={32} color="#cbd5e1" />
-                  </View>
-                  <Text className="text-base font-bold text-slate-700 mb-1">
-                    No appointments yet
-                  </Text>
-                  <Text className="text-slate-500 text-center text-sm">
-                    Your appointment history will appear here
-                  </Text>
-                </View>
-              ) : (
-                appointmentHistory.map((appointment, index) => (
-                  <View
-                    key={appointment.id}
-                    className={`p-4 ${index !== appointmentHistory.length - 1 ? "border-b border-slate-100" : ""}`}
-                  >
-                    <View className="flex-row justify-between items-start mb-2">
-                      <Text className="font-bold text-slate-800 text-base flex-1">
-                        {appointment.type}
-                      </Text>
-                      <View
-                        className={`px-2 py-1 rounded-full border ${getStatusColor(appointment.status)}`}
-                      >
-                        <Text className="text-xs font-semibold capitalize">
-                          {appointment.status}
-                        </Text>
-                      </View>
-                    </View>
-                    <View className="gap-1">
-                      <Text className="text-slate-700 font-semibold text-sm">
-                        {appointment.doctor}
-                      </Text>
-                      <Text className="text-slate-500 text-sm">
-                        {appointment.clinic}
-                      </Text>
-                      <Text className="text-slate-500 text-xs mt-1">
-                        {formatDate(appointment.date)}
+                <Text className="text-base font-bold text-slate-700 mb-1">
+                  No appointments yet
+                </Text>
+                <Text className="text-slate-500 text-center text-sm">
+                  Your appointment history will appear here
+                </Text>
+              </View>
+            ) : (
+              appointmentHistory.map((appointment) => (
+                <View
+                  key={appointment.id}
+                  className="bg-white rounded-2xl p-4 mb-3 border border-slate-100"
+                >
+                  <View className="flex-row justify-between items-start mb-3">
+                    <Text className="font-bold text-slate-800 text-lg flex-1">
+                      {appointment.type}
+                    </Text>
+                    <View
+                      className={`px-3 py-1 rounded-full ${getStatusColor(appointment.status)}`}
+                    >
+                      <Text className="text-xs font-semibold capitalize">
+                        {appointment.status}
                       </Text>
                     </View>
                   </View>
-                ))
-              )}
-            </View>
+                  <View className="flex-row items-center mb-2">
+                    <Feather name="user" size={14} color="#64748b" />
+                    <Text className="text-slate-700 font-medium text-sm ml-2">
+                      {appointment.doctor}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center mb-2">
+                    <Feather name="map-pin" size={14} color="#64748b" />
+                    <Text className="text-slate-600 text-sm ml-2">
+                      {appointment.clinic}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center">
+                    <Feather name="calendar" size={14} color="#64748b" />
+                    <Text className="text-slate-600 text-sm ml-2">
+                      {formatDate(appointment.date)}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
         );
       default:
@@ -606,7 +542,7 @@ const Profile = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
       <Header />
 
@@ -615,137 +551,203 @@ const Profile = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
       >
-        <View className="p-4">
-          {/* Header Section */}
-          <View
-            className="bg-white rounded-xl border border-slate-200 p-6 mb-6"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
-            }}
-          >
-            <View className="flex-row items-center mb-4">
-              <View className="w-20 h-20 rounded-full bg-cyan-600 items-center justify-center mr-4">
-                {patient?.photo ? (
-                  <Image
-                    source={{ uri: patient.photo }}
-                    className="w-full h-full rounded-full"
-                  />
-                ) : (
-                  <Text className="text-2xl font-bold text-white">
-                    {initials}
-                  </Text>
-                )}
-              </View>
-
-              <View className="flex-1">
-                <Text className="text-2xl font-bold text-slate-800 mb-1">
-                  {updatedUser.name}
-                </Text>
-                <Text className="text-slate-600 text-base mb-2">
-                  {updatedUser.email}
-                </Text>
-                <View className="flex-row">
-                  <View className="bg-cyan-100 px-3 py-1 rounded-md mr-2">
-                    <Text className="text-cyan-700 font-medium text-xs">
-                      Patient
-                    </Text>
-                  </View>
-                  <View className="bg-emerald-100 px-3 py-1 rounded-md">
-                    <Text className="text-emerald-700 font-medium text-xs">
-                      Active
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View className="border-t border-slate-200 pt-4">
-              <View className="flex-row justify-between mb-4">
-                <View>
-                  <Text className="text-sm text-slate-600 font-medium mb-1">
-                    Patient ID
-                  </Text>
-                  <Text className="text-base font-bold text-cyan-700">
-                    #{updatedUser.patientId}
-                  </Text>
-                </View>
-                <View>
-                  <Text className="text-sm text-slate-600 font-medium mb-1">
-                    Member Since
-                  </Text>
-                  <Text className="text-base font-bold text-slate-800">
-                    {formatDate(updatedUser.createdAt)}
-                  </Text>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                onPress={isEditMode ? handleCancelEdit : handleEditClick}
-                className="flex-row items-center justify-center gap-2 bg-cyan-600 px-4 py-3 rounded-lg"
-                activeOpacity={0.8}
-              >
-                <Feather name="edit" size={18} color="#ffffff" />
-                <Text className="text-white font-semibold text-base">
-                  {isEditMode ? "Cancel" : "Edit Profile"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Tab Navigation */}
-          <View className="mb-4">
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="mb-2"
-            >
-              <View className="flex-row">
-                <TabButton title="Personal" tabName="personal" icon="user" />
-                <TabButton title="Medical" tabName="medical" icon="heart" />
-                <TabButton title="Contact" tabName="contact" icon="phone" />
-                <TabButton title="Emergency" tabName="emergency" icon="users" />
-                <TabButton title="System" tabName="system" icon="settings" />
-                <TabButton
-                  title="Appointments"
-                  tabName="appointments"
-                  icon="calendar"
+        {/* Profile Header with Gradient */}
+        <View className="bg-gradient-to-b from-cyan-500 to-cyan-600 pt-6 pb-8 px-6">
+          <View className="flex-row items-center">
+            <View className="w-20 h-20 rounded-2xl bg-white/20 items-center justify-center mr-4 border-2 border-white/30">
+              {patient?.photo ? (
+                <Image
+                  source={{ uri: patient.photo }}
+                  className="w-full h-full rounded-2xl"
                 />
+              ) : (
+                <Text className="text-2xl font-bold text-white">
+                  {initials}
+                </Text>
+              )}
+            </View>
+
+            <View className="flex-1">
+              <Text className="text-2xl font-bold text-cyan-900 mb-1">
+                {updatedUser.name}
+              </Text>
+              <Text className="text-cyan-900 text-base mb-2">
+                {updatedUser.email}
+              </Text>
+              <View className="flex-row">
+                <View className="bg-cyan-900/20 px-3 py-1 rounded-lg mr-2">
+                  <Text className="text-cyan-800 font-medium text-xs">
+                    Patient
+                  </Text>
+                </View>
+                <View className="bg-emerald-400 px-3 py-1 rounded-lg">
+                  <Text className="text-white font-medium text-xs">Active</Text>
+                </View>
               </View>
-            </ScrollView>
+            </View>
           </View>
 
-          {/* Tab Content */}
-          {renderTabContent()}
+          <View className="flex-row justify-between mt-6">
+            <View className="items-start">
+              <Text className="text-cyan-900 text-sm font-medium mb-1">
+                Patient ID
+              </Text>
+              <Text className="text-cyan-800 font-bold text-lg">
+                #{updatedUser.patientId}
+              </Text>
+            </View>
+            <View className="items-start">
+              <Text className="text-cyan-900 text-sm font-medium mb-1">
+                Member Since
+              </Text>
+              <Text className="text-cyan-800 font-bold text-lg">
+                {formatDate(updatedUser.createdAt)}
+              </Text>
+            </View>
+          </View>
+        </View>
 
-          {/* Save Buttons */}
-          {isEditMode && (
-            <View className="flex-row gap-4 mt-6">
+        {/* Quick Actions */}
+        <View className="px-6 -mt-4">
+          <View className="bg-white rounded-2xl p-4 shadow-lg shadow-black/10 border border-slate-100">
+            <View className="flex-row justify-between">
               <TouchableOpacity
-                onPress={handleCancelEdit}
-                className="flex-1 bg-gray-600 py-4 rounded-xl"
-                activeOpacity={0.8}
+                className="items-center flex-1"
+                activeOpacity={0.7}
               >
-                <Text className="text-white font-semibold text-center text-base">
-                  Cancel
+                <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
+                  <Feather name="calendar" size={20} color="#0891b2" />
+                </View>
+                <Text className="text-slate-700 font-medium text-xs text-center">
+                  Appointments
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                onPress={handleSaveChanges}
-                disabled={isLoading}
-                className="flex-1 bg-cyan-600 py-4 rounded-xl"
-                activeOpacity={0.8}
+                className="items-center flex-1"
+                activeOpacity={0.7}
               >
-                <Text className="text-white font-semibold text-center text-base">
-                  {isLoading ? "Saving..." : "Save Changes"}
+                <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
+                  <Feather name="bell" size={20} color="#0891b2" />
+                </View>
+                <Text className="text-slate-700 font-medium text-xs text-center">
+                  Reminders
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="items-center flex-1"
+                activeOpacity={0.7}
+              >
+                <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
+                  <Feather name="users" size={20} color="#0891b2" />
+                </View>
+                <Text className="text-slate-700 font-medium text-xs text-center">
+                  My Doctors
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="items-center flex-1"
+                activeOpacity={0.7}
+              >
+                <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
+                  <Feather name="shield" size={20} color="#0891b2" />
+                </View>
+                <Text className="text-slate-700 font-medium text-xs text-center">
+                  Insurance
                 </Text>
               </TouchableOpacity>
             </View>
-          )}
+          </View>
         </View>
+
+        {/* Referral Banner */}
+        <View className="px-6 mt-4">
+          <View className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-2xl p-4">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text className="text-cyan-800 font-bold text-lg mb-1">
+                  Refer a friend
+                </Text>
+                <Text className="text-cyan-800 text-sm">
+                  Get 30% discount on your next appointment
+                </Text>
+              </View>
+              <TouchableOpacity className="bg-white rounded-xl px-4 py-2">
+                <Text className="text-cyan-600 font-semibold text-sm">
+                  Share
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* Tab Navigation */}
+        <View className="px-6 mt-6">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+          >
+            <View className="flex-row space-x-2">
+              <TabButton title="Personal" tabName="personal" icon="user" />
+              <TabButton title="Medical" tabName="medical" icon="heart" />
+              <TabButton title="Contact" tabName="contact" icon="phone" />
+              <TabButton title="Emergency" tabName="emergency" icon="users" />
+              <TabButton title="System" tabName="system" icon="settings" />
+              <TabButton
+                title="Appointments"
+                tabName="appointments"
+                icon="calendar"
+              />
+            </View>
+          </ScrollView>
+        </View>
+
+        {/* Tab Content */}
+        <View className="px-6">{renderTabContent()}</View>
+
+        {/* Edit Mode Actions */}
+        {isEditMode && (
+          <View className="px-6 mt-6 flex-row gap-3">
+            <TouchableOpacity
+              onPress={handleCancelEdit}
+              className="flex-1 bg-slate-200 py-4 rounded-2xl"
+              activeOpacity={0.8}
+            >
+              <Text className="text-slate-700 font-semibold text-center text-base">
+                Cancel
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSaveChanges}
+              disabled={isLoading}
+              className="flex-1 bg-cyan-500 py-4 rounded-2xl"
+              activeOpacity={0.8}
+            >
+              <Text className="text-white font-semibold text-center text-base">
+                {isLoading ? "Saving..." : "Save Changes"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Edit Profile Button */}
+        {!isEditMode && (
+          <View className="px-6 mt-4">
+            <TouchableOpacity
+              onPress={handleEditClick}
+              className="flex-row items-center justify-center gap-2 bg-cyan-500 px-4 py-4 rounded-2xl"
+              activeOpacity={0.8}
+            >
+              <Feather name="edit" size={18} color="#ffffff" />
+              <Text className="text-white font-semibold text-base">
+                Edit Profile
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

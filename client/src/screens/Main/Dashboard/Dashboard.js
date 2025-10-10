@@ -171,64 +171,82 @@ const Dashboard = ({ navigation }) => {
           </View>
 
           {/* Quick Actions */}
-          <View>
+          <View className="mb-8">
             <Text className="text-2xl font-semibold text-slate-800 mb-6">
               Quick Actions
             </Text>
-            <View className="gap-4">
+
+            {/* First Row */}
+            <View className="flex-row mb-4">
               {/* Book Appointment */}
               <TouchableOpacity
                 onPress={() => navigation.navigate("Appointments")}
-                className="flex-row items-center gap-4 p-6 bg-cyan-50 rounded-xl border border-cyan-200"
+                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-cyan-50 rounded-xl border border-cyan-200 mr-2"
                 activeOpacity={0.7}
               >
                 <View className="bg-cyan-500 p-3 rounded-xl shadow-md">
                   <Feather name="plus" size={24} color="#ffffff" />
                 </View>
-                <View className="flex-1">
-                  <Text className="font-semibold text-slate-800 text-lg">
-                    Book Appointment
-                  </Text>
-                  <Text className="text-slate-600">
-                    Schedule your next visit
-                  </Text>
-                </View>
+                <Text className="font-semibold text-slate-800 text-start">
+                  Book Appointment
+                </Text>
+                <Text className="text-slate-600 text-start text-sm">
+                  Schedule your next visit
+                </Text>
               </TouchableOpacity>
 
               {/* Start AI Chat */}
               <TouchableOpacity
                 onPress={() => navigation.navigate("Chat")}
-                className="flex-row items-center gap-4 p-6 bg-sky-50 rounded-xl border border-sky-200"
+                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-sky-50 rounded-xl border border-sky-200 ml-2"
                 activeOpacity={0.7}
               >
                 <View className="bg-sky-500 p-3 rounded-xl shadow-md">
                   <Feather name="message-square" size={24} color="#ffffff" />
                 </View>
-                <View className="flex-1">
-                  <Text className="font-semibold text-slate-800 text-lg">
-                    Start AI Chat
-                  </Text>
-                  <Text className="text-slate-600">
-                    Get instant health advice
-                  </Text>
-                </View>
+                <Text className="font-semibold text-slate-800 text-start">
+                  Start AI Chat
+                </Text>
+                <Text className="text-slate-600 text-start text-sm">
+                  Get instant health advice
+                </Text>
               </TouchableOpacity>
+            </View>
 
+            {/* Second Row */}
+            <View className="flex-row">
               {/* Set Reminder */}
               <TouchableOpacity
                 onPress={() => navigation.navigate("Reminders")}
-                className="flex-row items-center gap-4 p-6 bg-blue-50 rounded-xl border border-blue-200"
+                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-blue-50 rounded-xl border border-blue-200 mr-2"
                 activeOpacity={0.7}
               >
                 <View className="bg-blue-500 p-3 rounded-xl shadow-md">
                   <Feather name="bell" size={24} color="#ffffff" />
                 </View>
-                <View className="flex-1">
-                  <Text className="font-semibold text-slate-800 text-lg">
-                    Set Reminder
-                  </Text>
-                  <Text className="text-slate-600">Never miss medication</Text>
+                <Text className="font-semibold text-slate-800 text-start">
+                  Set Reminder
+                </Text>
+                <Text className="text-slate-600 text-start text-sm">
+                  Never miss medication
+                </Text>
+              </TouchableOpacity>
+
+              {/* Emergency Call */}
+              <TouchableOpacity
+                onPress={() => Linking.openURL("tel:112")}
+                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-red-50 rounded-xl border border-red-200 ml-2"
+                activeOpacity={0.7}
+              >
+                <View className="bg-red-500 p-3 rounded-xl shadow-md">
+                  <Feather name="phone" size={24} color="#ffffff" />
                 </View>
+                <Text className="font-semibold text-slate-800 text-start">
+                  Emergency Call
+                </Text>
+                <Text className="text-slate-600 text-start text-sm">
+                  Call for immediate help
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -52,24 +52,50 @@ class AuthController {
   }
 
   // Patient Login (unchanged)
+  // Patient Login with specific error messages
   async login(email, password) {
     return new Promise((resolve, reject) => {
+      // Check if email is provided
+      if (!email || email.trim() === "") {
+        reject(new Error("Email is required"));
+        return;
+      }
+
+      // Check if password is provided
+      if (!password || password.trim() === "") {
+        reject(new Error("Password is required"));
+        return;
+      }
+
+      // Check if email format is valid
+      const emailRegex = /\S+@\S+\.\S+/;
+      if (!emailRegex.test(email)) {
+        reject(new Error("Please enter a valid email address"));
+        return;
+      }
+
+      // Check if password meets minimum length
+      if (password.length < 6) {
+        reject(new Error("Password must be at least 6 characters"));
+        return;
+      }
+
       this.db.get(
-        "SELECT * FROM patients WHERE email = ? AND password = ?",
-        [email, password],
+        "SELECT * FROM patients WHERE email = ?",
+        [email],
         (err, patient) => {
           if (err) {
             console.log("❌ Login error:", err);
-            reject(err);
+            reject(new Error("Database error occurred"));
           } else if (!patient) {
-            reject(new Error("Invalid email or password"));
+            reject(new Error("No account found with this email address"));
+          } else if (patient.password !== password) {
+            reject(new Error("Incorrect password. Please try again"));
           } else {
             resolve({
               success: true,
               patient: {
-                // Copy ALL properties from patient
                 ...patient,
-                // But explicitly remove password
                 password: undefined,
                 role: "patient",
               },

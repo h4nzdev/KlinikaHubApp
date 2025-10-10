@@ -16,13 +16,21 @@ export const patientAuthServices = {
   patientLogin: async (email, password) => {
     try {
       console.log("🔄 Logging in patient:", email);
-      const response = await api.post("/auth/login", { email, password }); // ← Changed endpoint!
+      const response = await api.post("/auth/login", { email, password });
       console.log("✅ Login Success! Patient:", response.data);
       return response.data;
     } catch (error) {
-      console.error("❌ Login Error:", error.message);
       console.log("Full error details:", error.response?.data || error);
-      throw error;
+
+      // Extract the specific error message from backend response
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Login failed";
+
+      // Throw a new error with the specific message from backend
+      throw new Error(errorMessage);
     }
   },
 
@@ -33,9 +41,16 @@ export const patientAuthServices = {
       console.log("✅ Registration Success! Patient:", response.data);
       return response.data;
     } catch (error) {
-      console.error("❌ Registration Error:", error.message);
       console.log("Full error details:", error.response?.data || error);
-      throw error;
+
+      // Extract the specific error message from backend response
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Registration failed";
+
+      throw new Error(errorMessage);
     }
   },
 };

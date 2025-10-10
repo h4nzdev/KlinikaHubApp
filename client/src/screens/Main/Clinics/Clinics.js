@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  Image,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
@@ -21,6 +20,11 @@ const Clinics = () => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
+
+  // CATEGORIES STATE
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [categories, setCategories] = useState(["All"]);
+
   const [user] = useState({
     _id: "user123",
     name: "Hanz Christian Angelo G Magbal",
@@ -30,15 +34,53 @@ const Clinics = () => {
   const fetchClinics = async () => {
     try {
       setError(null);
+      console.log("🔄 Starting fetch...");
+
       const data = await clinicServices.getAllClinics();
+      console.log("✅ Data received:", data);
+
       setClinics(data);
+      extractCategories(data);
     } catch (err) {
-      console.error("Error fetching clinics:", err);
-      setError("Failed to load clinics. Please try again.");
+      console.error("❌ Detailed fetch error:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        code: err.code,
+      });
+
+      setError(
+        err.response?.data?.message || err.message || "Failed to load clinics."
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  // EXTRACT CATEGORIES FUNCTION
+  const extractCategories = (clinicsData) => {
+    const allCategories = new Set(["All"]); // Always include "All"
+
+    clinicsData.forEach((clinic) => {
+      if (clinic.primary_category) {
+        allCategories.add(clinic.primary_category);
+      }
+
+      // Also check categories field if it exists
+      if (clinic.categories) {
+        try {
+          const parsedCategories = JSON.parse(clinic.categories);
+          if (Array.isArray(parsedCategories)) {
+            parsedCategories.forEach((cat) => allCategories.add(cat));
+          }
+        } catch (e) {
+          console.log("Error parsing categories:", e);
+        }
+      }
+    });
+
+    setCategories(Array.from(allCategories));
   };
 
   console.log(clinics);
@@ -54,39 +96,137 @@ const Clinics = () => {
     fetchClinics();
   };
 
-  // Stats data
-  const stats = [
-    {
-      title: "Total Clinics",
-      value: clinics.length,
-      icon: "home",
-      color: "bg-cyan-50",
-      iconBg: "bg-cyan-100",
-      iconColor: "#0891b2",
-      textColor: "text-cyan-700",
-    },
-    {
-      title: "Available",
-      value: clinics.length,
-      icon: "check-circle",
-      color: "bg-emerald-50",
-      iconBg: "bg-emerald-100",
-      iconColor: "#059669",
-      textColor: "text-emerald-700",
-    },
-    {
-      title: "Services",
-      value: "All",
-      icon: "heart",
-      color: "bg-purple-50",
-      iconBg: "bg-purple-100",
-      iconColor: "#9333ea",
-      textColor: "text-purple-700",
-    },
-  ];
+  // FILTER CLINICS BY CATEGORY
+  const filteredClinics =
+    selectedCategory === "All"
+      ? clinics
+      : clinics.filter((clinic) => {
+          if (clinic.primary_category === selectedCategory) return true;
+
+          if (clinic.categories) {
+            try {
+              const parsedCategories = JSON.parse(clinic.categories);
+              return (
+                Array.isArray(parsedCategories) &&
+                parsedCategories.includes(selectedCategory)
+              );
+            } catch (e) {
+              return false;
+            }
+          }
+
+          return false;
+        });
+
+  // COOL CATEGORIES DISPLAY - REPLACING STATS
+  const getCategoryStats = () => {
+    const categoryCounts = {};
+
+    categories.forEach((cat) => {
+      if (cat === "All") {
+        categoryCounts[cat] = clinics.length;
+      } else {
+        categoryCounts[cat] = clinics.filter((clinic) => {
+          if (clinic.primary_category === cat) return true;
+          if (clinic.categories) {
+            try {
+              const parsedCategories = JSON.parse(clinic.categories);
+              return (
+                Array.isArray(parsedCategories) &&
+                parsedCategories.includes(cat)
+              );
+            } catch (e) {
+              return false;
+            }
+          }
+          return false;
+        }).length;
+      }
+    });
+
+    return categoryCounts;
+  };
+
+  const categoryStats = getCategoryStats();
 
   const handleClinicPress = (clinicId) => {
     navigation.navigate("ClinicProfile", { clinicId });
+  };
+
+  // COOL CATEGORIES GRID - REPLACES STATS SECTION
+  const CategoriesGrid = () => (
+    <View className="mb-2">
+      <Text className="text-xl font-bold text-slate-800 mb-4">
+        Browse Categories
+      </Text>
+
+      {/* Horizontal Scroll for Categories */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="flex-row mb-6"
+        contentContainerStyle={{ paddingRight: 16 }}
+      >
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category}
+            onPress={() => setSelectedCategory(category)}
+            className={`mr-3 px-5 py-3 rounded-2xl border-2 ${
+              selectedCategory === category
+                ? "bg-cyan-500 border-cyan-600 shadow-lg"
+                : "bg-white border-slate-200 shadow-sm"
+            } min-w-[100px] items-center justify-center`}
+          >
+            <View
+              className={`w-10 h-10 rounded-full mb-2 items-center justify-center ${
+                selectedCategory === category ? "bg-cyan-600" : "bg-slate-100"
+              }`}
+            >
+              <Feather
+                name={getCategoryIcon(category)}
+                size={18}
+                color={selectedCategory === category ? "#ffffff" : "#64748b"}
+              />
+            </View>
+            <Text
+              className={`text-sm font-bold text-center ${
+                selectedCategory === category ? "text-white" : "text-slate-700"
+              }`}
+              numberOfLines={1}
+            >
+              {category}
+            </Text>
+            <Text
+              className={`text-xs mt-1 ${
+                selectedCategory === category
+                  ? "text-cyan-100"
+                  : "text-slate-500"
+              }`}
+            >
+              {categoryStats[category]} clinic
+              {categoryStats[category] !== 1 ? "s" : ""}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+
+  // Helper function for category icons
+  const getCategoryIcon = (category) => {
+    const iconMap = {
+      All: "grid",
+      General: "home",
+      Dental: "activity",
+      Medical: "heart",
+      Surgical: "scissors",
+      Pediatric: "smile",
+      Orthopedic: "bone",
+      Cardiology: "heart",
+      Neurology: "brain",
+      Emergency: "alert-triangle",
+    };
+    return iconMap[category] || "folder";
   };
 
   // Loading State
@@ -176,94 +316,26 @@ const Clinics = () => {
             </Text>
           </View>
 
-          {/* Stats Section */}
-          <View>
-            <View className="gap-4">
-              {/* First Row - 2 stats */}
-              <View className="flex-row gap-4">
-                {stats.slice(0, 2).map((stat, index) => (
-                  <View key={index} className="flex-1">
-                    <View
-                      className={`${stat.color} border border-white/20 rounded-2xl p-4 shadow-lg`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1 min-w-0">
-                          <Text
-                            ellipsizeMode="tail"
-                            numberOfLines={1}
-                            className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-2 opacity-80`}
-                          >
-                            {stat.title}
-                          </Text>
-                          <Text className="text-2xl font-bold text-slate-800">
-                            {stat.value}
-                          </Text>
-                        </View>
-                        <View
-                          className={`p-3 rounded-xl ${stat.iconBg} ml-3 shadow-md`}
-                        >
-                          <Feather
-                            name={stat.icon}
-                            size={20}
-                            color={stat.iconColor}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                ))}
-              </View>
+          {/* COOL CATEGORIES GRID - REPLACES STATS SECTION */}
+          <CategoriesGrid />
 
-              {/* Second Row - 1 stat (full width) */}
-              <View>
-                {stats.slice(2, 3).map((stat, index) => (
-                  <View key={index + 2}>
-                    <View
-                      className={`${stat.color} border border-white/20 rounded-2xl p-4 shadow-lg`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1 min-w-0">
-                          <Text
-                            className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-2 opacity-80`}
-                          >
-                            {stat.title}
-                          </Text>
-                          <Text className="text-2xl font-bold text-slate-800">
-                            {stat.value}
-                          </Text>
-                        </View>
-                        <View
-                          className={`p-3 rounded-xl ${stat.iconBg} ml-3 shadow-md`}
-                        >
-                          <Feather
-                            name={stat.icon}
-                            size={20}
-                            color={stat.iconColor}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          {/* Section Header */}
+          {/* Section Header - SHOWS FILTERED COUNT */}
           <View>
             <Text className="text-2xl font-bold text-slate-800 mb-2">
-              Available Clinics
+              {selectedCategory === "All"
+                ? "All Available Clinics"
+                : `${selectedCategory} Clinics`}
             </Text>
             <Text className="text-slate-600 text-lg">
-              {clinics.length} clinic{clinics.length !== 1 ? "s" : ""} ready to
-              serve you
+              {filteredClinics.length} clinic
+              {filteredClinics.length !== 1 ? "s" : ""} ready to serve you
             </Text>
           </View>
 
-          {/* Clinics List */}
-          {clinics.length > 0 ? (
+          {/* Clinics List - USES FILTERED CLINICS */}
+          {filteredClinics.length > 0 ? (
             <View className="gap-6">
-              {clinics.map((clinic) => (
+              {filteredClinics.map((clinic) => (
                 <View
                   key={clinic.id}
                   className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-6"
@@ -281,7 +353,7 @@ const Clinics = () => {
                         {clinic.institute_name}
                       </Text>
                       <Text className="text-slate-600 font-medium text-sm mb-2">
-                        Diagnostic Center
+                        {clinic.primary_category || "Healthcare Center"}
                       </Text>
                       <View className="flex-row items-center gap-1">
                         <Feather name="phone" size={14} color="#64748b" />
@@ -295,7 +367,7 @@ const Clinics = () => {
                   {/* Clinic Info Card */}
                   <View className="bg-slate-50/80 rounded-xl p-4 mb-4">
                     <View className="gap-3">
-                      {/* Address - Stack on mobile */}
+                      {/* Address */}
                       <View className="flex-col space-y-1">
                         <Text className="text-slate-600 text-sm font-medium">
                           Address
@@ -305,7 +377,7 @@ const Clinics = () => {
                         </Text>
                       </View>
 
-                      {/* Hours and Status - Side by side on larger screens, stacked on mobile */}
+                      {/* Hours and Status */}
                       <View className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
                         {/* Hours */}
                         <View className="flex-1">
@@ -354,17 +426,30 @@ const Clinics = () => {
               ))}
             </View>
           ) : (
-            // Empty State (when API returns empty array)
+            // Empty State
             <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-12 items-center">
               <View className="bg-slate-100 rounded-2xl p-6 mb-6">
-                <Feather name="home" size={64} color="#9ca3af" />
+                <Feather name="search" size={64} color="#9ca3af" />
               </View>
               <Text className="text-xl font-bold text-slate-700 mb-2">
-                No clinics available
+                No clinics found
               </Text>
-              <Text className="text-slate-500 text-lg text-center">
-                Please check back later or contact support.
+              <Text className="text-slate-500 text-lg text-center mb-4">
+                {selectedCategory !== "All"
+                  ? `No clinics found in "${selectedCategory}" category`
+                  : "No clinics available"}
               </Text>
+              {selectedCategory !== "All" && (
+                <TouchableOpacity
+                  onPress={() => setSelectedCategory("All")}
+                  className="flex-row items-center justify-center px-6 py-3 bg-cyan-500 rounded-xl"
+                >
+                  <Feather name="list" size={16} color="#ffffff" />
+                  <Text className="text-white font-semibold ml-2">
+                    Show All Clinics
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>

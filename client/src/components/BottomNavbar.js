@@ -3,16 +3,15 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   TouchableWithoutFeedback,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 
-const BottomNavbar = () => {
+const BottomNavbar = ({ state, navigation, descriptors }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [activeTab, setActiveTab] = useState("Dashboard");
-  const navigation = useNavigation();
+  
+  // Get active tab from navigation state
+  const activeTab = state.routes[state.index].name;
 
   const leftMenuItems = [
     { icon: "home", label: "Dashboard", id: "Dashboard" },
@@ -30,26 +29,36 @@ const BottomNavbar = () => {
     { icon: "credit-card", label: "Invoices", id: "Invoices" },
   ];
 
-  const handleTabPress = (tabId) => {
-    if (tabId === "More") {
+  const handleTabPress = (tabName, isTab = true) => {
+    if (tabName === "More") {
       setShowMoreMenu(!showMoreMenu);
+      return;
+    }
+
+    setShowMoreMenu(false);
+
+    if (isTab) {
+      // For tab screens, use the tab navigator's navigation
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: tabName,
+        canPreventDefault: true,
+      });
+
+      if (!event.defaultPrevented) {
+        navigation.navigate(tabName);
+      }
     } else {
-      setActiveTab(tabId);
-      setShowMoreMenu(false);
-      navigation.navigate(tabId);
+      // For stack screens, navigate normally
+      navigation.navigate(tabName);
     }
   };
 
   const isMoreMenuActive = moreMenuItems.some((item) => activeTab === item.id);
 
-  const NavButton = ({
-    item,
-    isActive,
-    isMoreButton = false,
-    showClose = false,
-  }) => (
+  const NavButton = ({ item, isActive, isMoreButton = false, showClose = false }) => (
     <TouchableOpacity
-      onPress={() => handleTabPress(item.id)}
+      onPress={() => handleTabPress(item.id, !isMoreButton)}
       className={`flex-col items-center justify-center gap-1.5 relative p-3 rounded-2xl min-w-0 ${
         isActive ? "bg-blue-50/70" : ""
       }`}
@@ -57,17 +66,9 @@ const BottomNavbar = () => {
     >
       <View className={`relative ${isActive ? "scale-105" : ""}`}>
         {showClose ? (
-          <Feather
-            name="x"
-            size={22}
-            color={isActive ? "#2563eb" : "#64748b"}
-          />
+          <Feather name="x" size={22} color={isActive ? "#2563eb" : "#64748b"} />
         ) : (
-          <Feather
-            name={item.icon}
-            size={22}
-            color={isActive ? "#2563eb" : "#64748b"}
-          />
+          <Feather name={item.icon} size={22} color={isActive ? "#2563eb" : "#64748b"} />
         )}
         {isActive && (
           <View className="absolute -inset-1 bg-blue-100 rounded-full -z-10" />
@@ -75,9 +76,7 @@ const BottomNavbar = () => {
       </View>
       <Text
         className={`text-xs text-center leading-tight ${
-          isActive
-            ? "font-semibold text-blue-700"
-            : "font-medium text-slate-600"
+          isActive ? "font-semibold text-blue-700" : "font-medium text-slate-600"
         }`}
         numberOfLines={1}
       >
@@ -105,7 +104,7 @@ const BottomNavbar = () => {
             {moreMenuItems.map((item, index) => (
               <TouchableOpacity
                 key={index}
-                onPress={() => handleTabPress(item.id)}
+                onPress={() => handleTabPress(item.id, false)}
                 className={`flex-row items-center gap-3 px-4 py-3 rounded-xl ${
                   activeTab === item.id ? "bg-blue-50/70" : ""
                 }`}
@@ -129,17 +128,13 @@ const BottomNavbar = () => {
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* Arrow pointing down */}
           <View className="absolute -bottom-2 right-6 w-4 h-4 bg-white/95 border-r border-b border-slate-200/50 transform rotate-45" />
         </View>
       )}
 
       {/* Main Navbar */}
       <View className="bg-white/90 border-t border-slate-100 shadow-2xl">
-        {/* Gradient line on top */}
         <View className="h-px bg-slate-200" />
-
         <View className="flex-row justify-between items-center h-20 px-3 max-w-md mx-auto relative">
           {/* Left menu items */}
           <View className="flex-1 flex-row justify-around">
@@ -152,10 +147,10 @@ const BottomNavbar = () => {
             ))}
           </View>
 
-          {/* Center plus button */}
+          {/* Center button */}
           <View className="flex-shrink-0 mx-2">
             <TouchableOpacity
-              onPress={() => handleTabPress("Clinics")}
+              onPress={() => handleTabPress("Clinics", true)}
               className="flex-col items-center justify-center relative"
               activeOpacity={0.8}
             >
@@ -210,8 +205,6 @@ const BottomNavbar = () => {
             })}
           </View>
         </View>
-
-        {/* Safe area for devices with home indicator */}
         <View className="h-4" />
       </View>
     </>
