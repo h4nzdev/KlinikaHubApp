@@ -153,10 +153,18 @@ export const ReminderProvider = ({ children }) => {
   };
 
   const handleAutoCall = () => {
-    if (user && user.phone) {
+    console.log("📞 Auto-call triggered for:", dueReminder?.name);
+
+    if (user && user.mobileno) {
       Alert.alert(
         "📞 Auto-Call Initiated",
-        `Would have called ${user.phone} for reminder: ${dueReminder.name}`,
+        `Would have called ${user.mobileno} for reminder: ${dueReminder?.name}`,
+        [{ text: "OK" }]
+      );
+    } else {
+      Alert.alert(
+        "📞 Auto-Call Initiated",
+        `Would have called your phone for reminder: ${dueReminder?.name}`,
         [{ text: "OK" }]
       );
     }
