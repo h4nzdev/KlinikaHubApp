@@ -36,6 +36,9 @@ function MainTabs() {
       <Tab.Screen name="Clinics" component={Clinics} />
       <Tab.Screen name="Appointments" component={Appointments} />
       <Tab.Screen name="Profile" component={Profile} />
+      <Tab.Screen name="MedicalRecords" component={MedicalRecords} />
+      <Tab.Screen name="Invoices" component={Invoices} />
+      <Tab.Screen name="Reminders" component={Reminders} />
     </Tab.Navigator>
   );
 }

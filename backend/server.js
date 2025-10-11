@@ -26,10 +26,6 @@ const initializeDatabase = async () => {
 // Call initialization
 initializeDatabase();
 
-const mockDoctors = [
-  // ... your existing mock doctors data
-];
-
 app.use("/api/patients", patientRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/auth", authRouter);
@@ -40,22 +36,6 @@ app.get("/", (req, res) => {
     message: "Hello from express",
     timestamp: new Date().toISOString(),
   });
-});
-
-app.get("/api/doctors", (req, res) => {
-  res.json(mockDoctors);
-});
-
-app.post("/api/users", (req, res) => {
-  const { name, email } = req.body;
-  const newUser = {
-    id: Math.random(),
-    name,
-    email,
-    createdAt: new Date(),
-  };
-
-  res.json({ message: "User created", user: newUser });
 });
 
 const PORT = 5000;

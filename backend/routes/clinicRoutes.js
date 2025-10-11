@@ -4,7 +4,7 @@ import clinicController from "../controller/clinicController.js";
 const router = express.Router();
 
 // Initialize clinic table
-router.get("/clinics/init", async (req, res) => {
+router.get("/init", async (req, res) => {
   try {
     await clinicController.initTable();
     res.json({
@@ -29,7 +29,7 @@ router.get("/", async (req, res) => {
 });
 
 // GET CLINIC BY ID
-router.get("/clinics/:id", async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`🔄 Fetching clinic with ID: ${id}`);
@@ -50,7 +50,7 @@ router.get("/clinics/:id", async (req, res) => {
 });
 
 // GET CLINICS BY CATEGORY
-router.get("/clinics/category/:category", async (req, res) => {
+router.get("/category/:category", async (req, res) => {
   try {
     const { category } = req.params;
     console.log(`🔄 Fetching clinics in category: ${category}`);
@@ -76,7 +76,7 @@ router.get("/categories", async (req, res) => {
 });
 
 // CREATE NEW CLINIC
-router.post("/clinics", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const clinicData = req.body;
     console.log("🔄 Creating new clinic:", clinicData.institute_name);
@@ -104,7 +104,7 @@ router.post("/clinics", async (req, res) => {
 });
 
 // UPDATE CLINIC
-router.put("/clinics/:id", async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const clinicData = req.body;
@@ -127,7 +127,7 @@ router.put("/clinics/:id", async (req, res) => {
 });
 
 // DELETE CLINIC
-router.delete("/clinics/:id", async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`🔄 Deleting clinic ID: ${id}`);

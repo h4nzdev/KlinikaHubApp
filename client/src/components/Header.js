@@ -15,23 +15,35 @@ import Toast from "react-native-toast-message";
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notificationCount] = useState(5);
-  const { setUser, user } = useContext(AuthenticationContext);
+  const { user, logout } = useContext(AuthenticationContext); // Use logout function
   const navigation = useNavigation();
 
-  const handleLogout = () => {
-    setIsDropdownOpen(false);
-    setUser(false);
-    Toast.show({
-      type: "success",
-      text1: "Logged out successfully",
-    });
-    // Add your logout logic here
+  const handleLogout = async () => {
+    try {
+      setIsDropdownOpen(false);
+      await logout(); // Use the logout function from context
+      Toast.show({
+        type: "success",
+        text1: "Logged out successfully",
+      });
+      // Navigation will be handled by the context state change
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Logout failed",
+        text2: "Please try again",
+      });
+    }
   };
 
   const handleNavigate = (screen) => {
     setIsDropdownOpen(false);
     navigation.navigate(screen);
   };
+
+  // Add fallback for user data
+  const userFirstName = user?.first_name || "User";
+  const userPhoto = user?.photo || null;
 
   return (
     <>
@@ -77,11 +89,16 @@ const Header = () => {
                     elevation: 4,
                   }}
                 >
-                  <Image
-                    source={{ uri: user.photo }}
-                    className="w-full h-full"
-                    style={{ backgroundColor: "#e0f2fe" }}
-                  />
+                  {userPhoto ? (
+                    <Image
+                      source={{ uri: userPhoto }}
+                      className="w-full h-full"
+                    />
+                  ) : (
+                    <View className="w-full h-full bg-cyan-100 items-center justify-center">
+                      <Feather name="user" size={20} color="#06b6d4" />
+                    </View>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -106,9 +123,9 @@ const Header = () => {
                     className="text-sm font-semibold text-slate-900"
                     numberOfLines={1}
                   >
-                    {user.first_name}
+                    {userFirstName}
                   </Text>
-                  <Text className="text-xs text-slate-500">Client</Text>
+                  <Text className="text-xs text-slate-500">Patient</Text>
                 </View>
 
                 {/* Menu Items */}
@@ -152,8 +169,8 @@ const Header = () => {
                     className="flex-row items-center px-4 py-2.5"
                     activeOpacity={0.7}
                   >
-                    <Feather name="log-out" size={16} color="#334155" />
-                    <Text className="text-sm text-slate-700 font-medium ml-3">
+                    <Feather name="log-out" size={16} color="#ef4444" />
+                    <Text className="text-sm text-red-500 font-medium ml-3">
                       Logout
                     </Text>
                   </TouchableOpacity>
