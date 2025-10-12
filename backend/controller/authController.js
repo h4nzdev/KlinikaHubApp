@@ -1,5 +1,6 @@
 import database from "../config/database.js";
 import Patient from "../model/Patient.js";
+import cloudinary from "../config/cloudinary.js";
 
 class AuthController {
   constructor() {
@@ -118,6 +119,35 @@ class AuthController {
         }
       );
     });
+  }
+
+  // ADD THIS METHOD to your existing AuthController class
+  async uploadPatientPhoto(base64Image) {
+    try {
+      console.log("🔄 Uploading patient photo to Cloudinary...");
+
+      const result = await cloudinary.uploader.upload(
+        `data:image/jpeg;base64,${base64Image}`,
+        {
+          folder: "patient_profiles",
+          resource_type: "image",
+          transformation: [
+            { width: 300, height: 300, crop: "fill" },
+            { quality: "auto" },
+            { format: "jpg" },
+          ],
+        }
+      );
+
+      console.log(
+        "✅ Patient photo uploaded to Cloudinary:",
+        result.secure_url
+      );
+      return result.secure_url;
+    } catch (error) {
+      console.error("❌ Cloudinary upload error:", error);
+      throw new Error("Failed to upload patient photo");
+    }
   }
 }
 

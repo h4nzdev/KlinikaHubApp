@@ -20,6 +20,7 @@ import ClinicProfile from "../screens/Main/ClinicProfile/ClinicProfile";
 // Import your custom BottomNavbar
 import BottomNavbar from "../components/BottomNavbar";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import AppointmentBookingPage from "../screens/Main/AppointmentBooking/AppointmentBookingPage";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -35,6 +36,10 @@ function MainTabs() {
       <Tab.Screen name="AIChat" component={AIChat} />
       <Tab.Screen name="Clinics" component={Clinics} />
       <Tab.Screen name="Appointments" component={Appointments} />
+      <Tab.Screen
+        name="AppointmentBookingPage"
+        component={AppointmentBookingPage}
+      />
       <Tab.Screen name="Profile" component={Profile} />
       <Tab.Screen name="MedicalRecords" component={MedicalRecords} />
       <Tab.Screen name="Invoices" component={Invoices} />
@@ -71,6 +76,10 @@ const AppNavigation = () => {
           <Stack.Screen name="MedicalRecords" component={MedicalRecords} />
           <Stack.Screen name="Invoices" component={Invoices} />
           <Stack.Screen name="Reminders" component={Reminders} />
+          <Stack.Screen
+            name="AppointmentBookingPage"
+            component={AppointmentBookingPage}
+          />
           <Stack.Screen name="ClinicProfile" component={ClinicProfile} />
           <Stack.Screen name="Notifications" component={Notifications} />
         </Stack.Navigator>

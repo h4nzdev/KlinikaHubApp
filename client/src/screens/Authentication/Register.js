@@ -8,18 +8,24 @@ import {
   StatusBar,
   TextInput,
   Alert,
+  Image,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { patientAuthServices } from "../../services/patientAuthServices"; // Adjust path as needed
+import { patientAuthServices } from "../../services/patientAuthServices";
+import * as ImagePicker from "expo-image-picker";
+import { cloudinaryService } from "../../services/cloudinaryService";
 
 const Register = () => {
-  const [isVerificationStep, setIsVerificationStep] = useState(false);
-  const [verificationInput, setVerificationInput] = useState("");
-  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
 
+  // State management
+  const [activeSection, setActiveSection] = useState("personal");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+
+  // Form data with all fields including photo
   const [formData, setFormData] = useState({
     // Personal Info
     first_name: "",
@@ -52,12 +58,12 @@ const Register = () => {
     patient_id: "",
     category_id: "1",
     source: "1",
+    photo: "", // Cloudinary URL will be stored here
 
     agreeToTerms: false,
   });
 
-  const [activeSection, setActiveSection] = useState("personal"); // personal, contact, medical, emergency, security
-
+  // Password validation state
   const [passwordValidation, setPasswordValidation] = useState({
     length: false,
     firstLetterUppercase: false,
@@ -65,6 +71,122 @@ const Register = () => {
     specialChar: false,
   });
 
+  // Section order for navigation
+  const sections = ["personal", "contact", "medical", "emergency", "security"];
+  const sectionTitles = {
+    personal: "Personal Info",
+    contact: "Contact Info",
+    medical: "Medical Info",
+    emergency: "Emergency Contact",
+    security: "Security",
+  };
+
+  // Navigation functions
+  const goToNextSection = () => {
+    const currentIndex = sections.indexOf(activeSection);
+    if (currentIndex < sections.length - 1) {
+      setActiveSection(sections[currentIndex + 1]);
+    }
+  };
+
+  const goToPreviousSection = () => {
+    const currentIndex = sections.indexOf(activeSection);
+    if (currentIndex > 0) {
+      setActiveSection(sections[currentIndex - 1]);
+    }
+  };
+
+  const isLastSection = activeSection === sections[sections.length - 1];
+  const isFirstSection = activeSection === sections[0];
+
+  // Image handling functions
+  const pickImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Camera roll permissions needed for photos."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        await uploadImageToCloudinary(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Image picker error:", error);
+      Alert.alert("Error", "Failed to pick image");
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Camera permissions needed to take photos."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        await uploadImageToCloudinary(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Camera error:", error);
+      Alert.alert("Error", "Failed to take photo");
+    }
+  };
+
+  const uploadImageToCloudinary = async (imageUri) => {
+    try {
+      setIsUploading(true);
+      console.log("Starting image upload...");
+
+      const uploadResult = await cloudinaryService.uploadImage(imageUri);
+
+      setFormData((prev) => ({
+        ...prev,
+        photo: uploadResult.secure_url,
+      }));
+
+      Alert.alert("Success", "Profile photo uploaded!");
+    } catch (error) {
+      console.error("Upload failed:", error);
+      Alert.alert("Upload Failed", error.message || "Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removePhoto = () => {
+    Alert.alert("Remove Photo", "Remove your profile photo?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => setFormData((prev) => ({ ...prev, photo: "" })),
+      },
+    ]);
+  };
+
+  // Form handling
   const validatePassword = (password) => {
     setPasswordValidation({
       length: password.length >= 6,
@@ -89,10 +211,11 @@ const Register = () => {
   const allPasswordRequirementsMet =
     Object.values(passwordValidation).every(Boolean);
 
-  // NEW: Registration function using the service
+  // Registration
   const handleRegister = async () => {
+    // Validation checks
     if (!allPasswordRequirementsMet) {
-      Alert.alert("Error", "Password does not meet the requirements.");
+      Alert.alert("Error", "Password does not meet requirements.");
       return;
     }
 
@@ -102,11 +225,10 @@ const Register = () => {
     }
 
     if (!formData.agreeToTerms) {
-      Alert.alert("Error", "Please agree to the terms and conditions");
+      Alert.alert("Error", "Please agree to terms and conditions");
       return;
     }
 
-    // Required fields validation
     const requiredFields = [
       "first_name",
       "last_name",
@@ -117,45 +239,35 @@ const Register = () => {
     const missingFields = requiredFields.filter((field) => !formData[field]);
 
     if (missingFields.length > 0) {
-      Alert.alert(
-        "Error",
-        `Please fill in all required fields: ${missingFields.join(", ")}`
-      );
+      Alert.alert("Error", `Please fill in: ${missingFields.join(", ")}`);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      console.log("🔄 Registering patient...", formData.email);
-
-      // Prepare data for API (remove confirmPassword and agreeToTerms)
       const { confirmPassword, agreeToTerms, ...registrationData } = formData;
 
       const result =
         await patientAuthServices.patientRegister(registrationData);
 
-      console.log("✅ Registration Success!", result);
-
-      Alert.alert("Success!", "Your account has been created successfully!", [
+      Alert.alert("Success!", "Account created successfully!", [
         {
           text: "OK",
           onPress: () => navigation.navigate("Login"),
         },
       ]);
     } catch (error) {
-      console.error("❌ Registration Error:", error);
       Alert.alert(
         "Registration Failed",
-        error.response?.data?.error ||
-          error.message ||
-          "Something went wrong. Please try again."
+        error.response?.data?.error || error.message || "Please try again."
       );
     } finally {
       setIsLoading(false);
     }
   };
 
+  // UI Components
   const ValidationItem = ({ isValid, text }) => (
     <View className="flex-row items-center gap-2">
       <Feather
@@ -171,10 +283,31 @@ const Register = () => {
     </View>
   );
 
-  const SectionButton = ({ title, section, icon }) => (
+  const SectionProgress = () => (
+    <View className="mb-4">
+      <Text className="text-sm font-medium text-slate-600 mb-2">
+        Step {sections.indexOf(activeSection) + 1} of {sections.length}:{" "}
+        {sectionTitles[activeSection]}
+      </Text>
+      <View className="flex-row gap-1">
+        {sections.map((section, index) => (
+          <View
+            key={section}
+            className={`flex-1 h-2 rounded-full ${
+              sections.indexOf(activeSection) >= index
+                ? "bg-cyan-600"
+                : "bg-slate-200"
+            }`}
+          />
+        ))}
+      </View>
+    </View>
+  );
+
+  const SectionButton = ({ section, icon }) => (
     <TouchableOpacity
       onPress={() => setActiveSection(section)}
-      className={`flex-1 flex-column items-center justify-center gap-2 py-3 px-4 rounded-xl ${
+      className={`flex-1 items-center justify-center py-3 px-4 rounded-xl ${
         activeSection === section ? "bg-cyan-600" : "bg-slate-100"
       }`}
     >
@@ -186,8 +319,62 @@ const Register = () => {
     </TouchableOpacity>
   );
 
+  const renderPhotoUpload = () => (
+    <View className="items-center gap-4 mb-4">
+      <Text className="text-sm font-medium text-slate-700">
+        Profile Photo (Optional)
+      </Text>
+
+      {formData.photo ? (
+        <View className="items-center gap-3">
+          <Image
+            source={{ uri: formData.photo }}
+            className="w-32 h-32 rounded-full border-4 border-cyan-500"
+            resizeMode="cover"
+          />
+          <TouchableOpacity
+            onPress={removePhoto}
+            className="flex-row items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-xl"
+          >
+            <Feather name="trash-2" size={16} color="#ef4444" />
+            <Text className="text-red-600 font-medium">Remove Photo</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View className="items-center gap-3">
+          <View className="w-32 h-32 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 items-center justify-center">
+            <Feather name="user" size={40} color="#94a3b8" />
+          </View>
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              onPress={pickImage}
+              disabled={isUploading}
+              className="flex-row items-center gap-2 px-4 py-2 bg-cyan-500 rounded-xl"
+            >
+              <Feather name="upload" size={16} color="white" />
+              <Text className="text-white font-medium">
+                {isUploading ? "Uploading..." : "Choose Photo"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={takePhoto}
+              disabled={isUploading}
+              className="flex-row items-center gap-2 px-4 py-2 bg-slate-600 rounded-xl"
+            >
+              <Feather name="camera" size={16} color="white" />
+              <Text className="text-white font-medium">Take Photo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+
+  // Section renderers
   const renderPersonalInfo = () => (
     <View className="gap-4">
+      {renderPhotoUpload()}
+
       <View className="flex-row gap-4">
         <View className="flex-1">
           <Text className="text-sm font-medium text-slate-700 mb-2">
@@ -540,37 +727,64 @@ const Register = () => {
             </Text>
           </View>
 
+          {/* Progress Indicator */}
+          <SectionProgress />
+
           {/* Section Navigation */}
           <View className="flex-row gap-2">
-            <SectionButton title="Personal" section="personal" icon="user" />
-            <SectionButton title="Contact" section="contact" icon="phone" />
-            <SectionButton title="Medical" section="medical" icon="heart" />
-            <SectionButton
-              title="Emergency"
-              section="emergency"
-              icon="shield"
-            />
-            <SectionButton title="Security" section="security" icon="lock" />
+            <SectionButton section="personal" icon="user" />
+            <SectionButton section="contact" icon="phone" />
+            <SectionButton section="medical" icon="heart" />
+            <SectionButton section="emergency" icon="shield" />
+            <SectionButton section="security" icon="lock" />
           </View>
 
           {/* Active Section Content */}
           {renderActiveSection()}
 
-          {/* Register Button */}
-          <TouchableOpacity
-            onPress={handleRegister}
-            disabled={isLoading || !allPasswordRequirementsMet}
-            className={`w-full py-4 rounded-2xl shadow-lg ${
-              isLoading || !allPasswordRequirementsMet
-                ? "bg-slate-400"
-                : "bg-cyan-600"
-            }`}
-            activeOpacity={0.8}
-          >
-            <Text className="text-white font-bold text-center text-lg">
-              {isLoading ? "Creating Account..." : "Create Account"}
-            </Text>
-          </TouchableOpacity>
+          {/* Navigation Buttons */}
+          <View className="flex-row gap-3">
+            {/* Back Button */}
+            {!isFirstSection && (
+              <TouchableOpacity
+                onPress={goToPreviousSection}
+                className="flex-1 py-4 border border-slate-300 rounded-2xl bg-white"
+                activeOpacity={0.8}
+              >
+                <Text className="text-slate-700 font-bold text-center text-lg">
+                  Back
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Next/Register Button */}
+            <TouchableOpacity
+              onPress={isLastSection ? handleRegister : goToNextSection}
+              disabled={
+                isLoading ||
+                isUploading ||
+                (isLastSection && !allPasswordRequirementsMet)
+              }
+              className={`${isFirstSection ? "flex-1" : "flex-1"} py-4 rounded-2xl shadow-lg ${
+                isLoading ||
+                isUploading ||
+                (isLastSection && !allPasswordRequirementsMet)
+                  ? "bg-slate-400"
+                  : "bg-cyan-600"
+              }`}
+              activeOpacity={0.8}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                {isUploading
+                  ? "Uploading..."
+                  : isLoading
+                    ? "Creating Account..."
+                    : isLastSection
+                      ? "Create Account"
+                      : "Next"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Footer */}
           <View className="pt-6 border-t border-slate-200">
@@ -594,9 +808,9 @@ const Register = () => {
               </Text>
             </View>
             <View className="flex-row items-center gap-2">
-              <Feather name="star" size={16} color="#f59e0b" />
+              <Feather name="cloud" size={16} color="#3b82f6" />
               <Text className="text-sm text-slate-600">
-                Trusted by 1000+ healthcare providers
+                Secure Cloud Storage with Cloudinary
               </Text>
             </View>
           </View>

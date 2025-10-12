@@ -55,4 +55,25 @@ authRouter.post("/check-email", async (req, res) => {
   }
 });
 
+// routes/authRouter.js - ADD THESE ROUTES
+authRouter.post("/upload-photo", async (req, res) => {
+  try {
+    const { image } = req.body; // base64 image string
+
+    if (!image) {
+      return res.status(400).json({ error: "Image is required" });
+    }
+
+    const photoUrl = await authController.uploadPatientPhoto(image);
+
+    res.json({
+      success: true,
+      photoUrl,
+    });
+  } catch (error) {
+    console.error("❌ Upload photo error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default authRouter;

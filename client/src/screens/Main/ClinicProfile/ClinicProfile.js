@@ -6,9 +6,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  Image,
-  Modal,
-  TextInput,
   Alert,
   ActivityIndicator,
   Linking,
@@ -17,7 +14,6 @@ import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import clinicServices from "../../../services/clinicServices";
-import AppointmentBookingModal from "../../../components/Appointments/AddBookingModal";
 
 const ClinicProfile = () => {
   const route = useRoute();
@@ -49,7 +45,11 @@ const ClinicProfile = () => {
   }, [clinicId]);
 
   const handleBookAppointment = () => {
-    setIsBookingModalVisible(true);
+    // Navigate to the booking page instead of showing modal
+    navigation.navigate("AppointmentBookingPage", {
+      clinicId,
+      clinicName: clinic?.data?.institute_name,
+    });
   };
 
   const handleCallClinic = () => {

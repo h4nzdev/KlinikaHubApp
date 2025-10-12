@@ -39,7 +39,8 @@ const Appointments = ({ navigation }) => {
       setLoading(true);
       console.log("🔄 Fetching appointments from API...");
 
-      const appointmentsData = await appointmentServices.getAllAppointments();
+      const appointmentsData =
+        await appointmentServices.getAppointmentsByPatientId(user.id);
       console.log("✅ Appointments fetched:", appointmentsData);
 
       setAppointments(appointmentsData || []);
@@ -69,7 +70,7 @@ const Appointments = ({ navigation }) => {
         `The clinic has reached its appointment limit for the ${plan} plan.`
       );
     } else {
-      navigation.navigate("Doctors");
+      navigation.navigate("Clinics");
     }
   };
 

@@ -119,7 +119,7 @@ export const appointmentServices = {
       console.log("🔄 Fetching appointments by patient ID:", patientId);
       const response = await api.get(`/appointments/patient/${patientId}`);
       console.log("✅ Patient appointments fetched successfully!");
-      return response.data;
+      return response.data.data;
     } catch (error) {
       console.error("❌ Patient appointments fetch error:", error.message);
       console.log("Full error details:", error.response?.data || error);
