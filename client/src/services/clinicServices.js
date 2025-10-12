@@ -63,7 +63,7 @@ export const clinicServices = {
     try {
       console.log("🔄 Fetching clinic:", id);
       const response = await api.get(`/clinics/${id}`);
-      console.log("✅ Clinic fetched successfully!");
+      console.log("✅ Specific Clinic fetched successfully!");
       return response.data;
     } catch (error) {
       console.error("❌ Clinic fetch error:", error.message);

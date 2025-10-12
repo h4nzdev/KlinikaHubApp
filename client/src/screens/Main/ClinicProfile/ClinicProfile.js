@@ -17,6 +17,7 @@ import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import clinicServices from "../../../services/clinicServices";
+import AppointmentBookingModal from "../../../components/Appointments/AddBookingModal";
 
 const ClinicProfile = () => {
   const route = useRoute();
@@ -109,8 +110,8 @@ const ClinicProfile = () => {
       { count: 70, percentage: 28 },
       { count: 20, percentage: 8 },
       { count: 8, percentage: 3 },
-      { count: 2, percentage: 1 }
-    ]
+      { count: 2, percentage: 1 },
+    ],
   };
 
   return (
@@ -131,19 +132,19 @@ const ClinicProfile = () => {
           <View className="items-center">
             {/* Clinic Logo/Image */}
             <View className="w-24 h-24 rounded-2xl bg-white/20 items-center justify-center mb-4 border-2 border-white/30">
-              <Feather name="home" size={40} color="#ffffff" />
+              <Feather name="home" size={40} color="cyan" />
             </View>
 
             {/* Clinic Name */}
-            <Text className="text-3xl font-bold text-white text-center mb-2">
-              {clinic.institute_name}
+            <Text className="text-3xl font-bold text-cyan-900 text-center mb-2">
+              {clinic.data.institute_name}
             </Text>
 
             {/* Specialty */}
             <View className="flex-row items-center bg-white/20 px-4 py-2 rounded-full mb-4">
               <Feather name="activity" size={16} color="#ffffff" />
-              <Text className="text-cyan-100 font-semibold ml-2 text-sm">
-                Specialty: {clinic.primary_category || "General Practice"}
+              <Text className="text-cyan-700 font-semibold ml-2 text-sm">
+                Specialty: {clinic.data.specialties || "General Practice"}
               </Text>
             </View>
 
@@ -155,7 +156,8 @@ const ClinicProfile = () => {
                 ))}
               </View>
               <Text className="text-white font-semibold">
-                {ratingStats.average} Stars ({ratingStats.totalReviews}+ reviews)
+                {ratingStats.average} Stars ({ratingStats.totalReviews}+
+                reviews)
               </Text>
             </View>
           </View>
@@ -165,7 +167,7 @@ const ClinicProfile = () => {
         <View className="px-6 -mt-6">
           <View className="bg-white rounded-2xl p-4 shadow-lg shadow-black/10 border border-slate-100">
             <View className="flex-row justify-between">
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="items-center flex-1"
                 activeOpacity={0.7}
                 onPress={handleBookAppointment}
@@ -178,7 +180,7 @@ const ClinicProfile = () => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="items-center flex-1"
                 activeOpacity={0.7}
                 onPress={handleCallClinic}
@@ -191,7 +193,7 @@ const ClinicProfile = () => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="items-center flex-1"
                 activeOpacity={0.7}
                 onPress={handleEmailClinic}
@@ -204,7 +206,7 @@ const ClinicProfile = () => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="items-center flex-1"
                 activeOpacity={0.7}
               >
@@ -231,20 +233,32 @@ const ClinicProfile = () => {
                 Operating Hours
               </Text>
             </View>
-            
+
             <View className="gap-3">
-              <View className="flex-row justify-between items-center py-3 border-b border-slate-100">
-                <Text className="font-semibold text-slate-700">Mon-Fri</Text>
-                <Text className="text-slate-600">9:00 AM - 6:00 PM</Text>
-              </View>
-              <View className="flex-row justify-between items-center py-3 border-b border-slate-100">
-                <Text className="font-semibold text-slate-700">Saturday</Text>
-                <Text className="text-slate-600">9:00 AM - 1:00 PM</Text>
-              </View>
-              <View className="flex-row justify-between items-center py-3">
-                <Text className="font-semibold text-slate-700">Sunday</Text>
-                <Text className="text-slate-600">Closed</Text>
-              </View>
+              {clinic.data.working_hours ? (
+                <Text className="text-slate-600">
+                  {clinic.data.working_hours}
+                </Text>
+              ) : (
+                <>
+                  <View className="flex-row justify-between items-center py-3 border-b border-slate-100">
+                    <Text className="font-semibold text-slate-700">
+                      Mon-Fri
+                    </Text>
+                    <Text className="text-slate-600">9:00 AM - 6:00 PM</Text>
+                  </View>
+                  <View className="flex-row justify-between items-center py-3 border-b border-slate-100">
+                    <Text className="font-semibold text-slate-700">
+                      Saturday
+                    </Text>
+                    <Text className="text-slate-600">9:00 AM - 1:00 PM</Text>
+                  </View>
+                  <View className="flex-row justify-between items-center py-3">
+                    <Text className="font-semibold text-slate-700">Sunday</Text>
+                    <Text className="text-slate-600">Closed</Text>
+                  </View>
+                </>
+              )}
             </View>
           </View>
 
@@ -254,41 +268,86 @@ const ClinicProfile = () => {
               <View className="w-10 h-10 rounded-xl bg-orange-50 items-center justify-center">
                 <Feather name="map-pin" size={20} color="#ea580c" />
               </View>
-              <Text className="text-xl font-bold text-slate-800">
-                Address
-              </Text>
+              <Text className="text-xl font-bold text-slate-800">Address</Text>
             </View>
-            
+
             <Text className="text-slate-700 leading-6 text-base">
-              {clinic.address || "123 Health Ave, Suite 456, Anytown, CA 91234"}
+              {clinic.data.address ||
+                "123 Health Ave, Suite 456, Anytown, CA 91234"}
             </Text>
           </View>
 
-          {/* Contact */}
+          {/* Contact & Social Media - Grouped */}
           <View className="bg-white rounded-2xl p-6 shadow-lg shadow-black/5 border border-slate-100">
             <View className="flex-row items-center gap-3 mb-4">
               <View className="w-10 h-10 rounded-xl bg-blue-50 items-center justify-center">
                 <Feather name="phone" size={20} color="#2563eb" />
               </View>
-              <Text className="text-xl font-bold text-slate-800">
-                Contact
-              </Text>
+              <Text className="text-xl font-bold text-slate-800">Contact</Text>
             </View>
-            
-            <View className="gap-4">
+
+            {/* Contact Information */}
+            <View className="gap-4 mb-6">
               <View className="flex-row items-center gap-3">
                 <Feather name="phone" size={18} color="#64748b" />
                 <Text className="text-slate-700 text-base">
-                  {clinic.mobileno || "(555) 123-4567"}
+                  {clinic.data.mobileno || "(555) 123-4567"}
                 </Text>
               </View>
               <View className="flex-row items-center gap-3">
                 <Feather name="mail" size={18} color="#64748b" />
                 <Text className="text-slate-700 text-base">
-                  {clinic.institute_email || "info@medicare.com"}
+                  {clinic.data.institute_email || "info@medicare.com"}
                 </Text>
               </View>
             </View>
+
+            {/* Social Media Links */}
+            {(clinic.data.facebook_url ||
+              clinic.data.twitter_url ||
+              clinic.data.linkedin_url ||
+              clinic.data.youtube_url) && (
+              <View className="border-t border-slate-100 pt-4">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <Feather name="share-2" size={16} color="#64748b" />
+                  <Text className="text-slate-700 font-medium">Follow Us</Text>
+                </View>
+                <View className="flex-row gap-3">
+                  {clinic.data.facebook_url && (
+                    <TouchableOpacity
+                      className="w-10 h-10 rounded-lg bg-slate-50 items-center justify-center"
+                      onPress={() => Linking.openURL(clinic.data.facebook_url)}
+                    >
+                      <Feather name="facebook" size={18} color="#64748b" />
+                    </TouchableOpacity>
+                  )}
+                  {clinic.data.twitter_url && (
+                    <TouchableOpacity
+                      className="w-10 h-10 rounded-lg bg-slate-50 items-center justify-center"
+                      onPress={() => Linking.openURL(clinic.data.twitter_url)}
+                    >
+                      <Feather name="twitter" size={18} color="#64748b" />
+                    </TouchableOpacity>
+                  )}
+                  {clinic.data.linkedin_url && (
+                    <TouchableOpacity
+                      className="w-10 h-10 rounded-lg bg-slate-50 items-center justify-center"
+                      onPress={() => Linking.openURL(clinic.data.linkedin_url)}
+                    >
+                      <Feather name="linkedin" size={18} color="#64748b" />
+                    </TouchableOpacity>
+                  )}
+                  {clinic.data.youtube_url && (
+                    <TouchableOpacity
+                      className="w-10 h-10 rounded-lg bg-slate-50 items-center justify-center"
+                      onPress={() => Linking.openURL(clinic.data.youtube_url)}
+                    >
+                      <Feather name="youtube" size={18} color="#64748b" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Patient Reviews Summary */}
@@ -301,19 +360,21 @@ const ClinicProfile = () => {
                 Patient Reviews
               </Text>
             </View>
-            
-            <View className="items-center mb-6">
+
+            <View className="flex-row justify-between items-center mb-6">
+              <View>
+                <Text className="text-3xl font-bold text-slate-800 mb-1">
+                  {ratingStats.average}
+                </Text>
+                <Text className="text-slate-600">
+                  {ratingStats.totalReviews}+ reviews
+                </Text>
+              </View>
               <View className="flex-row items-center gap-2 mb-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Feather key={star} name="star" size={24} color="#fbbf24" />
                 ))}
               </View>
-              <Text className="text-3xl font-bold text-slate-800 mb-1">
-                {ratingStats.average}
-              </Text>
-              <Text className="text-slate-600">
-                {ratingStats.totalReviews}+ reviews
-              </Text>
             </View>
 
             {/* Star Distribution */}
@@ -321,13 +382,17 @@ const ClinicProfile = () => {
               {[5, 4, 3, 2, 1].map((stars, index) => (
                 <View key={stars} className="flex-row items-center gap-3">
                   <View className="flex-row items-center gap-1 w-8">
-                    <Text className="text-slate-600 text-sm font-medium">{stars}</Text>
+                    <Text className="text-slate-600 text-sm font-medium">
+                      {stars}
+                    </Text>
                     <Feather name="star" size={14} color="#fbbf24" />
                   </View>
                   <View className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <View 
+                    <View
                       className="h-full bg-amber-400 rounded-full"
-                      style={{ width: `${ratingStats.stars[index].percentage}%` }}
+                      style={{
+                        width: `${ratingStats.stars[index].percentage}%`,
+                      }}
                     />
                   </View>
                   <Text className="text-slate-600 text-sm w-10">
@@ -338,7 +403,9 @@ const ClinicProfile = () => {
             </View>
 
             <TouchableOpacity className="flex-row items-center justify-center gap-2 py-3 border border-slate-300 rounded-xl">
-              <Text className="text-slate-700 font-semibold">Read All Reviews</Text>
+              <Text className="text-slate-700 font-semibold">
+                Read All Reviews
+              </Text>
               <Feather name="chevron-right" size={16} color="#64748b" />
             </TouchableOpacity>
           </View>
@@ -356,59 +423,16 @@ const ClinicProfile = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Booking Modal */}
-      <Modal
+      <AppointmentBookingModal
         visible={isBookingModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsBookingModalVisible(false)}
-      >
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-3xl p-6">
-            <View className="flex-row items-center justify-between mb-6">
-              <Text className="text-xl font-bold text-slate-800">
-                Book Appointment
-              </Text>
-              <TouchableOpacity
-                onPress={() => setIsBookingModalVisible(false)}
-                activeOpacity={0.7}
-              >
-                <Feather name="x" size={24} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-            
-            <View className="gap-4">
-              <Text className="text-slate-600 text-center mb-4">
-                Book your appointment at {clinic.institute_name}
-              </Text>
-              
-              <TouchableOpacity
-                onPress={() => {
-                  setIsBookingModalVisible(false);
-                  Alert.alert("Success", "Appointment request sent to clinic!");
-                }}
-                className="px-6 py-4 bg-cyan-500 rounded-xl"
-                activeOpacity={0.8}
-              >
-                <Text className="text-white font-semibold text-center text-base">
-                  Confirm Booking
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                onPress={() => setIsBookingModalVisible(false)}
-                className="px-6 py-4 border border-slate-300 rounded-xl"
-                activeOpacity={0.7}
-              >
-                <Text className="text-slate-700 font-semibold text-center text-base">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setIsBookingModalVisible(false)}
+        clinicId={clinicId}
+        clinicName={clinic?.data?.institute_name}
+        onAppointmentAdded={() => {
+          // Refresh appointments or show success message
+          console.log("Appointment added successfully!");
+        }}
+      />
     </SafeAreaView>
   );
 };

@@ -6,6 +6,8 @@ import patientController from "./controller/patientController.js";
 import clinicController from "./controller/clinicController.js"; // Add this
 import authRouter from "./routes/authRoutes.js";
 import clinicRouter from "./routes/clinicRoutes.js"; // Add this
+import appointmentRouter from "./routes/appointmentRouter.js";
+import doctorRouter from "./routes/doctorRoutes.js";
 
 const app = express();
 
@@ -29,7 +31,9 @@ initializeDatabase();
 app.use("/api/patients", patientRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/clinics", clinicRouter); // Add this
+app.use("/api/clinics", clinicRouter);
+app.use("/api/appointments", appointmentRouter);
+app.use("/api/doctors", doctorRouter);
 
 app.get("/", (req, res) => {
   res.json({

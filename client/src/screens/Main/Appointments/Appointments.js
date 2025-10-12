@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -6,40 +6,20 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  RefreshControl,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
-
-// Mock static data
-const mockAppointments = [
-  {
-    id: "1",
-    doctorName: "Dr. Sarah Johnson",
-    specialty: "Cardiology",
-    date: "2024-01-15T10:00:00",
-    type: "checkup",
-    status: "scheduled",
-    time: "10:00 AM",
-  },
-  {
-    id: "2",
-    doctorName: "Dr. Mike Chen",
-    specialty: "Dermatology",
-    date: "2024-01-16T14:30:00",
-    type: "consultation",
-    status: "completed",
-    time: "02:30 PM",
-  },
-];
+import appointmentServices from "../../../services/appointmentsServices";
+import { AuthenticationContext } from "../../../context/AuthenticationContext";
 
 const Appointments = ({ navigation }) => {
-  const [appointments] = useState(mockAppointments);
-  const [user] = useState({
-    name: "Hanz Christian Angelo G Magbal",
-    phone: "+1 234 567 8900",
-    email: "hanz@example.com",
-    clinicId: { subscriptionPlan: "free" },
-  });
+  const { user } = useContext(AuthenticationContext);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Plan limits
   const planLimits = {
@@ -48,14 +28,44 @@ const Appointments = ({ navigation }) => {
     pro: Infinity,
   };
 
-  const plan = user.clinicId.subscriptionPlan;
+  const plan = user?.clinicId?.subscriptionPlan || "free";
   const maxAppointments = planLimits[plan];
   const clinicAppointmentCount = appointments.length;
   const limitReached = clinicAppointmentCount >= maxAppointments;
 
+  // Fetch appointments from API
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Fetching appointments from API...");
+
+      const appointmentsData = await appointmentServices.getAllAppointments();
+      console.log("✅ Appointments fetched:", appointmentsData);
+
+      setAppointments(appointmentsData || []);
+    } catch (error) {
+      console.error("❌ Error fetching appointments:", error);
+      Alert.alert("Error", "Failed to load appointments. Please try again.");
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchAppointments();
+  };
+
   const handleNewAppointmentClick = () => {
     if (limitReached) {
-      alert(
+      Alert.alert(
+        "Appointment Limit Reached",
         `The clinic has reached its appointment limit for the ${plan} plan.`
       );
     } else {
@@ -65,100 +75,141 @@ const Appointments = ({ navigation }) => {
 
   // Format date for display
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (error) {
+      return "Invalid Date";
+    }
   };
 
-  // Get status badge
+  // Format time for display
+  const formatTime = (schedule) => {
+    if (!schedule) return "No time set";
+
+    if (schedule.includes("-")) {
+      return schedule.split("-")[0].trim();
+    }
+
+    return schedule;
+  };
+
+  // Get status badge with proper API status mapping - MATCHING DASHBOARD STYLE
   const getStatusBadge = (status) => {
+    const statusMap = {
+      0: "pending",
+      1: "scheduled",
+      2: "completed",
+      3: "cancelled",
+    };
+
+    const uiStatus = statusMap[status] || "pending";
+
     const statusConfig = {
       scheduled: {
-        bgColor: "bg-cyan-100",
-        textColor: "text-cyan-600",
-        text: "scheduled",
+        bg: "bg-cyan-100",
+        text: "text-cyan-700",
+        label: "Scheduled",
       },
       pending: {
-        bgColor: "bg-yellow-100",
-        textColor: "text-yellow-600",
-        text: "pending",
+        bg: "bg-yellow-100",
+        text: "text-yellow-700",
+        label: "Pending",
       },
       completed: {
-        bgColor: "bg-emerald-100",
-        textColor: "text-emerald-600",
-        text: "completed",
+        bg: "bg-emerald-100",
+        text: "text-emerald-700",
+        label: "Completed",
       },
       cancelled: {
-        bgColor: "bg-red-100",
-        textColor: "text-red-600",
-        text: "cancelled",
-      },
-      rejected: {
-        bgColor: "bg-red-100",
-        textColor: "text-red-600",
-        text: "rejected",
+        bg: "bg-red-100",
+        text: "text-red-700",
+        label: "Cancelled",
       },
     };
 
-    const config = statusConfig[status] || statusConfig.scheduled;
+    const config = statusConfig[uiStatus] || statusConfig.pending;
 
     return (
-      <View className={`px-2 py-1 rounded-md ${config.bgColor}`}>
-        <Text
-          className={`${config.textColor} text-sm font-semibold capitalize`}
-        >
-          {config.text}
+      <View className={`px-3 py-1 rounded-full ${config.bg}`}>
+        <Text className={`${config.text} text-xs font-semibold`}>
+          {config.label}
         </Text>
       </View>
     );
   };
 
-  // Stats data
+  // Get doctor name from appointment data
+  const getDoctorName = (appointment) => {
+    return appointment.remarks
+      ? `Dr. ${appointment.remarks.split(" ")[0]}`
+      : "Medical Consultation";
+  };
+
+  // Get specialty from appointment data
+  const getSpecialty = (appointment) => {
+    return "General Medicine";
+  };
+
+  // Stats data based on real appointments - MATCHING DASHBOARD STYLE
   const stats = [
     {
       title: "Total Appointments",
       value: appointments.length,
       icon: "calendar",
-      color: "bg-slate-50",
-      iconBg: "bg-slate-200",
-      iconColor: "#475569",
-      textColor: "text-slate-700",
+      color: "bg-white",
+      iconColor: "#0891b2",
+      textColor: "text-slate-800",
+      accentColor: "bg-cyan-500",
     },
     {
       title: "Upcoming",
-      value: appointments.filter((app) =>
-        ["pending", "scheduled"].includes(app.status)
-      ).length,
+      value: appointments.filter((app) => [0, 1].includes(app.status)).length,
       icon: "clock",
-      color: "bg-cyan-50",
-      iconBg: "bg-cyan-100",
+      color: "bg-white",
       iconColor: "#0891b2",
-      textColor: "text-cyan-700",
+      textColor: "text-slate-800",
+      accentColor: "bg-cyan-500",
     },
     {
       title: "Completed",
-      value: appointments.filter((app) => app.status === "completed").length,
+      value: appointments.filter((app) => app.status === 2).length,
       icon: "check-circle",
-      color: "bg-emerald-50",
-      iconBg: "bg-emerald-100",
+      color: "bg-white",
       iconColor: "#059669",
-      textColor: "text-emerald-700",
+      textColor: "text-slate-800",
+      accentColor: "bg-emerald-500",
     },
     {
       title: "Cancelled",
-      value: appointments.filter((app) =>
-        ["cancelled", "rejected"].includes(app.status)
-      ).length,
-      icon: "alert-circle",
-      color: "bg-amber-50",
-      iconBg: "bg-amber-100",
-      iconColor: "#d97706",
-      textColor: "text-amber-700",
+      value: appointments.filter((app) => app.status === 3).length,
+      icon: "x-circle",
+      color: "bg-white",
+      iconColor: "#dc2626",
+      textColor: "text-slate-800",
+      accentColor: "bg-red-500",
     },
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar barStyle="dark-content" />
+        <Header />
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#0891b2" />
+          <Text className="text-slate-600 mt-4 text-lg">
+            Loading appointments...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
@@ -172,184 +223,242 @@ const Appointments = ({ navigation }) => {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View className="p-4 gap-8">
-          {/* Header Section */}
+          {/* Header Section - MATCHING DASHBOARD STYLE */}
           <View>
-            <View className="gap-6">
+            <View className="flex-row items-center gap-3">
+              <View className="bg-cyan-500 p-3 rounded-2xl shadow-lg">
+                <Feather name="calendar" size={24} color="#ffffff" />
+              </View>
               <View className="flex-1">
-                <Text className="text-3xl font-bold text-slate-800">
+                <Text className="text-2xl font-semibold text-slate-800">
                   My Appointments
                 </Text>
-                <Text className="text-slate-600 mt-3 text-lg">
-                  View and manage your upcoming appointments.
+                <Text className="text-slate-600 mt-1">
+                  Manage and track your medical appointments
                 </Text>
-                {limitReached && (
-                  <View className="flex-row items-center mt-4 border border-red-500 bg-red-200 rounded-lg p-3 gap-2">
-                    <Feather name="alert-triangle" size={20} color="#dc2626" />
-                    <Text className="text-red-600 font-semibold flex-1">
-                      The clinic has reached its appointment limit for the{" "}
-                      {plan} plan.
+              </View>
+            </View>
+
+            {limitReached && (
+              <View className="flex-row items-center mt-4 bg-red-50 rounded-xl border border-red-200 p-3 gap-2">
+                <Feather name="alert-triangle" size={18} color="#dc2626" />
+                <Text className="text-red-600 font-medium flex-1 text-sm">
+                  Appointment limit reached ({plan} plan)
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Stats Section - MATCHING DASHBOARD CARDS */}
+          <View>
+            <View>
+              {/* Quick Actions Card */}
+              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <View className="flex-row items-start justify-between">
+                  <View className="flex-1 pr-3">
+                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide mb-2">
+                      Quick Actions
                     </Text>
-                  </View>
-                )}
-              </View>
-              <TouchableOpacity
-                onPress={handleNewAppointmentClick}
-                className={`flex-row items-center justify-center px-8 py-4 rounded-2xl shadow-lg ${
-                  limitReached ? "bg-slate-400" : "bg-cyan-500"
-                }`}
-              >
-                <Feather name="plus" size={20} color="#ffffff" />
-                <Text className="text-white font-semibold ml-3 text-lg">
-                  New Appointment
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Stats Section */}
-          <View>
-            <View className="gap-4">
-              {/* First Row - 2 cards */}
-              <View className="flex-row gap-4">
-                {stats.slice(0, 2).map((stat, index) => (
-                  <View key={index} className="flex-1">
-                    <View
-                      className={`${stat.color} border border-white/20 rounded-2xl p-6 shadow-lg`}
+                    <TouchableOpacity
+                      onPress={handleNewAppointmentClick}
+                      className={`flex-row items-center justify-between py-3 px-4 rounded-xl ${
+                        limitReached
+                          ? "bg-slate-100"
+                          : "bg-cyan-50 border border-cyan-200"
+                      }`}
+                      disabled={limitReached}
                     >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1 min-w-0">
-                          <Text
-                            ellipsizeMode="tail"
-                            numberOfLines={1}
-                            className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-3 opacity-80`}
-                          >
-                            {stat.title}
-                          </Text>
-                          <Text className="text-3xl font-bold text-slate-800">
-                            {stat.value}
-                          </Text>
-                        </View>
+                      <View className="flex-row items-center">
                         <View
-                          className={`p-3 rounded-xl ${stat.iconBg} ml-3 shadow-md`}
+                          className={`p-2 rounded-lg ${limitReached ? "bg-slate-300" : "bg-cyan-500"}`}
                         >
-                          <Feather
-                            name={stat.icon}
-                            size={24}
-                            color={stat.iconColor}
-                          />
+                          <Feather name="plus" size={18} color="#ffffff" />
+                        </View>
+                        <View className="ml-3">
+                          <Text
+                            className={`font-semibold ${limitReached ? "text-slate-500" : "text-slate-800"}`}
+                          >
+                            New Appointment
+                          </Text>
+                          <Text className="text-slate-600 text-sm">
+                            Schedule your next visit
+                          </Text>
                         </View>
                       </View>
-                    </View>
+                      <Feather name="chevron-right" size={18} color="#64748b" />
+                    </TouchableOpacity>
                   </View>
-                ))}
-              </View>
-
-              {/* Second Row - 2 cards */}
-              <View className="flex-row gap-4">
-                {stats.slice(2, 4).map((stat, index) => (
-                  <View key={index + 2} className="flex-1">
-                    <View
-                      className={`${stat.color} border border-white/20 rounded-2xl p-6 shadow-lg`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1 min-w-0">
-                          <Text
-                            className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-3 opacity-80`}
-                          >
-                            {stat.title}
-                          </Text>
-                          <Text className="text-3xl font-bold text-slate-800">
-                            {stat.value}
-                          </Text>
-                        </View>
-                        <View
-                          className={`p-3 rounded-xl ${stat.iconBg} ml-3 shadow-md`}
-                        >
-                          <Feather
-                            name={stat.icon}
-                            size={24}
-                            color={stat.iconColor}
-                          />
-                        </View>
-                      </View>
-                    </View>
+                  <View className="bg-emerald-500 p-4 rounded-2xl shadow-md">
+                    <Feather name="clock" size={32} color="#ffffff" />
                   </View>
-                ))}
+                </View>
               </View>
             </View>
           </View>
 
-          {/* Appointments Section */}
+          {/* Detailed Stats - MATCHING DASHBOARD GRID */}
           <View>
-            <View className="mb-6">
-              <Text className="text-2xl font-bold text-slate-800">
-                All Appointments
-              </Text>
-              <Text className="text-slate-600 mt-2 text-lg">
-                {appointments.length} appointment
-                {appointments.length !== 1 ? "s" : ""} found
-              </Text>
-            </View>
+            <Text className="text-2xl font-semibold text-slate-800 mb-6">
+              Appointment Details
+            </Text>
 
-            {/* Mobile Card Layout */}
+            <View className="flex-row flex-wrap -mx-2">
+              {stats.map((stat, index) => (
+                <View key={index} className="w-1/2 px-2 mb-4">
+                  <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4">
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide mb-1">
+                          {stat.title}
+                        </Text>
+                        <Text className="text-2xl font-semibold text-slate-800">
+                          {stat.value}
+                        </Text>
+                      </View>
+                      <View
+                        className={`p-3 rounded-xl ${stat.accentColor} shadow-md`}
+                      >
+                        <Feather name={stat.icon} size={20} color="#ffffff" />
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Appointments List - MATCHING DASHBOARD STYLE */}
+          <View>
+            <Text className="text-2xl font-semibold text-slate-800 mb-6">
+              All Appointments
+            </Text>
+
             {appointments.length > 0 ? (
               <View className="gap-4">
                 {appointments.map((appointment) => (
                   <View
                     key={appointment.id}
-                    className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-6"
+                    className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6"
                   >
+                    {/* Doctor Info Row */}
                     <View className="flex-row justify-between items-start mb-4">
-                      <View className="flex-1">
-                        <Text className="font-bold text-slate-800 text-lg mb-2">
-                          {appointment.doctorName}
+                      <View className="flex-1 mr-2">
+                        <Text
+                          className="font-bold text-slate-800 text-lg mb-2"
+                          numberOfLines={1}
+                        >
+                          {getDoctorName(appointment)}
                         </Text>
-                        <Text className="text-slate-600 text-base font-medium mb-3">
-                          {appointment.specialty}
-                        </Text>
-                      </View>
-                      <View className="ml-4">
-                        {getStatusBadge(appointment.status)}
-                      </View>
-                    </View>
-
-                    <View className="flex-row gap-4 mb-4">
-                      <View className="flex-1 bg-slate-50/80 rounded-xl p-3">
-                        <Text className="text-slate-500 text-sm uppercase tracking-wide mb-1 font-semibold">
-                          Date
-                        </Text>
-                        <Text className="font-bold text-slate-700">
-                          {formatDate(appointment.date)}
-                        </Text>
-                      </View>
-                      <View className="flex-1 bg-slate-50/80 rounded-xl p-3">
-                        <Text className="text-slate-500 text-sm uppercase tracking-wide mb-1 font-semibold">
-                          Time
-                        </Text>
-                        <Text className="font-bold text-slate-700">
-                          {appointment.time}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View className="pt-4 border-t border-slate-200/50">
-                      <View className="flex-row items-center justify-between">
-                        <View>
-                          <Text className="text-base text-slate-700 font-medium">
-                            {user.phone}
-                          </Text>
-                          <Text className="text-sm text-slate-500">
-                            {user.email}
-                          </Text>
+                        <View className="flex-row flex-wrap gap-2">
+                          <View className="bg-slate-200 px-3 py-1 rounded-full">
+                            <Text className="text-slate-600 text-xs font-medium">
+                              {getSpecialty(appointment)}
+                            </Text>
+                          </View>
+                          <View className="bg-slate-100 px-3 py-1 rounded-full">
+                            <Text className="text-slate-700 text-xs font-medium capitalize">
+                              Consultation
+                            </Text>
+                          </View>
                         </View>
-                        <TouchableOpacity className="p-2">
+                      </View>
+
+                      {/* Status & Menu */}
+                      <View className="items-end gap-2">
+                        {getStatusBadge(appointment.status)}
+                        <TouchableOpacity
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            Alert.alert(
+                              "Appointment Options",
+                              "What would you like to do?",
+                              [
+                                {
+                                  text: "View Details",
+                                  onPress: () =>
+                                    console.log("View details", appointment.id),
+                                },
+                                {
+                                  text: "Reschedule",
+                                  onPress: () =>
+                                    console.log("Reschedule", appointment.id),
+                                },
+                                {
+                                  text: "Cancel",
+                                  style: "destructive",
+                                  onPress: () =>
+                                    console.log("Cancel", appointment.id),
+                                },
+                                {
+                                  text: "Close",
+                                  style: "cancel",
+                                },
+                              ]
+                            );
+                          }}
+                        >
                           <Feather
                             name="more-horizontal"
                             size={20}
-                            color="#6b7280"
+                            color="#64748b"
                           />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Date & Time */}
+                    <View className="flex-row items-center justify-between mb-4">
+                      <View className="flex-row items-center flex-1">
+                        <Feather name="calendar" size={16} color="#64748b" />
+                        <Text className="text-slate-600 ml-2 font-medium">
+                          {formatDate(appointment.appointment_date)}
+                        </Text>
+                      </View>
+
+                      <View className="flex-row items-center">
+                        <Feather name="clock" size={16} color="#64748b" />
+                        <Text className="text-slate-600 ml-2 font-medium">
+                          {formatTime(appointment.schedule)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Fees & Quick Actions Footer */}
+                    <View className="flex-row justify-between items-center pt-4 border-t border-slate-100">
+                      <View>
+                        <Text className="text-slate-700 font-semibold">
+                          ₱{appointment.consultation_fees || "0.00"}
+                        </Text>
+                        <Text className="text-slate-500 text-xs">
+                          Consultation Fee
+                        </Text>
+                      </View>
+
+                      <View className="flex-row gap-4">
+                        <TouchableOpacity
+                          className="flex-row items-center"
+                          activeOpacity={0.7}
+                        >
+                          <Feather name="bell" size={16} color="#8b5cf6" />
+                          <Text className="text-purple-600 font-medium ml-1 text-sm">
+                            Remind
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          className="flex-row items-center"
+                          activeOpacity={0.7}
+                        >
+                          <Feather name="phone" size={16} color="#3b82f6" />
+                          <Text className="text-blue-600 font-medium ml-1 text-sm">
+                            Call
+                          </Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -357,16 +466,28 @@ const Appointments = ({ navigation }) => {
                 ))}
               </View>
             ) : (
-              <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-12 items-center">
+              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 items-center">
                 <View className="bg-slate-100 rounded-2xl p-6 mb-6">
                   <Feather name="calendar" size={64} color="#9ca3af" />
                 </View>
                 <Text className="text-xl font-bold text-slate-700 mb-2">
-                  No appointments found
+                  No appointments yet
                 </Text>
-                <Text className="text-slate-500 text-lg text-center">
-                  Click "New Appointment" to schedule one.
+                <Text className="text-slate-500 text-center mb-6">
+                  Schedule your first appointment to get started
                 </Text>
+                <TouchableOpacity
+                  onPress={handleNewAppointmentClick}
+                  className={`flex-row items-center px-6 py-3 rounded-xl ${
+                    limitReached ? "bg-slate-300" : "bg-cyan-500"
+                  }`}
+                  disabled={limitReached}
+                >
+                  <Feather name="plus" size={18} color="#ffffff" />
+                  <Text className="text-white font-semibold ml-2">
+                    Schedule Appointment
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
