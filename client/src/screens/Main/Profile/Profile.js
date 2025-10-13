@@ -14,14 +14,15 @@ import {
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
+import { useAppointments } from "../../../hooks/useAppointments";
 
 const Profile = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useContext(AuthenticationContext);
   const [appointmentHistory, setAppointmentHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
   const [activeTab, setActiveTab] = useState("personal");
+  const { appointments, loading: appointmentsLoading } = useAppointments();
 
   // Extract patient data - handle both nested and flat structures
   const patient = user?.patient || user;
@@ -103,30 +104,6 @@ const Profile = () => {
   }, [patient]);
 
   // Mock appointment history
-  useEffect(() => {
-    setLoadingHistory(true);
-    setTimeout(() => {
-      setAppointmentHistory([
-        {
-          id: "1",
-          date: "2024-01-15",
-          type: "General Checkup",
-          status: "completed",
-          doctor: "Dr. Sarah Johnson",
-          clinic: "Main Health Center",
-        },
-        {
-          id: "2",
-          date: "2024-01-10",
-          type: "Dental Consultation",
-          status: "scheduled",
-          doctor: "Dr. Mike Chen",
-          clinic: "Dental Care Clinic",
-        },
-      ]);
-      setLoadingHistory(false);
-    }, 1000);
-  }, []);
 
   const initials = updatedUser?.name
     ? updatedUser.name
@@ -473,66 +450,121 @@ const Profile = () => {
             ))}
           </View>
         );
+      // Replace the entire "appointments" case in renderTabContent():
       case "appointments":
         return (
           <View className="mt-4">
-            {loadingHistory ? (
+            {appointmentsLoading ? (
               <View className="bg-white rounded-2xl p-6 items-center">
                 <ActivityIndicator size="small" color="#0891b2" />
                 <Text className="text-slate-600 mt-3 text-sm">
                   Loading appointments...
                 </Text>
               </View>
-            ) : appointmentHistory.length === 0 ? (
-              <View className="bg-white rounded-2xl p-8 items-center">
-                <View className="bg-slate-100 rounded-xl p-4 mb-3">
-                  <Feather name="calendar" size={32} color="#cbd5e1" />
-                </View>
-                <Text className="text-base font-bold text-slate-700 mb-1">
-                  No appointments yet
-                </Text>
-                <Text className="text-slate-500 text-center text-sm">
-                  Your appointment history will appear here
-                </Text>
-              </View>
             ) : (
-              appointmentHistory.map((appointment) => (
-                <View
-                  key={appointment.id}
-                  className="bg-white rounded-2xl p-4 mb-3 border border-slate-100"
-                >
-                  <View className="flex-row justify-between items-start mb-3">
-                    <Text className="font-bold text-slate-800 text-lg flex-1">
-                      {appointment.type}
-                    </Text>
+              <View className="gap-3">
+                {appointments.slice(0, 5).map((appointment) => {
+                  // Show only last 5
+                  // Format date and time
+                  const appointmentDate = formatDate(
+                    appointment.appointment_date
+                  );
+                  const appointmentTime = new Date(
+                    appointment.schedule
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+
+                  // Get status badge
+                  const statusConfig = {
+                    0: {
+                      label: "Pending",
+                      color: "bg-yellow-100 text-yellow-700",
+                    },
+                    1: {
+                      label: "Scheduled",
+                      color: "bg-cyan-100 text-cyan-700",
+                    },
+                    2: {
+                      label: "Completed",
+                      color: "bg-emerald-100 text-emerald-700",
+                    },
+                    3: { label: "Cancelled", color: "bg-red-100 text-red-700" },
+                  };
+
+                  const status =
+                    statusConfig[appointment.status] || statusConfig[0];
+
+                  return (
                     <View
-                      className={`px-3 py-1 rounded-full ${getStatusColor(appointment.status)}`}
+                      key={appointment.id}
+                      className="bg-white rounded-2xl p-4 border border-slate-100"
                     >
-                      <Text className="text-xs font-semibold capitalize">
-                        {appointment.status}
-                      </Text>
+                      {/* Doctor & Status Row */}
+                      <View className="flex-row justify-between items-start mb-3">
+                        <View className="flex-1">
+                          <Text className="font-bold text-slate-800 text-base mb-1">
+                            {appointment.doctor_name || "Medical Consultation"}
+                          </Text>
+                          <Text className="text-cyan-600 text-sm font-medium">
+                            {appointment.doctor_specialization ||
+                              "General Medicine"}
+                          </Text>
+                        </View>
+                        <View
+                          className={`px-3 py-1 rounded-full ${status.color}`}
+                        >
+                          <Text className="text-xs font-semibold">
+                            {status.label}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Date & Time Row */}
+                      <View className="flex-row items-center justify-between mb-2">
+                        <View className="flex-row items-center">
+                          <Feather name="calendar" size={14} color="#64748b" />
+                          <Text className="text-slate-600 text-sm ml-2 font-medium">
+                            {appointmentDate}
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center">
+                          <Feather name="clock" size={14} color="#64748b" />
+                          <Text className="text-slate-600 text-sm ml-2 font-medium">
+                            {appointmentTime}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Clinic & Fee Row */}
+                      <View className="flex-row items-center justify-between pt-3 border-t border-slate-100">
+                        <View className="flex-row items-center">
+                          <Feather name="map-pin" size={14} color="#64748b" />
+                          <Text className="text-slate-600 text-sm ml-2">
+                            {appointment.clinic_name || "Main Clinic"}
+                          </Text>
+                        </View>
+                        <Text className="text-slate-700 font-semibold">
+                          ₱{appointment.consultation_fees || "0.00"}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  <View className="flex-row items-center mb-2">
-                    <Feather name="user" size={14} color="#64748b" />
-                    <Text className="text-slate-700 font-medium text-sm ml-2">
-                      {appointment.doctor}
+                  );
+                })}
+
+                {/* Show "View All" button if more than 5 appointments */}
+                {appointments.length > 5 && (
+                  <TouchableOpacity
+                    className="bg-slate-50 rounded-2xl p-4 border border-slate-200 items-center"
+                    onPress={() => navigation.navigate("Appointments")}
+                  >
+                    <Text className="text-cyan-600 font-semibold">
+                      View All Appointments ({appointments.length})
                     </Text>
-                  </View>
-                  <View className="flex-row items-center mb-2">
-                    <Feather name="map-pin" size={14} color="#64748b" />
-                    <Text className="text-slate-600 text-sm ml-2">
-                      {appointment.clinic}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Feather name="calendar" size={14} color="#64748b" />
-                    <Text className="text-slate-600 text-sm ml-2">
-                      {formatDate(appointment.date)}
-                    </Text>
-                  </View>
-                </View>
-              ))
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
           </View>
         );

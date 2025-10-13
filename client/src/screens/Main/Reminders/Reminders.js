@@ -1,51 +1,43 @@
-// screens/Reminders.js (add these imports and functions)
-import React, { useState, useEffect } from "react";
+// screens/Reminders.js
+import React, { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  TouchableOpacity,
   Alert,
-  Modal,
+  RefreshControl,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Header from "../../../components/Header"; 
-import { useReminder } from "../../../context/ReminderContext"; 
+import Header from "../../../components/Header";
+import { useReminder } from "../../../context/ReminderContext";
 import AddReminderModal from "./components/AddReminderModal";
-import ReminderDropdown from "./components/ReminderDropdown";
 
 const Reminders = () => {
-  const {
-    reminders,
-    saveReminders,
-    deleteReminder,
-    toggleReminder,
-    isNotificationModalOpen,
-    dueReminder,
-  } = useReminder();
+  const { reminders, saveReminders, deleteReminder, toggleReminder } =
+    useReminder();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reminderToEdit, setReminderToEdit] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleSaveReminder = async (reminderData) => {
     try {
       let updatedReminders;
 
       if (reminderToEdit) {
-        // Edit existing reminder
         updatedReminders = reminders.map((r) =>
           r.id === reminderToEdit.id
             ? {
                 ...r,
                 ...reminderData,
-                lastAcknowledgedDate: null, // Reset acknowledgment when edited
+                lastAcknowledgedDate: null,
               }
             : r
         );
       } else {
-        // Add new reminder
         const newReminder = {
           id: Date.now().toString(),
           ...reminderData,
@@ -58,6 +50,7 @@ const Reminders = () => {
 
       await saveReminders(updatedReminders);
       setReminderToEdit(null);
+      setIsModalOpen(false);
 
       Alert.alert(
         "Success",
@@ -95,47 +88,30 @@ const Reminders = () => {
     await toggleReminder(reminder.id);
   };
 
-  const openModal = () => {
-    setReminderToEdit(null);
-    setIsModalOpen(true);
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
   };
 
-  // Enhanced stats with notification counts
+  // Stats data
   const stats = [
     {
       title: "Total Reminders",
       value: reminders.length,
       icon: "bell",
-      color: "bg-slate-50",
-      textColor: "text-slate-600",
-      borderColor: "border-slate-200",
+      color: "bg-cyan-500",
     },
     {
       title: "Active",
       value: reminders.filter((r) => r.isActive).length,
       icon: "check-circle",
-      color: "bg-emerald-50",
-      textColor: "text-emerald-600",
-      borderColor: "border-emerald-200",
+      color: "bg-emerald-500",
     },
     {
       title: "Notifications",
       value: reminders.reduce((total, r) => total + (r.notifiedCount || 0), 0),
       icon: "activity",
-      color: "bg-cyan-50",
-      textColor: "text-cyan-600",
-      borderColor: "border-cyan-200",
-    },
-    {
-      title: "Due Today",
-      value: reminders.filter((r) => {
-        const today = new Date().toISOString().split("T")[0];
-        return r.isActive && r.lastAcknowledgedDate !== today;
-      }).length,
-      icon: "clock",
-      color: "bg-orange-50",
-      textColor: "text-orange-600",
-      borderColor: "border-orange-200",
+      color: "bg-blue-500",
     },
   ];
 
@@ -151,192 +127,313 @@ const Reminders = () => {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View className="p-4 gap-8">
-          {/* Header Section */}
-          <View className="gap-6">
-            <View className="flex-1">
-              <Text className="text-3xl font-bold text-slate-800">
-                My Reminders
-              </Text>
-              <Text className="text-slate-600 mt-3 text-lg">
-                Manage your personal health reminders with alerts.
-              </Text>
+          {/* Welcome Section */}
+          <View>
+            <View className="flex-row items-center gap-3">
+              <View className="bg-cyan-500 p-3 rounded-2xl shadow-lg">
+                <Feather name="bell" size={24} color="#ffffff" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-2xl font-semibold text-slate-800">
+                  My Reminders
+                </Text>
+                <Text className="text-slate-600 mt-1">
+                  Never miss your medications and appointments
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsModalOpen(true)}
+                className="w-12 h-12 bg-cyan-500 rounded-full items-center justify-center shadow-lg"
+                activeOpacity={0.8}
+              >
+                <Feather name="plus" size={20} color="#ffffff" />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={openModal}
-              className="flex-row items-center justify-center px-8 py-4 bg-cyan-500 rounded-2xl shadow-lg"
-              activeOpacity={0.8}
-            >
-              <Feather name="plus" size={20} color="#ffffff" />
-              <Text className="text-white font-semibold ml-3 text-lg">
-                Set New Reminder
-              </Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Stats Section */}
+          {/* Stats Cards */}
           <View>
             <View className="gap-4">
-              <View className="flex-row gap-4">
-                {stats.slice(0, 2).map((stat, index) => (
-                  <View key={index} className="flex-1">
-                    <View
-                      className={`${stat.color} border ${stat.borderColor} rounded-2xl p-6 shadow-lg`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1">
-                          <Text
-                            className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-3 opacity-80`}
-                          >
-                            {stat.title}
-                          </Text>
-                          <Text className="text-3xl font-bold text-slate-800">
-                            {stat.value}
-                          </Text>
-                        </View>
-                        <View
-                          className={`p-3 rounded-xl ${stat.color} ml-3 shadow-md border ${stat.borderColor}`}
-                        >
-                          <Feather
-                            name={stat.icon}
-                            size={24}
-                            color={stat.textColor
-                              .replace("text-", "#")
-                              .replace("-600", "")}
-                          />
-                        </View>
-                      </View>
-                    </View>
+              {/* Total Reminders Card */}
+              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-1">
+                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
+                      Total Reminders
+                    </Text>
+                    <Text className="text-4xl font-semibold text-cyan-600 mt-2">
+                      {reminders.length}
+                    </Text>
+                    <Text className="text-sm text-slate-500 mt-2 font-medium">
+                      {reminders.filter((r) => r.isActive).length} active
+                      reminders
+                    </Text>
                   </View>
-                ))}
+                  <View className="bg-cyan-500 p-4 rounded-2xl shadow-md">
+                    <Feather name="bell" size={32} color="#ffffff" />
+                  </View>
+                </View>
               </View>
 
-              <View className="flex-row gap-4">
-                {stats.slice(2, 4).map((stat, index) => (
-                  <View key={index + 2} className="flex-1">
-                    <View
-                      className={`${stat.color} border ${stat.borderColor} rounded-2xl p-6 shadow-lg`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1">
-                          <Text
-                            className={`${stat.textColor} text-sm font-semibold uppercase tracking-wider mb-3 opacity-80`}
-                          >
-                            {stat.title}
-                          </Text>
-                          <Text className="text-3xl font-bold text-slate-800">
-                            {stat.value}
-                          </Text>
-                        </View>
-                        <View
-                          className={`p-3 rounded-xl ${stat.color} ml-3 shadow-md border ${stat.borderColor}`}
-                        >
-                          <Feather
-                            name={stat.icon}
-                            size={24}
-                            color={stat.textColor
-                              .replace("text-", "#")
-                              .replace("-600", "")}
-                          />
-                        </View>
+              {/* Active Reminders Card */}
+              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <View className="flex-row items-start justify-between">
+                  <View className="flex-1 pr-3">
+                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide mb-2">
+                      Reminder Stats
+                    </Text>
+                    <View className="flex-row justify-between mb-3">
+                      <View>
+                        <Text className="text-2xl font-semibold text-slate-800">
+                          {reminders.filter((r) => r.isActive).length}
+                        </Text>
+                        <Text className="text-slate-600 text-xs">Active</Text>
+                      </View>
+                      <View>
+                        <Text className="text-2xl font-semibold text-slate-800">
+                          {reminders.filter((r) => !r.isActive).length}
+                        </Text>
+                        <Text className="text-slate-600 text-xs">Inactive</Text>
+                      </View>
+                      <View>
+                        <Text className="text-2xl font-semibold text-slate-800">
+                          {reminders.reduce(
+                            (total, r) => total + (r.notifiedCount || 0),
+                            0
+                          )}
+                        </Text>
+                        <Text className="text-slate-600 text-xs">
+                          Notifications
+                        </Text>
                       </View>
                     </View>
                   </View>
-                ))}
+                  <View className="bg-emerald-500 p-4 rounded-2xl shadow-md">
+                    <Feather name="activity" size={32} color="#ffffff" />
+                  </View>
+                </View>
               </View>
             </View>
           </View>
 
-          {/* Enhanced Reminder Cards */}
-          {reminders.length === 0 ? (
-            <View className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-12 items-center">
-              <View className="bg-slate-100 rounded-2xl p-6 mb-6">
-                <Feather name="bell" size={64} color="#9ca3af" />
-              </View>
-              <Text className="text-xl font-bold text-slate-700 mb-2">
-                No reminders yet.
-              </Text>
-              <Text className="text-slate-500 text-lg text-center">
-                Click "Set New Reminder" to add one!
-              </Text>
+          {/* Quick Actions */}
+          <View className="mb-8">
+            <Text className="text-2xl font-semibold text-slate-800 mb-6">
+              Quick Actions
+            </Text>
+
+            <View className="flex-row">
+              {/* Add Reminder */}
+              <TouchableOpacity
+                onPress={() => setIsModalOpen(true)}
+                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-cyan-50 rounded-xl border border-cyan-200 mr-2"
+                activeOpacity={0.7}
+              >
+                <View className="bg-cyan-500 p-3 rounded-xl shadow-md">
+                  <Feather name="plus" size={24} color="#ffffff" />
+                </View>
+                <Text className="font-semibold text-slate-800 text-start">
+                  Add Reminder
+                </Text>
+                <Text className="text-slate-600 text-start text-sm">
+                  Set new medication reminder
+                </Text>
+              </TouchableOpacity>
+
+              {/* View All */}
+              <TouchableOpacity
+                onPress={() => {}}
+                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-blue-50 rounded-xl border border-blue-200 ml-2"
+                activeOpacity={0.7}
+              >
+                <View className="bg-blue-500 p-3 rounded-xl shadow-md">
+                  <Feather name="list" size={24} color="#ffffff" />
+                </View>
+                <Text className="font-semibold text-slate-800 text-start">
+                  Manage All
+                </Text>
+                <Text className="text-slate-600 text-start text-sm">
+                  View and edit reminders
+                </Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            <View className="gap-6">
-              {reminders.map((reminder, index) => (
-                <View
-                  key={reminder.id}
-                  className="bg-white/80 rounded-2xl shadow-lg border border-white/20 p-6"
+          </View>
+
+          {/* Reminders List */}
+          <View>
+            <Text className="text-2xl font-semibold text-slate-800 mb-6">
+              My Reminders
+            </Text>
+
+            {reminders.length === 0 ? (
+              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 items-center">
+                <View className="bg-slate-100 rounded-2xl p-6 mb-6">
+                  <Feather name="bell" size={64} color="#9ca3af" />
+                </View>
+                <Text className="text-xl font-bold text-slate-700 mb-2">
+                  No reminders yet
+                </Text>
+                <Text className="text-slate-500 text-center mb-6">
+                  Set your first reminder to get started
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setIsModalOpen(true)}
+                  className="flex-row items-center px-6 py-3 bg-cyan-500 rounded-xl"
                 >
-                  <View className="flex-row justify-between items-start mb-4">
-                    <View className="flex-row items-start gap-3 flex-1">
-                      <View
-                        className={`w-3 h-3 rounded-full mt-2 ${reminder.isActive ? "bg-emerald-400" : "bg-slate-300"}`}
-                      />
-                      <View className="flex-1">
-                        <Text className="text-xl font-bold text-slate-800 tracking-tight">
+                  <Feather name="plus" size={18} color="#ffffff" />
+                  <Text className="text-white font-semibold ml-2">
+                    Add Reminder
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="gap-4">
+                {reminders.map((reminder) => (
+                  <View
+                    key={reminder.id}
+                    className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6"
+                  >
+                    {/* Header with status */}
+                    <View className="flex-row justify-between items-start mb-4">
+                      <View className="flex-1 mr-2">
+                        <Text className="font-bold text-slate-800 text-lg mb-2">
                           {reminder.name}
                         </Text>
-                        {reminder.notifiedCount > 0 && (
-                          <Text className="text-sm text-cyan-600 mt-1">
+                        <View className="flex-row flex-wrap gap-2">
+                          <View className="bg-slate-200 px-3 py-1 rounded-full">
+                            <Text className="text-slate-600 text-xs font-medium">
+                              Medication
+                            </Text>
+                          </View>
+                          <View
+                            className={`px-3 py-1 rounded-full ${
+                              reminder.isActive
+                                ? "bg-emerald-100 border border-emerald-200"
+                                : "bg-slate-100 border border-slate-200"
+                            }`}
+                          >
+                            <Text
+                              className={`text-xs font-medium ${
+                                reminder.isActive
+                                  ? "text-emerald-700"
+                                  : "text-slate-700"
+                              }`}
+                            >
+                              {reminder.isActive ? "ACTIVE" : "INACTIVE"}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Menu */}
+                      <TouchableOpacity
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          Alert.alert(
+                            "Reminder Options",
+                            "What would you like to do?",
+                            [
+                              {
+                                text: "Edit",
+                                onPress: () => handleEdit(reminder),
+                              },
+                              {
+                                text: reminder.isActive
+                                  ? "Deactivate"
+                                  : "Activate",
+                                onPress: () => handleToggle(reminder),
+                              },
+                              {
+                                text: "Remove",
+                                style: "destructive",
+                                onPress: () => handleRemove(reminder.id),
+                              },
+                              {
+                                text: "Close",
+                                style: "cancel",
+                              },
+                            ]
+                          );
+                        }}
+                      >
+                        <Feather
+                          name="more-horizontal"
+                          size={20}
+                          color="#64748b"
+                        />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Time */}
+                    <View className="flex-row items-center justify-between mb-4">
+                      <View className="flex-row items-center flex-1">
+                        <Feather name="clock" size={16} color="#64748b" />
+                        <Text className="text-slate-600 ml-2 font-medium">
+                          {reminder.time}
+                        </Text>
+                      </View>
+
+                      {reminder.notifiedCount > 0 && (
+                        <View className="flex-row items-center">
+                          <Feather name="bell" size={16} color="#64748b" />
+                          <Text className="text-slate-600 ml-2 font-medium">
                             Notified {reminder.notifiedCount} time
                             {reminder.notifiedCount !== 1 ? "s" : ""}
                           </Text>
-                        )}
-                      </View>
+                        </View>
+                      )}
                     </View>
-                    <View
-                      className={`flex-row items-center px-3 py-1.5 rounded-lg ${reminder.isActive ? "bg-emerald-50 border border-emerald-200" : "bg-slate-100 border border-slate-200"}`}
-                    >
-                      <Feather
-                        name="bell"
-                        size={16}
-                        color={reminder.isActive ? "#059669" : "#475569"}
-                      />
-                      <Text
-                        className={`text-sm font-semibold ml-1 ${reminder.isActive ? "text-emerald-700" : "text-slate-700"}`}
+
+                    {/* Quick Actions */}
+                    <View className="flex-row justify-between items-center pt-4 border-t border-slate-100">
+                      <TouchableOpacity
+                        className="flex-row items-center"
+                        activeOpacity={0.7}
+                        onPress={() => handleEdit(reminder)}
                       >
-                        {reminder.isActive ? "Active" : "Inactive"}
-                      </Text>
+                        <Feather name="edit-2" size={16} color="#3b82f6" />
+                        <Text className="text-blue-600 font-medium ml-2">
+                          Edit
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        className="flex-row items-center"
+                        activeOpacity={0.7}
+                        onPress={() => handleToggle(reminder)}
+                      >
+                        <Feather
+                          name={reminder.isActive ? "bell-off" : "bell"}
+                          size={16}
+                          color="#8b5cf6"
+                        />
+                        <Text className="text-purple-600 font-medium ml-2">
+                          {reminder.isActive ? "Deactivate" : "Activate"}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        className="flex-row items-center"
+                        activeOpacity={0.7}
+                        onPress={() => handleRemove(reminder.id)}
+                      >
+                        <Feather name="trash-2" size={16} color="#ef4444" />
+                        <Text className="text-red-600 font-medium ml-2">
+                          Remove
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-
-                  <View className="my-4 h-px bg-slate-200" />
-
-                  <View className="flex-row items-center gap-3 mb-6 p-4 bg-cyan-50 rounded-xl border border-cyan-100 shadow-sm">
-                    <View className="w-10 h-10 bg-cyan-500 rounded-full items-center justify-center shadow-md">
-                      <Feather name="clock" size={20} color="#ffffff" />
-                    </View>
-                    <View>
-                      <Text className="text-cyan-700 font-bold text-xl">
-                        {reminder.time}
-                      </Text>
-                      <Text className="text-cyan-600 text-sm font-medium">
-                        Reminder Time
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View className="flex-row gap-2">
-                    <TouchableOpacity
-                      onPress={() => handleRemove(reminder.id)}
-                      className="flex-1 px-4 py-2 bg-red-50 border border-red-200 rounded-xl"
-                      activeOpacity={0.7}
-                    >
-                      <Text className="text-red-700 font-semibold text-center">
-                        Remove
-                      </Text>
-                    </TouchableOpacity>
-                    <ReminderDropdown
-                      onEdit={() => handleEdit(reminder)}
-                      reminder={reminder}
-                      onToggle={() => handleToggle(reminder)}
-                    />
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
+                ))}
+              </View>
+            )}
+          </View>
         </View>
       </ScrollView>
 

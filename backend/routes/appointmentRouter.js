@@ -177,4 +177,56 @@ appointmentRouter.delete("/:id", async (req, res) => {
   }
 });
 
+appointmentRouter.get("/patient/:patientId/details", async (req, res) => {
+  try {
+    const appointments =
+      await appointmentController.getAppointmentsByPatientIdWithDetails(
+        req.params.patientId
+      );
+    res.json({
+      success: true,
+      data: appointments,
+      message: `Found ${appointments.length} appointments with details`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   GET /api/appointments/:id/details
+// @desc    Get single appointment WITH clinic and doctor details
+// @access  Public
+appointmentRouter.get("/:id/details", async (req, res) => {
+  try {
+    const appointment = await appointmentController.getAppointmentWithDetails(
+      req.params.id
+    );
+    if (!appointment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Appointment not found" });
+    }
+    res.json({ success: true, data: appointment });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   GET /api/appointments/with-details/all
+// @desc    Get all appointments WITH clinic and doctor names
+// @access  Public
+appointmentRouter.get("/with-details/all", async (req, res) => {
+  try {
+    const appointments =
+      await appointmentController.getAllAppointmentsWithDetails();
+    res.json({
+      success: true,
+      data: appointments,
+      message: `Found ${appointments.length} appointments with details`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 export default appointmentRouter;

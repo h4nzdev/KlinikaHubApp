@@ -14,12 +14,16 @@ import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import appointmentServices from "../../../services/appointmentsServices";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
+import { useReminder } from "../../../context/ReminderContext";
+import Toast from "react-native-toast-message";
 
 const Appointments = ({ navigation }) => {
   const { user } = useContext(AuthenticationContext);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [remindedAppointments, setRemindedAppointments] = useState(new Set());
+  const { addReminder } = useReminder();
 
   // Plan limits
   const planLimits = {
@@ -33,21 +37,33 @@ const Appointments = ({ navigation }) => {
   const clinicAppointmentCount = appointments.length;
   const limitReached = clinicAppointmentCount >= maxAppointments;
 
-  // Fetch appointments from API
+  // Fetch appointments from API - UPDATED TO USE DETAILS
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Fetching appointments from API...");
+      console.log("🔄 Fetching appointments with details from API...");
 
+      // USE THE NEW METHOD WITH DETAILS!
       const appointmentsData =
-        await appointmentServices.getAppointmentsByPatientId(user.id);
-      console.log("✅ Appointments fetched:", appointmentsData);
+        await appointmentServices.getAppointmentsByPatientIdWithDetails(
+          user.id
+        );
+      console.log("✅ Appointments with details fetched:", appointmentsData);
 
       setAppointments(appointmentsData || []);
     } catch (error) {
-      console.error("❌ Error fetching appointments:", error);
-      Alert.alert("Error", "Failed to load appointments. Please try again.");
-      setAppointments([]);
+      console.error("❌ Error fetching appointments with details:", error);
+      // Fallback to regular method if details fail
+      try {
+        console.log("🔄 Trying regular appointments fetch...");
+        const fallbackData =
+          await appointmentServices.getAppointmentsByPatientId(user.id);
+        setAppointments(fallbackData || []);
+      } catch (fallbackError) {
+        console.error("❌ Fallback also failed:", fallbackError);
+        Alert.alert("Error", "Failed to load appointments. Please try again.");
+        setAppointments([]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -90,13 +106,10 @@ const Appointments = ({ navigation }) => {
 
   // Format time for display
   const formatTime = (schedule) => {
-    if (!schedule) return "No time set";
-
-    if (schedule.includes("-")) {
-      return schedule.split("-")[0].trim();
-    }
-
-    return schedule;
+    return new Date(schedule).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   // Get status badge with proper API status mapping - MATCHING DASHBOARD STYLE
@@ -144,16 +157,19 @@ const Appointments = ({ navigation }) => {
     );
   };
 
-  // Get doctor name from appointment data
+  // UPDATED: Get doctor name from appointment data - NOW USES REAL DATA
   const getDoctorName = (appointment) => {
-    return appointment.remarks
-      ? `Dr. ${appointment.remarks.split(" ")[0]}`
-      : "Medical Consultation";
+    return appointment.doctor_name || "Medical Consultation";
   };
 
-  // Get specialty from appointment data
+  // UPDATED: Get specialty from appointment data - NOW USES REAL DATA
   const getSpecialty = (appointment) => {
-    return "General Medicine";
+    return appointment.doctor_specialties || "General Medicine";
+  };
+
+  // UPDATED: Get clinic name from appointment data
+  const getClinicName = (appointment) => {
+    return appointment.clinic_name || "Main Clinic";
   };
 
   // Stats data based on real appointments - MATCHING DASHBOARD STYLE
@@ -195,6 +211,24 @@ const Appointments = ({ navigation }) => {
       accentColor: "bg-red-500",
     },
   ];
+
+  const handleSaveReminder = (reminderData) => {
+    const reminderFormData = {
+      name: `Appointment with ${getDoctorName(reminderData)} on ${formatDate(reminderData.appointment_date)}`,
+      time: formatTime(reminderData.schedule),
+      isActive: true,
+    };
+
+    addReminder(reminderFormData);
+
+    // Add to reminded appointments set
+    setRemindedAppointments((prev) => new Set(prev).add(reminderData.id));
+
+    Toast.show({
+      type: "success",
+      text1: "Reminder Added Successfully",
+    });
+  };
 
   // Loading state
   if (loading) {
@@ -363,7 +397,7 @@ const Appointments = ({ navigation }) => {
                           </View>
                           <View className="bg-slate-100 px-3 py-1 rounded-full">
                             <Text className="text-slate-700 text-xs font-medium capitalize">
-                              Consultation
+                              {getClinicName(appointment)}
                             </Text>
                           </View>
                         </View>
@@ -445,10 +479,28 @@ const Appointments = ({ navigation }) => {
                         <TouchableOpacity
                           className="flex-row items-center"
                           activeOpacity={0.7}
+                          onPress={() => handleSaveReminder(appointment)}
+                          disabled={remindedAppointments.has(appointment.id)}
                         >
-                          <Feather name="bell" size={16} color="#8b5cf6" />
-                          <Text className="text-purple-600 font-medium ml-1 text-sm">
-                            Remind
+                          <Feather
+                            name="bell"
+                            size={16}
+                            color={
+                              remindedAppointments.has(appointment.id)
+                                ? "#9ca3af"
+                                : "#8b5cf6"
+                            }
+                          />
+                          <Text
+                            className={`font-medium ml-1 text-sm ${
+                              remindedAppointments.has(appointment.id)
+                                ? "text-slate-400"
+                                : "text-purple-600"
+                            }`}
+                          >
+                            {remindedAppointments.has(appointment.id)
+                              ? "Reminded"
+                              : "Remind"}
                           </Text>
                         </TouchableOpacity>
 

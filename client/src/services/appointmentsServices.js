@@ -197,6 +197,58 @@ export const appointmentServices = {
     }
   },
 
+  getAppointmentsByPatientIdWithDetails: async (patientId) => {
+    try {
+      console.log(
+        "🔄 Fetching appointments with details for patient:",
+        patientId
+      );
+      const response = await api.get(
+        `/appointments/patient/${patientId}/details`
+      );
+      console.log("✅ Patient appointments with details fetched successfully!");
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error(
+        "❌ Patient appointments with details fetch error:",
+        error.message
+      );
+      console.log("Full error details:", error.response?.data || error);
+      throw error;
+    }
+  },
+
+  // Get single appointment WITH clinic and doctor details
+  getAppointmentWithDetails: async (appointmentId) => {
+    try {
+      console.log("🔄 Fetching appointment with details:", appointmentId);
+      const response = await api.get(`/appointments/${appointmentId}/details`);
+      console.log("✅ Appointment with details fetched successfully!");
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error("❌ Appointment with details fetch error:", error.message);
+      console.log("Full error details:", error.response?.data || error);
+      throw error;
+    }
+  },
+
+  // Get all appointments WITH clinic and doctor names
+  getAllAppointmentsWithDetails: async () => {
+    try {
+      console.log("🔄 Fetching all appointments with details...");
+      const response = await api.get("/appointments/with-details/all");
+      console.log("✅ All appointments with details fetched successfully!");
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error(
+        "❌ All appointments with details fetch error:",
+        error.message
+      );
+      console.log("Full error details:", error.response?.data || error);
+      throw error;
+    }
+  },
+
   // Update appointment status only
   updateAppointmentStatus: async (id, status) => {
     try {

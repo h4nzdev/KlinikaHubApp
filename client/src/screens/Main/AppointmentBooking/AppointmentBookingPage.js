@@ -210,7 +210,7 @@ const AppointmentBookingPage = () => {
     setIsLoading(true);
     try {
       const datePart = formData.date.toISOString().split("T")[0];
-      const appointmentDateTime = `${datePart}T${formData.time}:00.000Z`;
+      const appointmentDateTime = `${datePart}T${formData.time}:00`;
 
       const appointmentData = {
         appointment_id: `APT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -358,7 +358,7 @@ const AppointmentBookingPage = () => {
           <TouchableOpacity
             onPress={nextTab}
             disabled={!formData.type}
-            className={`w-full py-4 rounded-xl items-center ${!formData.type ? "bg-cyan-300" : "bg-cyan-500"}`}
+            className={`w-full py-4 rounded-xl items-center justify-center ${!formData.type ? "bg-cyan-300" : "bg-cyan-500"}`}
           >
             <Text className="text-white font-medium text-base">
               {!formData.type
@@ -432,7 +432,7 @@ const AppointmentBookingPage = () => {
         </TouchableOpacity>
         <TouchableOpacity
           onPress={nextTab}
-          className="flex-1 py-4 bg-cyan-500 rounded-xl items-center"
+          className="flex-1 justify-center py-4 bg-cyan-500 rounded-xl items-center"
         >
           <Text className="text-white font-semibold text-base">
             Continue to Doctors
@@ -619,7 +619,7 @@ const AppointmentBookingPage = () => {
         <TouchableOpacity
           onPress={nextTab}
           disabled={!formData.doctorId}
-          className={`flex-1 py-4 rounded-xl items-center ${!formData.doctorId ? "bg-cyan-300" : "bg-cyan-500"}`}
+          className={`flex-1 py-4 rounded-xl items-center justify-center ${!formData.doctorId ? "bg-cyan-300" : "bg-cyan-500"}`}
         >
           <Text className="text-white font-semibold text-base">
             {!formData.doctorId ? "Select Doctor" : "Continue to Time"}
@@ -680,7 +680,7 @@ const AppointmentBookingPage = () => {
         <TouchableOpacity
           onPress={nextTab}
           disabled={!formData.time}
-          className={`flex-1 py-4 rounded-xl items-center ${!formData.time ? "bg-cyan-300" : "bg-cyan-500"}`}
+          className={`flex-1 py-4 rounded-xl items-center justify-center ${!formData.time ? "bg-cyan-300" : "bg-cyan-500"}`}
         >
           <Text className="text-white font-semibold text-base">
             {!formData.time ? "Select Time" : "Continue to Details"}
@@ -737,7 +737,7 @@ const AppointmentBookingPage = () => {
         </TouchableOpacity>
         <TouchableOpacity
           onPress={nextTab}
-          className="flex-1 py-4 bg-cyan-500 rounded-xl items-center"
+          className="flex-1 py-4 bg-cyan-500 rounded-xl items-center justify-center"
         >
           <Text className="text-white font-semibold text-base">
             Review Booking
@@ -836,7 +836,7 @@ const AppointmentBookingPage = () => {
           <TouchableOpacity
             onPress={handleAddAppointment}
             disabled={isLoading}
-            className={`flex-1 py-4 rounded-xl items-center ${isLoading ? "bg-emerald-300" : "bg-emerald-500"}`}
+            className={`flex-1 py-4 rounded-xl items-center justify-center ${isLoading ? "bg-emerald-300" : "bg-emerald-500"}`}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color="#ffffff" />

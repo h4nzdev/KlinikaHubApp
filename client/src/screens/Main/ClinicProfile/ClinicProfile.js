@@ -129,9 +129,12 @@ const ClinicProfile = () => {
       >
         {/* Hero Section with Gradient */}
         <View className="bg-gradient-to-b from-cyan-500 to-cyan-600 pt-8 pb-8 px-6">
+          <TouchableOpacity onPress={() => navigation.goBack()} className="p-2">
+            <Feather name="arrow-left" size={24} color="black" />
+          </TouchableOpacity>
           <View className="items-center">
             {/* Clinic Logo/Image */}
-            <View className="w-24 h-24 rounded-2xl bg-white/20 items-center justify-center mb-4 border-2 border-white/30">
+            <View className=" rounded-2xl bg-white/20 items-center justify-center mb-4 border-2 border-white/30">
               <Feather name="home" size={40} color="cyan" />
             </View>
 
@@ -423,16 +426,6 @@ const ClinicProfile = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      <AppointmentBookingModal
-        visible={isBookingModalVisible}
-        onClose={() => setIsBookingModalVisible(false)}
-        clinicId={clinicId}
-        clinicName={clinic?.data?.institute_name}
-        onAppointmentAdded={() => {
-          // Refresh appointments or show success message
-          console.log("Appointment added successfully!");
-        }}
-      />
     </SafeAreaView>
   );
 };

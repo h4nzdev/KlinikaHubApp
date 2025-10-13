@@ -36,8 +36,8 @@ class AppointmentController {
       const placeholders = Object.keys(Appointment.columns)
         .map(() => "?")
         .join(", ");
-      const values = Object.keys(Appointment.columns).map(
-        (key) => processedData[key] || null
+      const values = Object.keys(Appointment.columns).map((key) =>
+        processedData.hasOwnProperty(key) ? processedData[key] : null
       );
 
       const sql = `INSERT INTO ${Appointment.tableName} (${columns}) VALUES (${placeholders})`;
@@ -203,6 +203,91 @@ class AppointmentController {
         } else {
           console.log("✅ Appointment updated:", id);
           resolve({ id, ...appointmentData });
+        }
+      });
+    });
+  }
+
+  // Get appointments by patient ID WITH clinic and doctor names
+  async getAppointmentsByPatientIdWithDetails(patientId) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          a.*,
+          gs.institute_name as clinic_name,
+          s.name as doctor_name,
+          s.specialties as doctor_specialties
+        FROM ${Appointment.tableName} a
+        LEFT JOIN global_settings gs ON a.clinic_id = gs.id
+        LEFT JOIN staff s ON a.doctor_id = s.id
+        WHERE a.patient_id = ? 
+        ORDER BY a.appointment_date DESC
+      `;
+
+      this.db.all(sql, [patientId], (err, rows) => {
+        if (err) {
+          console.log("❌ Patient appointments with details error:", err);
+          reject(err);
+        } else {
+          console.log(
+            `✅ Found ${rows.length} detailed appointments for patient: ${patientId}`
+          );
+          resolve(rows);
+        }
+      });
+    });
+  }
+
+  // Get single appointment WITH clinic and doctor details
+  async getAppointmentWithDetails(appointmentId) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          a.*,
+          gs.institute_name as clinic_name,
+          gs.address as clinic_address,
+          s.name as doctor_name,
+          s.specialties as doctor_specialties,
+          s.qualification as doctor_qualification
+        FROM ${Appointment.tableName} a
+        LEFT JOIN global_settings gs ON a.clinic_id = gs.id
+        LEFT JOIN staff s ON a.doctor_id = s.id
+        WHERE a.id = ? OR a.appointment_id = ?
+      `;
+
+      this.db.get(sql, [appointmentId, appointmentId], (err, row) => {
+        if (err) {
+          console.log("❌ Appointment details fetch error:", err);
+          reject(err);
+        } else {
+          resolve(row || null);
+        }
+      });
+    });
+  }
+
+  // Get all appointments WITH clinic and doctor names
+  async getAllAppointmentsWithDetails() {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          a.*,
+          gs.institute_name as clinic_name,
+          s.name as doctor_name,
+          s.specialties as doctor_specialties
+        FROM ${Appointment.tableName} a
+        LEFT JOIN global_settings gs ON a.clinic_id = gs.id
+        LEFT JOIN staff s ON a.doctor_id = s.id
+        ORDER BY a.appointment_date DESC, a.created_at DESC
+      `;
+
+      this.db.all(sql, [], (err, rows) => {
+        if (err) {
+          console.log("❌ Appointments with details fetch error:", err);
+          reject(err);
+        } else {
+          console.log("✅ Appointments with details found:", rows.length);
+          resolve(rows);
         }
       });
     });

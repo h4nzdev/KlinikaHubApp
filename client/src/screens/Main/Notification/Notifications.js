@@ -450,7 +450,7 @@ const Notifications = ({ navigation }) => {
                   >
                     <TouchableOpacity
                       onPress={() => handleNotificationAction(notification)}
-                      className={`bg-white rounded-xl border ${
+                      className={`bg-white rounded-xl ${
                         !notification.isRead
                           ? "border-l-4 border-l-cyan-500 shadow-md"
                           : "border-slate-200 shadow-sm"
