@@ -11,7 +11,6 @@ import {
   Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Header from "../../../components/Header";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import clinicServices from "../../../services/clinicServices";
 
@@ -22,7 +21,6 @@ const ClinicProfile = () => {
 
   const [clinic, setClinic] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isBookingModalVisible, setIsBookingModalVisible] = useState(false);
 
   // Fetch clinic data
   useEffect(() => {
@@ -69,7 +67,6 @@ const ClinicProfile = () => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <StatusBar barStyle="dark-content" />
-        <Header />
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0891b2" />
           <Text className="text-slate-600 mt-4 text-lg">
@@ -83,7 +80,6 @@ const ClinicProfile = () => {
   if (!clinic) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <Header />
         <View className="flex-1 items-center justify-center p-4">
           <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 items-center max-w-md">
             <View className="bg-slate-100 rounded-2xl p-6 mb-6">
@@ -117,10 +113,6 @@ const ClinicProfile = () => {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
-      <Header />
-
       {/* Main Content */}
       <ScrollView
         className="flex-1"

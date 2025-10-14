@@ -329,47 +329,7 @@ const Reminders = () => {
                           </View>
                         </View>
                       </View>
-
-                      {/* Menu */}
-                      <TouchableOpacity
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        activeOpacity={0.7}
-                        onPress={() => {
-                          Alert.alert(
-                            "Reminder Options",
-                            "What would you like to do?",
-                            [
-                              {
-                                text: "Edit",
-                                onPress: () => handleEdit(reminder),
-                              },
-                              {
-                                text: reminder.isActive
-                                  ? "Deactivate"
-                                  : "Activate",
-                                onPress: () => handleToggle(reminder),
-                              },
-                              {
-                                text: "Remove",
-                                style: "destructive",
-                                onPress: () => handleRemove(reminder.id),
-                              },
-                              {
-                                text: "Close",
-                                style: "cancel",
-                              },
-                            ]
-                          );
-                        }}
-                      >
-                        <Feather
-                          name="more-horizontal"
-                          size={20}
-                          color="#64748b"
-                        />
-                      </TouchableOpacity>
                     </View>
-
                     {/* Time */}
                     <View className="flex-row items-center justify-between mb-4">
                       <View className="flex-row items-center flex-1">

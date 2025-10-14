@@ -21,6 +21,8 @@ import ClinicProfile from "../screens/Main/ClinicProfile/ClinicProfile";
 import BottomNavbar from "../components/BottomNavbar";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AppointmentBookingPage from "../screens/Main/AppointmentBooking/AppointmentBookingPage";
+import Calendar from "../screens/Main/Calendar/Calendar";
+import Settings from "../screens/Main/Settings/Settings";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,6 +47,7 @@ function MainTabs() {
       <Tab.Screen name="Invoices" component={Invoices} />
       <Tab.Screen name="Reminders" component={Reminders} />
       <Tab.Screen name="Notifications" component={Notifications} />
+      <Tab.Screen name="Calendar" component={Calendar} />
     </Tab.Navigator>
   );
 }
@@ -82,6 +85,7 @@ const AppNavigation = () => {
           />
           <Stack.Screen name="ClinicProfile" component={ClinicProfile} />
           <Stack.Screen name="Notifications" component={Notifications} />
+          <Stack.Screen name="Settings" component={Settings} />
         </Stack.Navigator>
       </View>
     </NavigationContainer>
