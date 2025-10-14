@@ -248,7 +248,7 @@ export default function Calendar() {
               return (
                 <View
                   key={appointment.id || index}
-                  className="mb-3 bg-purple-50 rounded-2xl p-4 border border-purple-100"
+                  className="mb-3 bg-cyan-50 rounded-2xl p-4 border border-purple-100"
                 >
                   <View className="flex-row justify-between items-start mb-3">
                     <View className="flex-1">
@@ -256,7 +256,7 @@ export default function Calendar() {
                         {appointment.doctor_name || "Doctor"}
                       </Text>
                       {appointment.doctor_specialties && (
-                        <Text className="text-sm text-purple-600 mt-1">
+                        <Text className="text-sm text-cyan-600 mt-1">
                           {appointment.doctor_specialties}
                         </Text>
                       )}
@@ -281,7 +281,7 @@ export default function Calendar() {
 
                   {appointment.clinic_name && (
                     <View className="flex-row items-center mb-2">
-                      <Feather name="map-pin" size={14} color="#7C3AED" />
+                      <Feather name="map-pin" size={14} color="cyan" />
                       <Text className="text-sm text-gray-600 ml-2">
                         {appointment.clinic_name}
                       </Text>
@@ -289,14 +289,14 @@ export default function Calendar() {
                   )}
 
                   <View className="flex-row items-center mb-2">
-                    <Feather name="clock" size={14} color="#7C3AED" />
+                    <Feather name="clock" size={14} color="cyan" />
                     <Text className="text-sm text-gray-600 ml-2">
                       {formatTime(appointment.schedule)}
                     </Text>
                   </View>
 
                   <View className="flex-row items-center mb-2">
-                    <Feather name="dollar-sign" size={14} color="#7C3AED" />
+                    <Feather name="dollar-sign" size={14} color="cyan" />
                     <Text className="text-sm text-gray-600 ml-2">
                       Fee: {appointment.consultation_fees}
                       {appointment.discount > 0 &&
@@ -305,7 +305,7 @@ export default function Calendar() {
                   </View>
 
                   <View className="flex-row items-center mb-2">
-                    <Feather name="hash" size={14} color="#7C3AED" />
+                    <Feather name="hash" size={14} color="cyan" />
                     <Text className="text-sm text-gray-600 ml-2">
                       {appointment.appointment_id}
                     </Text>

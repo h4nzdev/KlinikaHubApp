@@ -514,7 +514,7 @@ const Dashboard = ({ navigation }) => {
                     {/* Quick Actions Footer */}
                     <View className="flex-row justify-between items-center pt-4 border-t border-slate-100">
                       <TouchableOpacity
-                        className="flex-row items-center"
+                        className="flex-row items-center justify-center"
                         activeOpacity={0.7}
                       >
                         <Feather name="user" size={16} color="#3b82f6" />
@@ -524,20 +524,20 @@ const Dashboard = ({ navigation }) => {
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        className="flex-row items-center"
+                        className="flex-row items-center justify-center"
                         activeOpacity={0.7}
                       >
-                        <Feather name="bell" size={16} color="#8b5cf6" />
-                        <Text className="text-purple-600 font-medium ml-2">
+                        <Feather name="bell" size={16} color="#3b82f6" />
+                        <Text className="text-blue-600 font-medium ml-2">
                           Remind
                         </Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        className="flex-row items-center"
+                        className="flex-row items-center justify-center"
                         activeOpacity={0.7}
                       >
-                        <Feather name="x" size={16} color="#ef4444" />
+                        <Feather name="x" size={16} color="red" />
                         <Text className="text-red-600 font-medium ml-2">
                           Cancel
                         </Text>

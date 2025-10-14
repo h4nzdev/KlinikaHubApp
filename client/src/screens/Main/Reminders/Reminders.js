@@ -371,9 +371,9 @@ const Reminders = () => {
                         <Feather
                           name={reminder.isActive ? "bell-off" : "bell"}
                           size={16}
-                          color="#8b5cf6"
+                          color="#3b82f6"
                         />
-                        <Text className="text-purple-600 font-medium ml-2">
+                        <Text className="text-blue-600 font-medium ml-2">
                           {reminder.isActive ? "Deactivate" : "Activate"}
                         </Text>
                       </TouchableOpacity>
