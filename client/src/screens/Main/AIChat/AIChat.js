@@ -19,6 +19,7 @@ import chatServices from "../../../services/chatServices";
 const AIChat = () => {
   const [message, setMessage] = useState("");
   const scrollViewRef = useRef(null);
+  const [isShown, setIsShown] = useState(true);
   const [chatHistory, setChatHistory] = useState([
     {
       role: "bot",
@@ -463,8 +464,15 @@ const AIChat = () => {
           )}
 
           {/* Sample Questions */}
-          {chatCredits.canChat && !showEmergency && (
-            <View className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+          {chatCredits.canChat && !showEmergency && isShown && (
+            <View className="bg-blue-50 rounded-xl p-4 border border-blue-200 relative">
+              <TouchableOpacity
+                onPress={() => setIsShown(false)}
+                className="absolute h-8 w-8 bg-cyan-100 -top-4 self-center rounded-full
+              flex items-center justify-center"
+              >
+                <Feather name="chevron-down" size={18} color="#0891b2" />
+              </TouchableOpacity>
               <Text className="font-medium text-blue-900 mb-3">
                 Try asking about:
               </Text>
@@ -501,6 +509,15 @@ const AIChat = () => {
 
           {/* API Status */}
           <View className="bg-cyan-50 rounded-xl p-4 mb-5 border border-cyan-200">
+            {!isShown && (
+              <TouchableOpacity
+                onPress={() => setIsShown(true)}
+                className="absolute h-8 w-8 bg-cyan-100 -top-3 self-center rounded-full
+              flex items-center justify-center"
+              >
+                <Feather name="chevron-up" size={18} color="#0891b2" />
+              </TouchableOpacity>
+            )}
             <View className="flex-row items-center gap-2 mb-3">
               <Feather name="cpu" size={20} color="#0891b2" />
               <Text className="font-medium text-cyan-900">
