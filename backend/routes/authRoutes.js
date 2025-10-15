@@ -3,7 +3,61 @@ import authController from "../controller/authController.js";
 
 const authRouter = express.Router();
 
-// Patient Registration (updated validation)
+// ✅ NEW: Request verification code
+authRouter.post("/request-verification", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const result = await authController.requestVerificationCode(email);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ✅ NEW: Verify code and register
+authRouter.post("/verify-and-register", async (req, res) => {
+  try {
+    const { email, code, patientData } = req.body;
+
+    if (!email || !code || !patientData) {
+      return res.status(400).json({
+        error: "Email, verification code, and patient data are required",
+      });
+    }
+
+    const result = await authController.verifyAndRegister(
+      email,
+      code,
+      patientData
+    );
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ✅ NEW: Resend verification code
+authRouter.post("/resend-verification", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const result = await authController.resendVerificationCode(email);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ⚠️ UPDATE: Old register route (keep for backward compatibility or remove)
 authRouter.post("/register", async (req, res) => {
   try {
     const { email, password, first_name, last_name, mobileno } = req.body;
@@ -55,7 +109,7 @@ authRouter.post("/check-email", async (req, res) => {
   }
 });
 
-// routes/authRouter.js - ADD THESE ROUTES
+// Upload photo
 authRouter.post("/upload-photo", async (req, res) => {
   try {
     const { image } = req.body; // base64 image string

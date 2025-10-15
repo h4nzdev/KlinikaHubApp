@@ -1,5 +1,6 @@
 import database from "../config/database.js";
 import Patient from "../model/Patient.js";
+import cloudinary from "../config/cloudinary.js";
 
 // Patient Controller for Node.js/Express
 class PatientController {
@@ -138,6 +139,78 @@ class PatientController {
         }
       });
     });
+  }
+  // Add to PatientController class
+  async updateProfilePicture(patientId, base64Image) {
+    try {
+      console.log("🔄 Uploading profile picture for patient:", patientId);
+
+      // Upload to Cloudinary
+      const imageUrl = await this.uploadToCloudinary(base64Image);
+
+      // Update patient record
+      return new Promise((resolve, reject) => {
+        const sql = `UPDATE patients SET photo = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+
+        this.db.run(sql, [imageUrl, patientId], function (err) {
+          if (err) {
+            console.log("❌ Profile picture update error:", err);
+            reject(err);
+          } else {
+            console.log("✅ Profile picture updated for patient:", patientId);
+            resolve({
+              success: true,
+              profile_picture: imageUrl,
+            });
+          }
+        });
+      });
+    } catch (error) {
+      console.error("❌ Error updating profile picture:", error);
+      throw error;
+    }
+  }
+
+  async uploadToCloudinary(base64Image) {
+    try {
+      console.log("🔄 Starting Cloudinary upload...");
+      console.log("🔧 Cloudinary Config Check:");
+      console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME);
+      console.log(
+        "API Key:",
+        process.env.CLOUDINARY_API_KEY
+          ? "***" + process.env.CLOUDINARY_API_KEY.slice(-4)
+          : "MISSING"
+      );
+      console.log(
+        "API Secret:",
+        process.env.CLOUDINARY_API_SECRET
+          ? "***" + process.env.CLOUDINARY_API_SECRET.slice(-4)
+          : "MISSING"
+      );
+
+      const result = await cloudinary.uploader.upload(
+        `data:image/jpeg;base64,${base64Image}`,
+        {
+          folder: "patient_profiles",
+          resource_type: "image",
+          transformation: [
+            { width: 300, height: 300, crop: "fill" },
+            { quality: "auto" },
+            { format: "jpg" },
+          ],
+        }
+      );
+
+      console.log("✅ Cloudinary upload successful!");
+      return result.secure_url;
+    } catch (error) {
+      console.error("❌ Cloudinary upload error details:");
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Full error:", error);
+      throw new Error("Failed to upload profile picture");
+    }
   }
 }
 

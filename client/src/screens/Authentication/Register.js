@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+"use client";
+
+import { useState } from "react";
 import {
   View,
   Text,
@@ -9,9 +11,12 @@ import {
   TextInput,
   Alert,
   Image,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 import { patientAuthServices } from "../../services/patientAuthServices";
 import * as ImagePicker from "expo-image-picker";
 import { cloudinaryService } from "../../services/cloudinaryService";
@@ -19,15 +24,19 @@ import { cloudinaryService } from "../../services/cloudinaryService";
 const Register = () => {
   const navigation = useNavigation();
 
-  // State management
   const [activeSection, setActiveSection] = useState("personal");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Form data with all fields including photo
+  //DropDowns
+  const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+  const [showBloodGroupDropdown, setShowBloodGroupDropdown] = useState(false);
+
   const [formData, setFormData] = useState({
-    // Personal Info
     first_name: "",
     last_name: "",
     middle_name: "",
@@ -39,31 +48,21 @@ const Register = () => {
     height: "",
     weight: "",
     marital_status: "",
-
-    // Contact Info
     address: "",
     mobileno: "",
     email: "",
-
-    // Account Security
     password: "",
     confirmPassword: "",
-
-    // Emergency Contact
     guardian: "",
     relationship: "",
     gua_mobileno: "",
-
-    // Additional Fields
     patient_id: "",
     category_id: "1",
     source: "1",
-    photo: "", // Cloudinary URL will be stored here
-
+    photo: "",
     agreeToTerms: false,
   });
 
-  // Password validation state
   const [passwordValidation, setPasswordValidation] = useState({
     length: false,
     firstLetterUppercase: false,
@@ -71,7 +70,6 @@ const Register = () => {
     specialChar: false,
   });
 
-  // Section order for navigation
   const sections = ["personal", "contact", "medical", "emergency", "security"];
   const sectionTitles = {
     personal: "Personal Info",
@@ -81,7 +79,6 @@ const Register = () => {
     security: "Security",
   };
 
-  // Navigation functions
   const goToNextSection = () => {
     const currentIndex = sections.indexOf(activeSection);
     if (currentIndex < sections.length - 1) {
@@ -96,124 +93,32 @@ const Register = () => {
     }
   };
 
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setSelectedDate(selectedDate);
+      // Format date as YYYY-MM-DD
+      const formattedDate = selectedDate.toISOString().split("T")[0];
+      handleInputChange("birthday", formattedDate);
+
+      // Auto-calculate age
+      const today = new Date();
+      const age = today.getFullYear() - selectedDate.getFullYear();
+      const monthDiff = today.getMonth() - selectedDate.getMonth();
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < selectedDate.getDate())
+      ) {
+        age--;
+      }
+      handleInputChange("age", age.toString());
+    }
+  };
+
   const isLastSection = activeSection === sections[sections.length - 1];
   const isFirstSection = activeSection === sections[0];
 
-  // Image handling functions
-  const pickImage = async () => {
-    try {
-      const { status } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission required",
-          "Camera roll permissions needed for photos."
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets?.[0]) {
-        await uploadImageToCloudinary(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error("Image picker error:", error);
-      Alert.alert("Error", "Failed to pick image");
-    }
-  };
-
-  const takePhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission required",
-          "Camera permissions needed to take photos."
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets?.[0]) {
-        await uploadImageToCloudinary(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error("Camera error:", error);
-      Alert.alert("Error", "Failed to take photo");
-    }
-  };
-
-  const uploadImageToCloudinary = async (imageUri) => {
-    try {
-      setIsUploading(true);
-      console.log("Starting image upload...");
-
-      const uploadResult = await cloudinaryService.uploadImage(imageUri);
-
-      setFormData((prev) => ({
-        ...prev,
-        photo: uploadResult.secure_url,
-      }));
-
-      Alert.alert("Success", "Profile photo uploaded!");
-    } catch (error) {
-      console.error("Upload failed:", error);
-      Alert.alert("Upload Failed", error.message || "Please try again.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const removePhoto = () => {
-    Alert.alert("Remove Photo", "Remove your profile photo?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => setFormData((prev) => ({ ...prev, photo: "" })),
-      },
-    ]);
-  };
-
-  // Form handling
-  const validatePassword = (password) => {
-    setPasswordValidation({
-      length: password.length >= 6,
-      firstLetterUppercase: /^[A-Z]/.test(password),
-      number: /[0-9]/.test(password),
-      specialChar: /[!@#$%^&*]/.test(password),
-    });
-  };
-
-  const handleInputChange = (name, value) => {
-    if (name === "password") {
-      validatePassword(value);
-      setShowPasswordValidation(value.length > 0);
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const allPasswordRequirementsMet =
-    Object.values(passwordValidation).every(Boolean);
-
-  // Registration
-  const handleRegister = async () => {
-    // Validation checks
+  const handleFinalStep = async () => {
     if (!allPasswordRequirementsMet) {
       Alert.alert("Error", "Password does not meet requirements.");
       return;
@@ -243,31 +148,117 @@ const Register = () => {
       return;
     }
 
-    setIsLoading(true);
-
+    setIsSendingCode(true);
     try {
-      const { confirmPassword, agreeToTerms, ...registrationData } = formData;
-
-      const result =
-        await patientAuthServices.patientRegister(registrationData);
-
-      Alert.alert("Success!", "Account created successfully!", [
-        {
-          text: "OK",
-          onPress: () => navigation.navigate("Login"),
-        },
-      ]);
+      await patientAuthServices.requestVerificationCode(formData.email);
+      navigation.navigate("Verification", { formData });
     } catch (error) {
-      Alert.alert(
-        "Registration Failed",
-        error.response?.data?.error || error.message || "Please try again."
-      );
+      Alert.alert("Error", error.message || "Failed to send verification code");
     } finally {
-      setIsLoading(false);
+      setIsSendingCode(false);
     }
   };
 
-  // UI Components
+  const pickImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Camera roll permissions needed for photos."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        await uploadImageToCloudinary(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to pick image");
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Camera permissions needed to take photos."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        await uploadImageToCloudinary(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to take photo");
+    }
+  };
+
+  const uploadImageToCloudinary = async (imageUri) => {
+    try {
+      setIsUploading(true);
+      const uploadResult = await cloudinaryService.uploadImage(imageUri);
+      setFormData((prev) => ({ ...prev, photo: uploadResult.secure_url }));
+      Alert.alert("Success", "Profile photo uploaded!");
+    } catch (error) {
+      Alert.alert("Upload Failed", error.message || "Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removePhoto = () => {
+    Alert.alert("Remove Photo", "Remove your profile photo?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => setFormData((prev) => ({ ...prev, photo: "" })),
+      },
+    ]);
+  };
+
+  const validatePassword = (password) => {
+    setPasswordValidation({
+      length: password.length >= 6,
+      firstLetterUppercase: /^[A-Z]/.test(password),
+      number: /[0-9]/.test(password),
+      specialChar: /[!@#$%^&*]/.test(password),
+    });
+  };
+
+  const handleInputChange = (name, value) => {
+    if (name === "password") {
+      validatePassword(value);
+      setShowPasswordValidation(value.length > 0);
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const allPasswordRequirementsMet =
+    Object.values(passwordValidation).every(Boolean);
+
   const ValidationItem = ({ isValid, text }) => (
     <View className="flex-row items-center gap-2">
       <Feather
@@ -324,7 +315,6 @@ const Register = () => {
       <Text className="text-sm font-medium text-slate-700">
         Profile Photo (Optional)
       </Text>
-
       {formData.photo ? (
         <View className="items-center gap-3">
           <Image
@@ -370,11 +360,9 @@ const Register = () => {
     </View>
   );
 
-  // Section renderers
   const renderPersonalInfo = () => (
     <View className="gap-4">
       {renderPhotoUpload()}
-
       <View className="flex-row gap-4">
         <View className="flex-1">
           <Text className="text-sm font-medium text-slate-700 mb-2">
@@ -399,7 +387,6 @@ const Register = () => {
           />
         </View>
       </View>
-
       <View>
         <Text className="text-sm font-medium text-slate-700 mb-2">
           Middle Name
@@ -411,18 +398,23 @@ const Register = () => {
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
-
       <View className="flex-row gap-4">
         <View className="flex-1">
           <Text className="text-sm font-medium text-slate-700 mb-2">
             Birthday
           </Text>
-          <TextInput
-            value={formData.birthday}
-            onChangeText={(text) => handleInputChange("birthday", text)}
-            placeholder="YYYY-MM-DD"
-            className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
-          />
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            className="px-4 py-3 border border-slate-300 rounded-xl bg-white justify-center"
+          >
+            <Text
+              className={
+                formData.birthday ? "text-slate-800" : "text-slate-400"
+              }
+            >
+              {formData.birthday || "BirthDate"}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View className="flex-1">
           <Text className="text-sm font-medium text-slate-700 mb-2">Age *</Text>
@@ -435,18 +427,43 @@ const Register = () => {
           />
         </View>
       </View>
-
       <View className="flex-row gap-4">
         <View className="flex-1">
           <Text className="text-sm font-medium text-slate-700 mb-2">
             Gender *
           </Text>
-          <TextInput
-            value={formData.sex}
-            onChangeText={(text) => handleInputChange("sex", text)}
-            placeholder="Male/Female/Other"
-            className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
-          />
+          <TouchableOpacity
+            onPress={() => setShowGenderDropdown(!showGenderDropdown)}
+            className="px-4 py-3 border border-slate-300 rounded-xl bg-white flex-row justify-between items-center"
+          >
+            <Text
+              className={formData.sex ? "text-slate-800" : "text-slate-400"}
+            >
+              {formData.sex || "Select gender"}
+            </Text>
+            <Feather
+              name={showGenderDropdown ? "chevron-up" : "chevron-down"}
+              size={16}
+              color="#64748b"
+            />
+          </TouchableOpacity>
+
+          {showGenderDropdown && (
+            <View className="absolute top-full left-0 right-0 mt-1 border border-slate-300 rounded-xl bg-white z-10 shadow-lg">
+              {["Male", "Female", "Other"].map((gender) => (
+                <TouchableOpacity
+                  key={gender}
+                  onPress={() => {
+                    handleInputChange("sex", gender);
+                    setShowGenderDropdown(false);
+                  }}
+                  className="px-4 py-3 border-b border-slate-100 last:border-b-0"
+                >
+                  <Text className="text-slate-800">{gender}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
         <View className="flex-1">
           <Text className="text-sm font-medium text-slate-700 mb-2">
@@ -460,6 +477,15 @@ const Register = () => {
           />
         </View>
       </View>
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+        />
+      )}
     </View>
   );
 
@@ -478,7 +504,6 @@ const Register = () => {
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
-
       <View>
         <Text className="text-sm font-medium text-slate-700 mb-2">
           Phone Number *
@@ -492,7 +517,6 @@ const Register = () => {
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
-
       <View>
         <Text className="text-sm font-medium text-slate-700 mb-2">
           Address *
@@ -514,12 +538,42 @@ const Register = () => {
           <Text className="text-sm font-medium text-slate-700 mb-2">
             Blood Group
           </Text>
-          <TextInput
-            value={formData.blood_group}
-            onChangeText={(text) => handleInputChange("blood_group", text)}
-            placeholder="O+ / A+ / B+ / AB+"
-            className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
-          />
+          <TouchableOpacity
+            onPress={() => setShowBloodGroupDropdown(!showBloodGroupDropdown)}
+            className="px-4 py-3 border border-slate-300 rounded-xl bg-white flex-row justify-between items-center"
+          >
+            <Text
+              className={
+                formData.blood_group ? "text-slate-800" : "text-slate-400"
+              }
+            >
+              {formData.blood_group || "Select blood group"}
+            </Text>
+            <Feather
+              name={showBloodGroupDropdown ? "chevron-up" : "chevron-down"}
+              size={16}
+              color="#64748b"
+            />
+          </TouchableOpacity>
+
+          {showBloodGroupDropdown && (
+            <View className="absolute top-full left-0 right-0 mt-1 border border-slate-300 rounded-xl bg-white z-10 shadow-lg">
+              {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
+                (bloodGroup) => (
+                  <TouchableOpacity
+                    key={bloodGroup}
+                    onPress={() => {
+                      handleInputChange("blood_group", bloodGroup);
+                      setShowBloodGroupDropdown(false);
+                    }}
+                    className="px-4 py-3 border-b border-slate-100 last:border-b-0"
+                  >
+                    <Text className="text-slate-800">{bloodGroup}</Text>
+                  </TouchableOpacity>
+                )
+              )}
+            </View>
+          )}
         </View>
         <View className="flex-1">
           <Text className="text-sm font-medium text-slate-700 mb-2">
@@ -533,7 +587,6 @@ const Register = () => {
           />
         </View>
       </View>
-
       <View className="flex-row gap-4">
         <View className="flex-1">
           <Text className="text-sm font-medium text-slate-700 mb-2">
@@ -574,7 +627,6 @@ const Register = () => {
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
-
       <View>
         <Text className="text-sm font-medium text-slate-700 mb-2">
           Relationship
@@ -586,7 +638,6 @@ const Register = () => {
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
-
       <View>
         <Text className="text-sm font-medium text-slate-700 mb-2">
           Guardian Phone
@@ -618,7 +669,6 @@ const Register = () => {
           onBlur={() => setShowPasswordValidation(false)}
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
-
         {showPasswordValidation && (
           <View className="mt-2 p-4 bg-white border border-slate-200 rounded-xl gap-2">
             <ValidationItem
@@ -640,7 +690,6 @@ const Register = () => {
           </View>
         )}
       </View>
-
       <View>
         <Text className="text-sm font-medium text-slate-700 mb-2">
           Confirm Password *
@@ -653,7 +702,6 @@ const Register = () => {
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
-
       <TouchableOpacity
         onPress={() =>
           handleInputChange("agreeToTerms", !formData.agreeToTerms)
@@ -662,11 +710,7 @@ const Register = () => {
         activeOpacity={0.7}
       >
         <View
-          className={`w-5 h-5 rounded border-2 items-center justify-center ${
-            formData.agreeToTerms
-              ? "bg-cyan-600 border-cyan-600"
-              : "border-slate-300 bg-white"
-          }`}
+          className={`w-5 h-5 rounded border-2 items-center justify-center ${formData.agreeToTerms ? "bg-cyan-600 border-cyan-600" : "border-slate-300 bg-white"}`}
         >
           {formData.agreeToTerms && (
             <Feather name="check" size={14} color="#ffffff" />
@@ -700,14 +744,12 @@ const Register = () => {
   return (
     <SafeAreaView className="flex-1 bg-slate-50 pt-4">
       <StatusBar barStyle="dark-content" />
-
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         <View className="p-6 gap-6">
-          {/* Back Button */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             className="flex-row items-center gap-2"
@@ -717,7 +759,6 @@ const Register = () => {
             <Text className="text-slate-600 font-medium">Back</Text>
           </TouchableOpacity>
 
-          {/* Header */}
           <View>
             <Text className="text-3xl font-bold text-slate-800 mb-2">
               Create Your Patient Account
@@ -727,10 +768,8 @@ const Register = () => {
             </Text>
           </View>
 
-          {/* Progress Indicator */}
           <SectionProgress />
 
-          {/* Section Navigation */}
           <View className="flex-row gap-2">
             <SectionButton section="personal" icon="user" />
             <SectionButton section="contact" icon="phone" />
@@ -739,12 +778,9 @@ const Register = () => {
             <SectionButton section="security" icon="lock" />
           </View>
 
-          {/* Active Section Content */}
           {renderActiveSection()}
 
-          {/* Navigation Buttons */}
           <View className="flex-row gap-3">
-            {/* Back Button */}
             {!isFirstSection && (
               <TouchableOpacity
                 onPress={goToPreviousSection}
@@ -756,22 +792,15 @@ const Register = () => {
                 </Text>
               </TouchableOpacity>
             )}
-
-            {/* Next/Register Button */}
             <TouchableOpacity
-              onPress={isLastSection ? handleRegister : goToNextSection}
+              onPress={isLastSection ? handleFinalStep : goToNextSection}
               disabled={
                 isLoading ||
                 isUploading ||
+                isSendingCode ||
                 (isLastSection && !allPasswordRequirementsMet)
               }
-              className={`${isFirstSection ? "flex-1" : "flex-1"} py-4 rounded-2xl shadow-lg ${
-                isLoading ||
-                isUploading ||
-                (isLastSection && !allPasswordRequirementsMet)
-                  ? "bg-slate-400"
-                  : "bg-cyan-600"
-              }`}
+              className={`${isFirstSection ? "flex-1" : "flex-1"} py-4 rounded-2xl shadow-lg ${isLoading || isUploading || isSendingCode || (isLastSection && !allPasswordRequirementsMet) ? "bg-slate-400" : "bg-cyan-600"}`}
               activeOpacity={0.8}
             >
               <Text className="text-white font-bold text-center text-lg">
@@ -779,14 +808,15 @@ const Register = () => {
                   ? "Uploading..."
                   : isLoading
                     ? "Creating Account..."
-                    : isLastSection
-                      ? "Create Account"
-                      : "Next"}
+                    : isSendingCode
+                      ? "Sending Code..."
+                      : isLastSection
+                        ? "Continue"
+                        : "Next"}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Footer */}
           <View className="pt-6 border-t border-slate-200">
             <Text className="text-center text-sm text-slate-600">
               Already have an account?{" "}
@@ -799,7 +829,6 @@ const Register = () => {
             </Text>
           </View>
 
-          {/* Trust Badges */}
           <View className="gap-3">
             <View className="flex-row items-center gap-2">
               <Feather name="shield" size={16} color="#059669" />

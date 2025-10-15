@@ -15,12 +15,14 @@ import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import { useAppointments } from "../../../hooks/useAppointments";
+import patientAuthServices from "../../../services/patientAuthServices";
+import * as ImagePicker from "expo-image-picker";
 
 const Profile = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useContext(AuthenticationContext);
-  const [appointmentHistory, setAppointmentHistory] = useState([]);
+  const { user, updateUser } = useContext(AuthenticationContext);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
   const { appointments, loading: appointmentsLoading } = useAppointments();
 
@@ -124,13 +126,102 @@ const Profile = () => {
     }));
   };
 
-  const handleSaveChanges = () => {
+  const handleUpdateProfilePicture = async () => {
+    try {
+      // Request camera roll permissions
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Sorry, we need camera roll permissions to update your profile picture."
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        setIsUploadingPhoto(true);
+        const base64Image = result.assets[0].base64;
+
+        // Upload to backend
+        const response = await patientAuthServices.updatePatientProfilePicture(
+          updatedUser.patientId,
+          base64Image
+        );
+
+        // Update local state immediately
+        setUpdatedUser((prev) => ({
+          ...prev,
+          profilePicture: `data:image/jpeg;base64,${base64Image}`,
+        }));
+
+        // ✅ UPDATE THE CONTEXT - This will refresh the Header!
+        if (updateUser && response.result) {
+          const updatedUserData = {
+            ...user,
+            photo: response.result.photo, // Use the URL from backend response
+          };
+          await updateUser(updatedUserData);
+        }
+
+        Alert.alert("Success", "Profile picture updated successfully!");
+      }
+    } catch (error) {
+      console.error("Profile picture update error:", error);
+      Alert.alert("Error", error.message || "Failed to update profile picture");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      // Prepare the data for backend (map back to your database structure)
+      const updateData = {
+        first_name: updatedUser.name.split(" ")[0] || "",
+        last_name: updatedUser.name.split(" ").slice(1).join(" ") || "",
+        age: updatedUser.age,
+        sex: updatedUser.gender,
+        email: updatedUser.email,
+        mobileno: updatedUser.phone,
+        address: updatedUser.address,
+        birthday: updatedUser.birthday,
+        blood_group: updatedUser.bloodGroup,
+        blood_pressure: updatedUser.bloodPressure,
+        height: updatedUser.height,
+        weight: updatedUser.weight,
+        marital_status: updatedUser.maritalStatus,
+        guardian: updatedUser.guardian,
+        relationship: updatedUser.relationship,
+        gua_mobileno: updatedUser.guardianPhone,
+      };
+
+      // Call the update service
+      await patientAuthServices.updatePatientProfile(
+        updatedUser.patientId,
+        updateData
+      );
+
       setIsLoading(false);
       setIsEditMode(false);
       Alert.alert("Success", "Profile updated successfully!");
-    }, 1000);
+
+      // Optional: Refresh user data from context
+      // You might want to update your context here
+    } catch (error) {
+      setIsLoading(false);
+      Alert.alert("Error", error.message || "Failed to update profile");
+    }
   };
 
   const handleCancelEdit = () => {
@@ -586,18 +677,42 @@ const Profile = () => {
         {/* Profile Header with Gradient */}
         <View className="bg-gradient-to-b from-cyan-500 to-cyan-600 pt-6 pb-8 px-6">
           <View className="flex-row items-center">
-            <View className="w-20 h-20 rounded-2xl bg-white/20 items-center justify-center mr-4 border-2 border-white/30">
-              {patient?.photo ? (
-                <Image
-                  source={{ uri: patient.photo }}
-                  className="w-full h-full rounded-2xl"
-                />
-              ) : (
-                <Text className="text-2xl font-bold text-white">
-                  {initials}
-                </Text>
-              )}
-            </View>
+            <TouchableOpacity
+              onPress={handleUpdateProfilePicture}
+              disabled={isUploadingPhoto}
+              activeOpacity={0.7}
+            >
+              <View className="w-20 h-20 rounded-2xl bg-white/20 items-center justify-center mr-4 border-2 border-white/30 relative">
+                {isUploadingPhoto ? (
+                  <View className="absolute inset-0 bg-black/50 rounded-2xl items-center justify-center z-10">
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  </View>
+                ) : null}
+
+                {updatedUser.profilePicture ? (
+                  <Image
+                    source={{ uri: updatedUser.profilePicture }}
+                    className="w-full h-full rounded-2xl"
+                  />
+                ) : patient?.photo ? (
+                  <Image
+                    source={{ uri: patient.photo }}
+                    className="w-full h-full rounded-2xl"
+                  />
+                ) : (
+                  <Text className="text-2xl font-bold text-white">
+                    {initials}
+                  </Text>
+                )}
+
+                {/* Edit overlay */}
+                {!isUploadingPhoto && (
+                  <View className="absolute bottom-0 right-0 bg-cyan-600 rounded-full p-1 border-2 border-white">
+                    <Feather name="camera" size={14} color="#ffffff" />
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
 
             <View className="flex-1">
               <Text className="text-2xl font-bold text-cyan-900 mb-1">
@@ -618,7 +733,6 @@ const Profile = () => {
               </View>
             </View>
           </View>
-
           <View className="flex-row justify-between mt-6">
             <View className="items-start">
               <Text className="text-cyan-900 text-sm font-medium mb-1">
@@ -638,7 +752,6 @@ const Profile = () => {
             </View>
           </View>
         </View>
-
         {/* Quick Actions */}
         <View className="px-6 -mt-4">
           <View className="bg-white rounded-2xl p-4 shadow-lg shadow-black/10 border border-slate-100">
@@ -693,7 +806,6 @@ const Profile = () => {
             </View>
           </View>
         </View>
-
         {/* Referral Banner */}
         <View className="px-6 mt-4">
           <View className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-2xl p-4">
@@ -714,7 +826,6 @@ const Profile = () => {
             </View>
           </View>
         </View>
-
         {/* Tab Navigation */}
         <View className="px-6 mt-6">
           <ScrollView
@@ -736,10 +847,8 @@ const Profile = () => {
             </View>
           </ScrollView>
         </View>
-
         {/* Tab Content */}
         <View className="px-6">{renderTabContent()}</View>
-
         {/* Edit Mode Actions */}
         {isEditMode && (
           <View className="px-6 mt-6 flex-row gap-3">
@@ -764,7 +873,6 @@ const Profile = () => {
             </TouchableOpacity>
           </View>
         )}
-
         {/* Edit Profile Button */}
         {!isEditMode && (
           <View className="px-6 mt-4">

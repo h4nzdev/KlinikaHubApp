@@ -4,6 +4,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Login from "../screens/Authentication/Login";
 import Register from "../screens/Authentication/Register";
+import VerificationScreen from "../screens/Authentication/VerificationScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +17,7 @@ export default function AuthNavigation() {
       >
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Register" component={Register} />
+        <Stack.Screen name="Verification" component={VerificationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

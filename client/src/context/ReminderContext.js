@@ -11,6 +11,7 @@ import {
 import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthenticationContext } from "./AuthenticationContext";
+import smsService from "../services/smsServices";
 
 const ReminderContext = createContext();
 
@@ -152,21 +153,20 @@ export const ReminderProvider = ({ children }) => {
     Vibration.cancel();
   };
 
-  const handleAutoCall = () => {
-    console.log("📞 Auto-call triggered for:", dueReminder?.name);
+  const handleAutoCall = async () => {
+    console.log("📱 Sending SMS reminder");
 
     if (user && user.mobileno) {
-      Alert.alert(
-        "📞 Auto-Call Initiated",
-        `Would have called ${user.mobileno} for reminder: ${dueReminder?.name}`,
-        [{ text: "OK" }]
-      );
-    } else {
-      Alert.alert(
-        "📞 Auto-Call Initiated",
-        `Would have called your phone for reminder: ${dueReminder?.name}`,
-        [{ text: "OK" }]
-      );
+      try {
+        const message = `🔔 KlinikaHub Reminder: ${dueReminder?.name}`;
+
+        await smsService.sendReminder(user.mobileno, message);
+
+        Alert.alert("✅ SMS Sent", `Reminder sent to ${user.mobileno}`);
+      } catch (error) {
+        console.error("SMS failed:", error);
+        Alert.alert("⚠️ SMS Failed", error.message);
+      }
     }
 
     stopAllAlerts();

@@ -8,11 +8,12 @@ import authRouter from "./routes/authRoutes.js";
 import clinicRouter from "./routes/clinicRoutes.js"; // Add this
 import appointmentRouter from "./routes/appointmentRouter.js";
 import doctorRouter from "./routes/doctorRoutes.js";
+import smsRouter from "./routes/smsRoutes.js";
 
 const app = express();
 
-app.use(express.json({ limit: '50mb' })); // Increase from default 100kb to 50mb
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: "50mb" })); // Increase from default 100kb to 50mb
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cors());
 app.use(express.json());
 
@@ -36,6 +37,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/clinics", clinicRouter);
 app.use("/api/appointments", appointmentRouter);
 app.use("/api/doctors", doctorRouter);
+app.use("/api", smsRouter);
 
 app.get("/", (req, res) => {
   res.json({
