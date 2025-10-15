@@ -39,7 +39,8 @@ const Dashboard = ({ navigation }) => {
       setLoading(true);
       console.log("🔄 Fetching appointments for dashboard...");
 
-      const appointmentsData = await appointmentServices.getAllAppointments();
+      const appointmentsData =
+        await appointmentServices.getAppointmentsByPatientId(user.id);
       console.log("✅ Dashboard appointments fetched:", appointmentsData);
 
       setAppointments(appointmentsData || []);
