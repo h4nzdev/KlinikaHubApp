@@ -1,5 +1,5 @@
 import brevo from "@getbrevo/brevo";
-
+//This is service
 class BrevoService {
   constructor() {
     this.apiInstance = new brevo.TransactionalEmailsApi();
