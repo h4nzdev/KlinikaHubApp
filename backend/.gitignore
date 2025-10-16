@@ -8,7 +8,6 @@
 
 # Secrets and config files
 config/*.json
-config/*.js
 secrets/
 keys/
 credentials/
