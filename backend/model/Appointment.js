@@ -3,20 +3,20 @@ class Appointment {
   // Table schema definition
   static tableName = "appointment";
 
-  // Column definitions matching existing database
+  // Column definitions for MySQL
   static columns = {
-    id: "INTEGER PRIMARY KEY AUTOINCREMENT",
-    appointment_id: "TEXT NOT NULL",
-    clinic_id: "INTEGER NOT NULL",
-    doctor_id: "INTEGER NOT NULL",
-    patient_id: "INTEGER NOT NULL",
-    consultation_fees: "TEXT NOT NULL",
+    id: "INT AUTO_INCREMENT PRIMARY KEY",
+    appointment_id: "VARCHAR(255) NOT NULL",
+    clinic_id: "INT NOT NULL",
+    doctor_id: "INT NOT NULL",
+    patient_id: "INT NOT NULL",
+    consultation_fees: "DECIMAL(10,2) NOT NULL",
     discount: "DECIMAL(10,2) DEFAULT 0.00",
     schedule: "DATETIME",
     remarks: "TEXT",
     appointment_date: "DATE NOT NULL",
-    status: "INTEGER DEFAULT 0", // 0=pending, 1=confirmed, 2=completed, 3=cancelled
-    created_at: "DATETIME DEFAULT CURRENT_TIMESTAMP",
+    status: "TINYINT DEFAULT 0", // 0=pending, 1=confirmed, 2=completed, 3=cancelled
+    created_at: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
   };
 
   // Returns SQL CREATE TABLE statement
@@ -38,7 +38,7 @@ class Appointment {
         s.specialties as doctor_specialties,
         s.qualification as doctor_qualification
       FROM ${this.tableName} a
-      LEFT JOIN global_settings gs ON a.clinic_id = gs.id
+      LEFT JOIN clinics gs ON a.clinic_id = gs.id
       LEFT JOIN staff s ON a.doctor_id = s.id
     `;
   }
@@ -53,7 +53,7 @@ class Appointment {
         s.specialties as doctor_specialties,
         s.qualification as doctor_qualification
       FROM ${this.tableName} a
-      LEFT JOIN global_settings gs ON a.clinic_id = gs.id
+      LEFT JOIN clinics gs ON a.clinic_id = gs.id
       LEFT JOIN staff s ON a.doctor_id = s.id
       WHERE a.patient_id = ?
       ORDER BY a.appointment_date DESC, a.created_at DESC
@@ -74,7 +74,7 @@ class Appointment {
         s.experience_years as doctor_experience,
         s.photo as doctor_photo
       FROM ${this.tableName} a
-      LEFT JOIN global_settings gs ON a.clinic_id = gs.id
+      LEFT JOIN clinics gs ON a.clinic_id = gs.id
       LEFT JOIN staff s ON a.doctor_id = s.id
       WHERE a.id = ? OR a.appointment_id = ?
     `;

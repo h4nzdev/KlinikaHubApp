@@ -2,14 +2,23 @@ import database from "../config/database.js";
 import Patient from "../model/Patient.js";
 import cloudinary from "../config/cloudinary.js";
 import brevoService from "../services/brevoService.js";
-import { generateVerificationCode } from "../utils/generateCode.js"; // Add this import
+import { generateVerificationCode } from "../utils/generateCode.js";
+import bcrypt from "bcrypt";
 
 // In-memory storage for verification codes (replace with database later)
 const verificationCodes = new Map(); // email -> { code, expiresAt, patientData }
 
 class AuthController {
   constructor() {
-    this.db = database.getDatabase();
+    this.db = null;
+  }
+
+  // Initialize database connection
+  async initDB() {
+    if (!this.db) {
+      this.db = await database.getDatabase();
+    }
+    return this.db;
   }
 
   // ✅ NEW: Request verification code
@@ -102,58 +111,62 @@ class AuthController {
 
   // ✅ UPDATED: Patient Registration (with verification check)
   async register(patientData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
+
       // Check if email already exists
-      this.checkPatientExists(patientData.email)
-        .then((exists) => {
-          if (exists) {
-            reject(new Error("Email already registered"));
-            return;
-          }
+      const exists = await this.checkPatientExists(patientData.email);
+      if (exists) {
+        throw new Error("Email already registered");
+      }
 
-          // Filter out id and timestamp fields (auto-generated)
-          const insertableColumns = Object.keys(Patient.columns).filter(
-            (key) => !["id", "created_at", "updated_at"].includes(key)
-          );
+      // Hash password first
+      const hashedPassword = patientData.password
+        ? await bcrypt.hash(patientData.password, 10)
+        : null;
 
-          const columns = insertableColumns.join(", ");
-          const placeholders = insertableColumns.map(() => "?").join(", ");
+      // Filter out id and timestamp fields (auto-generated)
+      const insertableColumns = Object.keys(Patient.columns).filter(
+        (key) => !["id", "created_at", "updated_at"].includes(key)
+      );
 
-          const values = insertableColumns.map((key) => {
-            // Provide default values for required fields if missing
-            if (key === "patient_id" && !patientData[key]) {
-              return `PAT${Date.now()}`; // Generate unique patient ID
-            }
-            if (key === "category_id" && !patientData[key]) {
-              return 1; // Default category
-            }
-            if (key === "source" && !patientData[key]) {
-              return 1; // Default source
-            }
-            return patientData[key] || null;
-          });
+      const columns = insertableColumns.join(", ");
+      const placeholders = insertableColumns.map(() => "?").join(", ");
 
-          const sql = `INSERT INTO patients (${columns}) VALUES (${placeholders})`;
+      const values = insertableColumns.map((key) => {
+        // Handle password hashing
+        if (key === "password") {
+          return hashedPassword;
+        }
+        // Provide default values for required fields if missing
+        if (key === "patient_id" && !patientData[key]) {
+          return `PAT${Date.now()}`; // Generate unique patient ID
+        }
+        if (key === "category_id" && !patientData[key]) {
+          return 1; // Default category
+        }
+        if (key === "source" && !patientData[key]) {
+          return 1; // Default source
+        }
+        return patientData[key] || null;
+      });
 
-          this.db.run(sql, values, function (err) {
-            if (err) {
-              console.log("❌ Patient registration error:", err);
-              reject(err);
-            } else {
-              console.log("✅ Patient registered with ID:", this.lastID);
-              resolve({
-                success: true,
-                patient: {
-                  id: this.lastID,
-                  ...patientData,
-                  password: undefined, // Don't return password
-                },
-              });
-            }
-          });
-        })
-        .catch(reject);
-    });
+      const sql = `INSERT INTO patients (${columns}) VALUES (${placeholders})`;
+      const [result] = await db.execute(sql, values);
+
+      console.log("✅ Patient registered with ID:", result.insertId);
+      return {
+        success: true,
+        patient: {
+          id: result.insertId,
+          ...patientData,
+          password: undefined, // Don't return password
+        },
+      };
+    } catch (err) {
+      console.log("❌ Patient registration error:", err);
+      throw err;
+    }
   }
 
   // ✅ NEW: Resend verification code
@@ -182,75 +195,73 @@ class AuthController {
     }
   }
 
-  // Patient Login (unchanged)
+  // Patient Login
   async login(email, password) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
+
       // Check if email is provided
       if (!email || email.trim() === "") {
-        reject(new Error("Email is required"));
-        return;
+        throw new Error("Email is required");
       }
 
       // Check if password is provided
       if (!password || password.trim() === "") {
-        reject(new Error("Password is required"));
-        return;
+        throw new Error("Password is required");
       }
 
       // Check if email format is valid
       const emailRegex = /\S+@\S+\.\S+/;
       if (!emailRegex.test(email)) {
-        reject(new Error("Please enter a valid email address"));
-        return;
+        throw new Error("Please enter a valid email address");
       }
 
       // Check if password meets minimum length
       if (password.length < 6) {
-        reject(new Error("Password must be at least 6 characters"));
-        return;
+        throw new Error("Password must be at least 6 characters");
       }
 
-      this.db.get(
+      const [rows] = await db.execute(
         "SELECT * FROM patients WHERE email = ?",
-        [email],
-        (err, patient) => {
-          if (err) {
-            console.log("❌ Login error:", err);
-            reject(new Error("Database error occurred"));
-          } else if (!patient) {
-            reject(new Error("No account found with this email address"));
-          } else if (patient.password !== password) {
-            reject(new Error("Incorrect password. Please try again"));
-          } else {
-            resolve({
-              success: true,
-              patient: {
-                ...patient,
-                password: undefined,
-                role: "patient",
-              },
-            });
-          }
-        }
+        [email]
       );
-    });
+      const patient = rows[0];
+
+      if (!patient) {
+        throw new Error("No account found with this email address");
+      } else if (!(await bcrypt.compare(password, patient.password))) {
+        throw new Error("Incorrect password. Please try again");
+      } else {
+        return {
+          success: true,
+          patient: {
+            ...patient,
+            password: undefined,
+            role: "patient",
+          },
+        };
+      }
+    } catch (err) {
+      console.log("❌ Login error:", err);
+      throw new Error("Database error occurred");
+    }
   }
 
-  // Check if patient exists (unchanged)
+  // Check if patient exists
   async checkPatientExists(email) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         "SELECT id FROM patients WHERE email = ?",
-        [email],
-        (err, patient) => {
-          if (err) reject(err);
-          else resolve(!!patient);
-        }
+        [email]
       );
-    });
+      return rows.length > 0;
+    } catch (err) {
+      throw err;
+    }
   }
 
-  // Upload patient photo (unchanged)
+  // Upload patient photo
   async uploadPatientPhoto(base64Image) {
     try {
       console.log("🔄 Uploading patient photo to Cloudinary...");

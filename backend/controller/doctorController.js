@@ -4,27 +4,33 @@ import Doctor from "../model/Doctor.js";
 // Doctor Controller for Node.js/Express
 class DoctorController {
   constructor() {
-    this.db = database.getDatabase();
+    this.db = null;
+  }
+
+  // Initialize database connection
+  async initDB() {
+    if (!this.db) {
+      this.db = await database.getDatabase();
+    }
+    return this.db;
   }
 
   // Initialize doctor table
   async initTable() {
-    return new Promise((resolve, reject) => {
-      this.db.run(Doctor.getCreateTableSQL(), (err) => {
-        if (err) {
-          console.log("❌ Doctor table init error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Doctor table initialized");
-          resolve();
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      await db.execute(Doctor.getCreateTableSQL());
+      console.log("✅ Doctor table initialized");
+    } catch (err) {
+      console.log("❌ Doctor table init error:", err);
+      throw err;
+    }
   }
 
   // Create a new doctor
   async createDoctor(doctorData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       // Process JSON fields
       const processedData = { ...doctorData };
 
@@ -45,122 +51,103 @@ class DoctorController {
       );
 
       const sql = `INSERT INTO ${Doctor.tableName} (${columns}) VALUES (${placeholders})`;
+      const [result] = await db.execute(sql, values);
 
-      this.db.run(sql, values, function (err) {
-        if (err) {
-          console.log("❌ Doctor creation error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Doctor created with ID:", this.lastID);
-          resolve({ id: this.lastID, ...doctorData });
-        }
-      });
-    });
+      console.log("✅ Doctor created with ID:", result.insertId);
+      return { id: result.insertId, ...doctorData };
+    } catch (err) {
+      console.log("❌ Doctor creation error:", err);
+      throw err;
+    }
   }
 
   // Get all doctors
   async getAllDoctors() {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        `SELECT * FROM ${Doctor.tableName} ORDER BY created_at DESC`,
-        [],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Doctors fetch error:", err);
-            reject(err);
-          } else {
-            // Parse JSON fields
-            const doctors = rows.map((doctor) => this.parseDoctorData(doctor));
-            console.log("✅ Doctors found:", doctors.length);
-            resolve(doctors);
-          }
-        }
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        `SELECT * FROM ${Doctor.tableName} ORDER BY created_at DESC`
       );
-    });
+      // Parse JSON fields
+      const doctors = rows.map((doctor) => this.parseDoctorData(doctor));
+      console.log("✅ Doctors found:", doctors.length);
+      return doctors;
+    } catch (err) {
+      console.log("❌ Doctors fetch error:", err);
+      throw err;
+    }
   }
 
   // Get doctor by ID
   async getDoctorById(id) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         `SELECT * FROM ${Doctor.tableName} WHERE id = ?`,
-        [id],
-        (err, row) => {
-          if (err) {
-            console.log("❌ Doctor find error:", err);
-            reject(err);
-          } else {
-            const doctor = row ? this.parseDoctorData(row) : null;
-            resolve(doctor);
-          }
-        }
+        [id]
       );
-    });
+      const doctor = rows[0] ? this.parseDoctorData(rows[0]) : null;
+      return doctor;
+    } catch (err) {
+      console.log("❌ Doctor find error:", err);
+      throw err;
+    }
   }
 
   // Get doctor by staff_id
   async getDoctorByStaffId(staffId) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         `SELECT * FROM ${Doctor.tableName} WHERE staff_id = ?`,
-        [staffId],
-        (err, row) => {
-          if (err) {
-            console.log("❌ Doctor staff_id search error:", err);
-            reject(err);
-          } else {
-            const doctor = row ? this.parseDoctorData(row) : null;
-            resolve(doctor);
-          }
-        }
+        [staffId]
       );
-    });
+      const doctor = rows[0] ? this.parseDoctorData(rows[0]) : null;
+      return doctor;
+    } catch (err) {
+      console.log("❌ Doctor staff_id search error:", err);
+      throw err;
+    }
   }
 
   // Get doctors by department
   async getDoctorsByDepartment(departmentId) {
-    return new Promise((resolve, reject) => {
-      this.db.all(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         `SELECT * FROM ${Doctor.tableName} WHERE department = ? ORDER BY name ASC`,
-        [departmentId],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Doctors by department error:", err);
-            reject(err);
-          } else {
-            const doctors = rows.map((doctor) => this.parseDoctorData(doctor));
-            console.log(
-              `✅ Found ${doctors.length} doctors in department: ${departmentId}`
-            );
-            resolve(doctors);
-          }
-        }
+        [departmentId]
       );
-    });
+      const doctors = rows.map((doctor) => this.parseDoctorData(doctor));
+      console.log(
+        `✅ Found ${doctors.length} doctors in department: ${departmentId}`
+      );
+      return doctors;
+    } catch (err) {
+      console.log("❌ Doctors by department error:", err);
+      throw err;
+    }
   }
 
   // Get active doctors
   async getActiveDoctors() {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        `SELECT * FROM ${Doctor.tableName} WHERE is_active = 1 ORDER BY name ASC`,
-        [],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Active doctors fetch error:", err);
-            reject(err);
-          } else {
-            const doctors = rows.map((doctor) => this.parseDoctorData(doctor));
-            resolve(doctors);
-          }
-        }
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        `SELECT * FROM ${Doctor.tableName} WHERE is_active = 1 ORDER BY name ASC`
       );
-    });
+      const doctors = rows.map((doctor) => this.parseDoctorData(doctor));
+      return doctors;
+    } catch (err) {
+      console.log("❌ Active doctors fetch error:", err);
+      throw err;
+    }
   }
 
   // Update doctor
   async updateDoctor(id, doctorData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       // Process JSON fields
       const processedData = { ...doctorData };
 
@@ -183,39 +170,65 @@ class DoctorController {
         .concat(id);
 
       const sql = `UPDATE ${Doctor.tableName} SET ${updates}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+      await db.execute(sql, values);
 
-      this.db.run(sql, values, function (err) {
-        if (err) {
-          console.log("❌ Doctor update error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Doctor updated:", id);
-          resolve({ id, ...doctorData });
-        }
-      });
-    });
+      console.log("✅ Doctor updated:", id);
+      return { id, ...doctorData };
+    } catch (err) {
+      console.log("❌ Doctor update error:", err);
+      throw err;
+    }
   }
 
   // Delete doctor (soft delete by setting is_active to 0)
   async deleteDoctor(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
+    try {
+      const db = await this.initDB();
+      await db.execute(
         `UPDATE ${Doctor.tableName} SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        [id],
-        function (err) {
-          if (err) {
-            console.log("❌ Doctor delete error:", err);
-            reject(err);
-          } else {
-            console.log("✅ Doctor deactivated:", id);
-            resolve({ deletedId: id });
-          }
-        }
+        [id]
       );
-    });
+      console.log("✅ Doctor deactivated:", id);
+      return { deletedId: id };
+    } catch (err) {
+      console.log("❌ Doctor delete error:", err);
+      throw err;
+    }
   }
 
-  // HELPER METHOD: Parse doctor data (JSON fields)
+  // Get doctors by clinic ID
+  async getDoctorsByClinicId(clinicId) {
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        `SELECT * FROM ${Doctor.tableName} WHERE clinic_id = ? ORDER BY name ASC`,
+        [clinicId]
+      );
+      const doctors = rows.map((doctor) => this.parseDoctorData(doctor));
+      console.log(`✅ Found ${doctors.length} doctors for clinic: ${clinicId}`);
+      return doctors;
+    } catch (err) {
+      console.log("❌ Doctors by clinic error:", err);
+      throw err;
+    }
+  }
+
+  // Recreate table
+  async recreateTable() {
+    try {
+      const db = await this.initDB();
+      // Drop existing table
+      await db.execute(`DROP TABLE IF EXISTS ${Doctor.tableName}`);
+      // Create new table with updated schema
+      await db.execute(Doctor.getCreateTableSQL());
+      console.log("✅ Doctor table recreated with clinic_id");
+    } catch (err) {
+      console.log("❌ Table recreation error:", err);
+      throw err;
+    }
+  }
+
+  // HELPER METHOD: Parse doctor data (JSON fields) - keep your existing method unchanged
   parseDoctorData(doctor) {
     const parsedDoctor = { ...doctor };
 
@@ -248,54 +261,6 @@ class DoctorController {
     }
 
     return parsedDoctor;
-  }
-
-  // Add this to your DoctorController
-  async recreateTable() {
-    return new Promise((resolve, reject) => {
-      // Drop existing table
-      this.db.run(`DROP TABLE IF EXISTS ${Doctor.tableName}`, (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        // Create new table with updated schema
-        this.db.run(Doctor.getCreateTableSQL(), (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            console.log("✅ Doctor table recreated with clinic_id");
-            resolve();
-          }
-        });
-      });
-    });
-  }
-
-  // @route   GET /api/doctors/clinic/:clinicId
-  // @desc    Get doctors by clinic ID
-  // @access  Public
-  async getDoctorsByClinicId(clinicId) {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        `SELECT * FROM ${Doctor.tableName} WHERE clinic_id = ? ORDER BY name ASC`,
-        [clinicId],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Doctors by clinic error:", err);
-            reject(err);
-          } else {
-            // Parse JSON fields
-            const doctors = rows.map((doctor) => this.parseDoctorData(doctor));
-            console.log(
-              `✅ Found ${doctors.length} doctors for clinic: ${clinicId}`
-            );
-            resolve(doctors);
-          }
-        }
-      );
-    });
   }
 }
 

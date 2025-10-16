@@ -5,27 +5,33 @@ import cloudinary from "../config/cloudinary.js";
 // Patient Controller for Node.js/Express
 class PatientController {
   constructor() {
-    this.db = database.getDatabase();
+    this.db = null;
+  }
+
+  // Initialize database connection
+  async initDB() {
+    if (!this.db) {
+      this.db = await database.getDatabase();
+    }
+    return this.db;
   }
 
   // Initialize patients table
   async initTable() {
-    return new Promise((resolve, reject) => {
-      this.db.run(Patient.getCreateTableSQL(), (err) => {
-        if (err) {
-          console.log("❌ Table init error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Patients table initialized");
-          resolve();
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      await db.execute(Patient.getCreateTableSQL());
+      console.log("✅ Patients table initialized");
+    } catch (err) {
+      console.log("❌ Table init error:", err);
+      throw err;
+    }
   }
 
   // Create a new patient
   async createPatient(patientData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       const columns = Object.keys(Patient.columns).join(", ");
       const placeholders = Object.keys(Patient.columns)
         .map(() => "?")
@@ -35,73 +41,64 @@ class PatientController {
       );
 
       const sql = `INSERT INTO patients (${columns}) VALUES (${placeholders})`;
+      const [result] = await db.execute(sql, values);
 
-      this.db.run(sql, values, function (err) {
-        if (err) {
-          console.log("❌ Patient creation error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Patient created with ID:", this.lastID);
-          resolve({ id: this.lastID, ...patientData });
-        }
-      });
-    });
+      console.log("✅ Patient created with ID:", result.insertId);
+      return { id: result.insertId, ...patientData };
+    } catch (err) {
+      console.log("❌ Patient creation error:", err);
+      throw err;
+    }
   }
 
   // Get all patients
   async getAllPatients() {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        "SELECT * FROM patients ORDER BY created_at DESC",
-        [],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Patients fetch error:", err);
-            reject(err);
-          } else {
-            console.log("✅ Patients found:", rows.length);
-            resolve(rows);
-          }
-        }
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        "SELECT * FROM patients ORDER BY created_at DESC"
       );
-    });
+      console.log("✅ Patients found:", rows.length);
+      return rows;
+    } catch (err) {
+      console.log("❌ Patients fetch error:", err);
+      throw err;
+    }
   }
 
   // Get patient by ID
   async getPatientById(id) {
-    return new Promise((resolve, reject) => {
-      this.db.get("SELECT * FROM patients WHERE id = ?", [id], (err, row) => {
-        if (err) {
-          console.log("❌ Patient find error:", err);
-          reject(err);
-        } else {
-          resolve(row || null);
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute("SELECT * FROM patients WHERE id = ?", [
+        id,
+      ]);
+      return rows[0] || null;
+    } catch (err) {
+      console.log("❌ Patient find error:", err);
+      throw err;
+    }
   }
 
   // Get patient by email
   async getPatientByEmail(email) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         "SELECT * FROM patients WHERE email = ?",
-        [email],
-        (err, row) => {
-          if (err) {
-            console.log("❌ Patient email search error:", err);
-            reject(err);
-          } else {
-            resolve(row || null);
-          }
-        }
+        [email]
       );
-    });
+      return rows[0] || null;
+    } catch (err) {
+      console.log("❌ Patient email search error:", err);
+      throw err;
+    }
   }
 
   // Update patient
   async updatePatient(id, patientData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       const updates = Object.keys(patientData)
         .filter((key) => key !== "id")
         .map((key) => `${key} = ?`)
@@ -113,58 +110,49 @@ class PatientController {
         .concat(id);
 
       const sql = `UPDATE patients SET ${updates}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+      await db.execute(sql, values);
 
-      this.db.run(sql, values, function (err) {
-        if (err) {
-          console.log("❌ Patient update error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Patient updated:", id);
-          resolve({ id, ...patientData });
-        }
-      });
-    });
+      console.log("✅ Patient updated:", id);
+      return { id, ...patientData };
+    } catch (err) {
+      console.log("❌ Patient update error:", err);
+      throw err;
+    }
   }
 
   // Delete patient
   async deletePatient(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run("DELETE FROM patients WHERE id = ?", [id], function (err) {
-        if (err) {
-          console.log("❌ Patient delete error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Patient deleted:", id);
-          resolve({ deletedId: id });
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      await db.execute("DELETE FROM patients WHERE id = ?", [id]);
+      console.log("✅ Patient deleted:", id);
+      return { deletedId: id };
+    } catch (err) {
+      console.log("❌ Patient delete error:", err);
+      throw err;
+    }
   }
-  // Add to PatientController class
+
+  // Update profile picture
   async updateProfilePicture(patientId, base64Image) {
     try {
+      const db = await this.initDB();
       console.log("🔄 Uploading profile picture for patient:", patientId);
 
       // Upload to Cloudinary
       const imageUrl = await this.uploadToCloudinary(base64Image);
 
       // Update patient record
-      return new Promise((resolve, reject) => {
-        const sql = `UPDATE patients SET photo = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+      await db.execute(
+        "UPDATE patients SET photo = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [imageUrl, patientId]
+      );
 
-        this.db.run(sql, [imageUrl, patientId], function (err) {
-          if (err) {
-            console.log("❌ Profile picture update error:", err);
-            reject(err);
-          } else {
-            console.log("✅ Profile picture updated for patient:", patientId);
-            resolve({
-              success: true,
-              profile_picture: imageUrl,
-            });
-          }
-        });
-      });
+      console.log("✅ Profile picture updated for patient:", patientId);
+      return {
+        success: true,
+        profile_picture: imageUrl,
+      };
     } catch (error) {
       console.error("❌ Error updating profile picture:", error);
       throw error;
@@ -172,6 +160,7 @@ class PatientController {
   }
 
   async uploadToCloudinary(base64Image) {
+    // ... keep your existing cloudinary code unchanged ...
     try {
       console.log("🔄 Starting Cloudinary upload...");
       console.log("🔧 Cloudinary Config Check:");

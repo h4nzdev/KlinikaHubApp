@@ -1,5 +1,4 @@
 # API Keys and environment variables
-.env
 .env.local
 .env.development.local
 .env.test.local

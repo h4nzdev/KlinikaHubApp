@@ -4,27 +4,33 @@ import Clinic from "../model/Clinic.js";
 // Clinic Controller for Node.js/Express
 class ClinicController {
   constructor() {
-    this.db = database.getDatabase();
+    this.db = null;
+  }
+
+  // Initialize database connection
+  async initDB() {
+    if (!this.db) {
+      this.db = await database.getDatabase();
+    }
+    return this.db;
   }
 
   // Initialize clinic table
   async initTable() {
-    return new Promise((resolve, reject) => {
-      this.db.run(Clinic.getCreateTableSQL(), (err) => {
-        if (err) {
-          console.log("❌ Table init error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Clinic table initialized");
-          resolve();
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      await db.execute(Clinic.getCreateTableSQL());
+      console.log("✅ Clinic table initialized");
+    } catch (err) {
+      console.log("❌ Table init error:", err);
+      throw err;
+    }
   }
 
   // Create a new clinic
   async createClinic(clinicData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       // Handle categories field - convert array to JSON string if needed
       const processedData = { ...clinicData };
 
@@ -47,145 +53,131 @@ class ClinicController {
         (key) => processedData[key] || null
       );
 
-      const sql = `INSERT INTO global_settings (${columns}) VALUES (${placeholders})`;
+      const sql = `INSERT INTO clinics (${columns}) VALUES (${placeholders})`;
+      const [result] = await db.execute(sql, values);
 
-      this.db.run(sql, values, function (err) {
-        if (err) {
-          console.log("❌ Clinic creation error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Clinic created with ID:", this.lastID);
-          resolve({ id: this.lastID, ...clinicData });
-        }
-      });
-    });
+      console.log("✅ Clinic created with ID:", result.insertId);
+      return { id: result.insertId, ...clinicData };
+    } catch (err) {
+      console.log("❌ Clinic creation error:", err);
+      throw err;
+    }
   }
 
   // Get all clinics
   async getAllClinics() {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        "SELECT * FROM global_settings ORDER BY created_at DESC",
-        [],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Clinics fetch error:", err);
-            reject(err);
-          } else {
-            // Parse JSON fields for categories and specialties
-            const clinics = rows.map((clinic) => this.parseClinicData(clinic));
-            console.log("✅ Clinics found:", clinics.length);
-            resolve(clinics);
-          }
-        }
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        "SELECT * FROM clinics ORDER BY created_at DESC"
       );
-    });
+      // Parse JSON fields for categories and specialties
+      const clinics = rows.map((clinic) => this.parseClinicData(clinic));
+      console.log("✅ Clinics found:", clinics.length);
+      return clinics;
+    } catch (err) {
+      console.log("❌ Clinics fetch error:", err);
+      throw err;
+    }
   }
 
   // Get clinic by ID
   async getClinicById(id) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        "SELECT * FROM global_settings WHERE id = ?",
-        [id],
-        (err, row) => {
-          if (err) {
-            console.log("❌ Clinic find error:", err);
-            reject(err);
-          } else {
-            const clinic = row ? this.parseClinicData(row) : null;
-            resolve(clinic);
-          }
-        }
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        "SELECT * FROM clinics WHERE id = ?",
+        [id]
       );
-    });
+      const clinic = rows[0] ? this.parseClinicData(rows[0]) : null;
+      return clinic;
+    } catch (err) {
+      console.log("❌ Clinic find error:", err);
+      throw err;
+    }
   }
 
   // Get clinic by name
   async getClinicByName(name) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        "SELECT * FROM global_settings WHERE institute_name = ?",
-        [name],
-        (err, row) => {
-          if (err) {
-            console.log("❌ Clinic name search error:", err);
-            reject(err);
-          } else {
-            const clinic = row ? this.parseClinicData(row) : null;
-            resolve(clinic);
-          }
-        }
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        "SELECT * FROM clinics WHERE institute_name = ?",
+        [name]
       );
-    });
+      const clinic = rows[0] ? this.parseClinicData(rows[0]) : null;
+      return clinic;
+    } catch (err) {
+      console.log("❌ Clinic name search error:", err);
+      throw err;
+    }
   }
 
   // GET CLINICS BY CATEGORY
   async getClinicsByCategory(category) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
+
       if (category === "All") {
         // If 'All', return all clinics
-        this.getAllClinics().then(resolve).catch(reject);
-        return;
+        return await this.getAllClinics();
       }
 
       // Search in primary_category or categories JSON array
       const sql = `
-        SELECT * FROM global_settings 
+        SELECT * FROM clinics 
         WHERE primary_category = ? 
-        OR categories LIKE ?
+        OR JSON_CONTAINS(categories, ?)
         ORDER BY created_at DESC
       `;
 
-      const categoryPattern = `%"${category}"%`; // For JSON array search
-
-      this.db.all(sql, [category, categoryPattern], (err, rows) => {
-        if (err) {
-          console.log("❌ Clinics by category error:", err);
-          reject(err);
-        } else {
-          // Parse JSON fields
-          const clinics = rows.map((clinic) => this.parseClinicData(clinic));
-          console.log(
-            `✅ Found ${clinics.length} clinics in category: ${category}`
-          );
-          resolve(clinics);
-        }
-      });
-    });
+      const [rows] = await db.execute(sql, [category, `"${category}"`]);
+      // Parse JSON fields
+      const clinics = rows.map((clinic) => this.parseClinicData(clinic));
+      console.log(
+        `✅ Found ${clinics.length} clinics in category: ${category}`
+      );
+      return clinics;
+    } catch (err) {
+      console.log("❌ Clinics by category error:", err);
+      throw err;
+    }
   }
 
   // GET ALL UNIQUE CATEGORIES
   async getAllCategories() {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       const sql = `
         SELECT DISTINCT primary_category 
-        FROM global_settings 
+        FROM clinics 
         WHERE primary_category IS NOT NULL AND primary_category != ''
         UNION
-        SELECT DISTINCT json_each.value as primary_category
-        FROM global_settings, json_each(categories)
+        SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(categories, CONCAT('$[', idx.idx, ']'))) as primary_category
+        FROM clinics
+        CROSS JOIN (
+          SELECT 0 as idx UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4
+        ) idx
         WHERE categories IS NOT NULL AND categories != '[]'
+        AND JSON_EXTRACT(categories, CONCAT('$[', idx.idx, ']')) IS NOT NULL
       `;
 
-      this.db.all(sql, [], (err, rows) => {
-        if (err) {
-          console.log("❌ Categories fetch error:", err);
-          reject(err);
-        } else {
-          const categories = rows
-            .map((row) => row.primary_category)
-            .filter(Boolean);
-          console.log("✅ Found categories:", categories);
-          resolve(categories);
-        }
-      });
-    });
+      const [rows] = await db.execute(sql);
+      const categories = rows
+        .map((row) => row.primary_category)
+        .filter(Boolean);
+      console.log("✅ Found categories:", categories);
+      return categories;
+    } catch (err) {
+      console.log("❌ Categories fetch error:", err);
+      throw err;
+    }
   }
 
   // Update clinic
   async updateClinic(id, clinicData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       // Handle categories field - convert array to JSON string if needed
       const processedData = { ...clinicData };
 
@@ -210,40 +202,31 @@ class ClinicController {
         .map((key) => processedData[key])
         .concat(id);
 
-      const sql = `UPDATE global_settings SET ${updates}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+      const sql = `UPDATE clinics SET ${updates}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+      await db.execute(sql, values);
 
-      this.db.run(sql, values, function (err) {
-        if (err) {
-          console.log("❌ Clinic update error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Clinic updated:", id);
-          resolve({ id, ...clinicData });
-        }
-      });
-    });
+      console.log("✅ Clinic updated:", id);
+      return { id, ...clinicData };
+    } catch (err) {
+      console.log("❌ Clinic update error:", err);
+      throw err;
+    }
   }
 
   // Delete clinic
   async deleteClinic(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        "DELETE FROM global_settings WHERE id = ?",
-        [id],
-        function (err) {
-          if (err) {
-            console.log("❌ Clinic delete error:", err);
-            reject(err);
-          } else {
-            console.log("✅ Clinic deleted:", id);
-            resolve({ deletedId: id });
-          }
-        }
-      );
-    });
+    try {
+      const db = await this.initDB();
+      await db.execute("DELETE FROM clinics WHERE id = ?", [id]);
+      console.log("✅ Clinic deleted:", id);
+      return { deletedId: id };
+    } catch (err) {
+      console.log("❌ Clinic delete error:", err);
+      throw err;
+    }
   }
 
-  // HELPER METHOD: Parse clinic data (JSON fields)
+  // HELPER METHOD: Parse clinic data (JSON fields) - keep your existing method unchanged
   parseClinicData(clinic) {
     const parsedClinic = { ...clinic };
 

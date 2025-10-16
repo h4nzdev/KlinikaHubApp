@@ -3,33 +3,34 @@ class Patient {
   // Table schema definition
   static tableName = "patients";
 
-  // Column definitions matching your mock data
+  // Column definitions for MySQL
   static columns = {
-    id: "INTEGER PRIMARY KEY AUTOINCREMENT",
-    last_name: "TEXT NOT NULL",
-    first_name: "TEXT NOT NULL",
-    middle_name: "TEXT",
-    patient_id: "TEXT UNIQUE",
-    category_id: "INTEGER",
-    birthday: "TEXT",
-    sex: "TEXT",
-    blood_group: "TEXT",
-    blood_pressure: "TEXT",
-    height: "TEXT",
-    weight: "TEXT",
-    marital_status: "TEXT",
-    age: "TEXT",
+    id: "INT AUTO_INCREMENT PRIMARY KEY",
+    last_name: "VARCHAR(255) NOT NULL",
+    first_name: "VARCHAR(255) NOT NULL",
+    middle_name: "VARCHAR(255)",
+    patient_id: "VARCHAR(255) UNIQUE",
+    category_id: "INT",
+    birthday: "DATE",
+    sex: "VARCHAR(50)",
+    blood_group: "VARCHAR(10)",
+    blood_pressure: "VARCHAR(50)",
+    height: "VARCHAR(50)",
+    weight: "VARCHAR(50)",
+    marital_status: "VARCHAR(50)",
+    age: "INT",
     address: "TEXT",
-    mobileno: "TEXT",
-    email: "TEXT UNIQUE",
-    password: "TEXT",
+    mobileno: "VARCHAR(20)",
+    email: "VARCHAR(255) UNIQUE",
+    password: "VARCHAR(255)",
     photo: "TEXT",
-    guardian: "TEXT",
-    relationship: "TEXT",
-    gua_mobileno: "TEXT",
-    source: "INTEGER",
-    created_at: "DATETIME DEFAULT CURRENT_TIMESTAMP",
-    updated_at: "DATETIME DEFAULT CURRENT_TIMESTAMP",
+    guardian: "VARCHAR(255)",
+    relationship: "VARCHAR(100)",
+    gua_mobileno: "VARCHAR(20)",
+    source: "INT",
+    created_at: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    updated_at:
+      "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
   };
 
   // Returns SQL CREATE TABLE statement

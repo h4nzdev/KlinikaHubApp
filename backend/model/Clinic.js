@@ -1,26 +1,27 @@
 // Clinic Model - Defines the data structure and table schema
 class Clinic {
   // Table schema definition
-  static tableName = "global_settings";
+  static tableName = "clinics";
 
-  // Column definitions matching existing database
+  // Column definitions for MySQL
   static columns = {
-    id: "INTEGER PRIMARY KEY AUTOINCREMENT",
-    institute_name: "TEXT NOT NULL",
-    institute_email: "TEXT NOT NULL",
+    id: "INT AUTO_INCREMENT PRIMARY KEY",
+    institute_name: "VARCHAR(255) NOT NULL",
+    institute_email: "VARCHAR(255) NOT NULL",
     address: "TEXT NOT NULL",
-    mobileno: "TEXT NOT NULL",
-    working_hours: "TEXT",
+    mobileno: "VARCHAR(20) NOT NULL",
+    working_hours: "VARCHAR(255)",
     facebook_url: "TEXT",
     twitter_url: "TEXT",
     linkedin_url: "TEXT",
     youtube_url: "TEXT",
     // NEW: Category fields
-    primary_category: "TEXT DEFAULT 'general'",
-    categories: "TEXT DEFAULT '[\"general\"]'", // JSON array as string
-    specialties: "TEXT",
-    created_at: "DATETIME DEFAULT CURRENT_TIMESTAMP",
-    updated_at: "DATETIME DEFAULT CURRENT_TIMESTAMP",
+    primary_category: "VARCHAR(100) DEFAULT 'general'",
+    categories: "JSON DEFAULT ('[\"general\"]')", // JSON array
+    specialties: "JSON",
+    created_at: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    updated_at:
+      "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
   };
 
   // Returns SQL CREATE TABLE statement

@@ -4,27 +4,33 @@ import Appointment from "../model/Appointment.js";
 // Appointment Controller for Node.js/Express
 class AppointmentController {
   constructor() {
-    this.db = database.getDatabase();
+    this.db = null;
+  }
+
+  // Initialize database connection
+  async initDB() {
+    if (!this.db) {
+      this.db = await database.getDatabase();
+    }
+    return this.db;
   }
 
   // Initialize appointment table
   async initTable() {
-    return new Promise((resolve, reject) => {
-      this.db.run(Appointment.getCreateTableSQL(), (err) => {
-        if (err) {
-          console.log("❌ Appointment table init error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Appointment table initialized");
-          resolve();
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      await db.execute(Appointment.getCreateTableSQL());
+      console.log("✅ Appointment table initialized");
+    } catch (err) {
+      console.log("❌ Appointment table init error:", err);
+      throw err;
+    }
   }
 
   // Create a new appointment
   async createAppointment(appointmentData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       // Generate unique appointment_id if not provided
       const processedData = { ...appointmentData };
       if (!processedData.appointment_id) {
@@ -41,138 +47,114 @@ class AppointmentController {
       );
 
       const sql = `INSERT INTO ${Appointment.tableName} (${columns}) VALUES (${placeholders})`;
+      const [result] = await db.execute(sql, values);
 
-      this.db.run(sql, values, function (err) {
-        if (err) {
-          console.log("❌ Appointment creation error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Appointment created with ID:", this.lastID);
-          resolve({ id: this.lastID, ...appointmentData });
-        }
-      });
-    });
+      console.log("✅ Appointment created with ID:", result.insertId);
+      return { id: result.insertId, ...appointmentData };
+    } catch (err) {
+      console.log("❌ Appointment creation error:", err);
+      throw err;
+    }
   }
 
   // Get all appointments
   async getAllAppointments() {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        `SELECT * FROM ${Appointment.tableName} ORDER BY appointment_date DESC, created_at DESC`,
-        [],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Appointments fetch error:", err);
-            reject(err);
-          } else {
-            console.log("✅ Appointments found:", rows.length);
-            resolve(rows);
-          }
-        }
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        `SELECT * FROM ${Appointment.tableName} ORDER BY appointment_date DESC, created_at DESC`
       );
-    });
+      console.log("✅ Appointments found:", rows.length);
+      return rows;
+    } catch (err) {
+      console.log("❌ Appointments fetch error:", err);
+      throw err;
+    }
   }
 
   // Get appointment by ID
   async getAppointmentById(id) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         `SELECT * FROM ${Appointment.tableName} WHERE id = ?`,
-        [id],
-        (err, row) => {
-          if (err) {
-            console.log("❌ Appointment find error:", err);
-            reject(err);
-          } else {
-            resolve(row || null);
-          }
-        }
+        [id]
       );
-    });
+      return rows[0] || null;
+    } catch (err) {
+      console.log("❌ Appointment find error:", err);
+      throw err;
+    }
   }
 
   // Get appointments by patient ID
   async getAppointmentsByPatientId(patientId) {
-    return new Promise((resolve, reject) => {
-      this.db.all(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         `SELECT * FROM ${Appointment.tableName} WHERE patient_id = ? ORDER BY appointment_date DESC`,
-        [patientId],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Patient appointments fetch error:", err);
-            reject(err);
-          } else {
-            console.log(
-              `✅ Found ${rows.length} appointments for patient: ${patientId}`
-            );
-            resolve(rows);
-          }
-        }
+        [patientId]
       );
-    });
+      console.log(
+        `✅ Found ${rows.length} appointments for patient: ${patientId}`
+      );
+      return rows;
+    } catch (err) {
+      console.log("❌ Patient appointments fetch error:", err);
+      throw err;
+    }
   }
 
   // Get appointments by doctor ID
   async getAppointmentsByDoctorId(doctorId) {
-    return new Promise((resolve, reject) => {
-      this.db.all(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         `SELECT * FROM ${Appointment.tableName} WHERE doctor_id = ? ORDER BY appointment_date DESC`,
-        [doctorId],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Doctor appointments fetch error:", err);
-            reject(err);
-          } else {
-            console.log(
-              `✅ Found ${rows.length} appointments for doctor: ${doctorId}`
-            );
-            resolve(rows);
-          }
-        }
+        [doctorId]
       );
-    });
+      console.log(
+        `✅ Found ${rows.length} appointments for doctor: ${doctorId}`
+      );
+      return rows;
+    } catch (err) {
+      console.log("❌ Doctor appointments fetch error:", err);
+      throw err;
+    }
   }
 
   // Get appointments by date
   async getAppointmentsByDate(date) {
-    return new Promise((resolve, reject) => {
-      this.db.all(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         `SELECT * FROM ${Appointment.tableName} WHERE appointment_date = ? ORDER BY schedule ASC`,
-        [date],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Date appointments fetch error:", err);
-            reject(err);
-          } else {
-            console.log(
-              `✅ Found ${rows.length} appointments for date: ${date}`
-            );
-            resolve(rows);
-          }
-        }
+        [date]
       );
-    });
+      console.log(`✅ Found ${rows.length} appointments for date: ${date}`);
+      return rows;
+    } catch (err) {
+      console.log("❌ Date appointments fetch error:", err);
+      throw err;
+    }
   }
 
   // Get appointments by status
   async getAppointmentsByStatus(status) {
-    return new Promise((resolve, reject) => {
-      this.db.all(
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
         `SELECT * FROM ${Appointment.tableName} WHERE status = ? ORDER BY appointment_date DESC`,
-        [status],
-        (err, rows) => {
-          if (err) {
-            console.log("❌ Status appointments fetch error:", err);
-            reject(err);
-          } else {
-            console.log(
-              `✅ Found ${rows.length} appointments with status: ${status}`
-            );
-            resolve(rows);
-          }
-        }
+        [status]
       );
-    });
+      console.log(
+        `✅ Found ${rows.length} appointments with status: ${status}`
+      );
+      return rows;
+    } catch (err) {
+      console.log("❌ Status appointments fetch error:", err);
+      throw err;
+    }
   }
 
   // Get today's appointments
@@ -183,7 +165,8 @@ class AppointmentController {
 
   // Update appointment
   async updateAppointment(id, appointmentData) {
-    return new Promise((resolve, reject) => {
+    try {
+      const db = await this.initDB();
       const updates = Object.keys(appointmentData)
         .filter((key) => key !== "id")
         .map((key) => `${key} = ?`)
@@ -195,140 +178,93 @@ class AppointmentController {
         .concat(id);
 
       const sql = `UPDATE ${Appointment.tableName} SET ${updates} WHERE id = ?`;
+      await db.execute(sql, values);
 
-      this.db.run(sql, values, function (err) {
-        if (err) {
-          console.log("❌ Appointment update error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Appointment updated:", id);
-          resolve({ id, ...appointmentData });
-        }
-      });
-    });
+      console.log("✅ Appointment updated:", id);
+      return { id, ...appointmentData };
+    } catch (err) {
+      console.log("❌ Appointment update error:", err);
+      throw err;
+    }
   }
 
   // Get appointments by patient ID WITH clinic and doctor names
   async getAppointmentsByPatientIdWithDetails(patientId) {
-    return new Promise((resolve, reject) => {
-      const sql = `
-        SELECT 
-          a.*,
-          gs.institute_name as clinic_name,
-          s.name as doctor_name,
-          s.specialties as doctor_specialties
-        FROM ${Appointment.tableName} a
-        LEFT JOIN global_settings gs ON a.clinic_id = gs.id
-        LEFT JOIN staff s ON a.doctor_id = s.id
-        WHERE a.patient_id = ? 
-        ORDER BY a.appointment_date DESC
-      `;
-
-      this.db.all(sql, [patientId], (err, rows) => {
-        if (err) {
-          console.log("❌ Patient appointments with details error:", err);
-          reject(err);
-        } else {
-          console.log(
-            `✅ Found ${rows.length} detailed appointments for patient: ${patientId}`
-          );
-          resolve(rows);
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        Appointment.getAppointmentsByPatientIdWithDetailsSQL(),
+        [patientId]
+      );
+      console.log(
+        `✅ Found ${rows.length} detailed appointments for patient: ${patientId}`
+      );
+      return rows;
+    } catch (err) {
+      console.log("❌ Patient appointments with details error:", err);
+      throw err;
+    }
   }
 
   // Get single appointment WITH clinic and doctor details
   async getAppointmentWithDetails(appointmentId) {
-    return new Promise((resolve, reject) => {
-      const sql = `
-        SELECT 
-          a.*,
-          gs.institute_name as clinic_name,
-          gs.address as clinic_address,
-          s.name as doctor_name,
-          s.specialties as doctor_specialties,
-          s.qualification as doctor_qualification
-        FROM ${Appointment.tableName} a
-        LEFT JOIN global_settings gs ON a.clinic_id = gs.id
-        LEFT JOIN staff s ON a.doctor_id = s.id
-        WHERE a.id = ? OR a.appointment_id = ?
-      `;
-
-      this.db.get(sql, [appointmentId, appointmentId], (err, row) => {
-        if (err) {
-          console.log("❌ Appointment details fetch error:", err);
-          reject(err);
-        } else {
-          resolve(row || null);
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        Appointment.getAppointmentWithDetailsSQL(),
+        [appointmentId, appointmentId]
+      );
+      return rows[0] || null;
+    } catch (err) {
+      console.log("❌ Appointment details fetch error:", err);
+      throw err;
+    }
   }
 
   // Get all appointments WITH clinic and doctor names
   async getAllAppointmentsWithDetails() {
-    return new Promise((resolve, reject) => {
-      const sql = `
-        SELECT 
-          a.*,
-          gs.institute_name as clinic_name,
-          s.name as doctor_name,
-          s.specialties as doctor_specialties
-        FROM ${Appointment.tableName} a
-        LEFT JOIN global_settings gs ON a.clinic_id = gs.id
-        LEFT JOIN staff s ON a.doctor_id = s.id
-        ORDER BY a.appointment_date DESC, a.created_at DESC
-      `;
-
-      this.db.all(sql, [], (err, rows) => {
-        if (err) {
-          console.log("❌ Appointments with details fetch error:", err);
-          reject(err);
-        } else {
-          console.log("✅ Appointments with details found:", rows.length);
-          resolve(rows);
-        }
-      });
-    });
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        Appointment.getAppointmentsWithDetailsSQL()
+      );
+      console.log("✅ Appointments with details found:", rows.length);
+      return rows;
+    } catch (err) {
+      console.log("❌ Appointments with details fetch error:", err);
+      throw err;
+    }
   }
 
   // Update appointment status
   async updateAppointmentStatus(id, status) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
+    try {
+      const db = await this.initDB();
+      await db.execute(
         `UPDATE ${Appointment.tableName} SET status = ? WHERE id = ?`,
-        [status, id],
-        function (err) {
-          if (err) {
-            console.log("❌ Appointment status update error:", err);
-            reject(err);
-          } else {
-            console.log("✅ Appointment status updated:", id, "to", status);
-            resolve({ id, status });
-          }
-        }
+        [status, id]
       );
-    });
+      console.log("✅ Appointment status updated:", id, "to", status);
+      return { id, status };
+    } catch (err) {
+      console.log("❌ Appointment status update error:", err);
+      throw err;
+    }
   }
 
   // Delete appointment
   async deleteAppointment(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        `DELETE FROM ${Appointment.tableName} WHERE id = ?`,
-        [id],
-        function (err) {
-          if (err) {
-            console.log("❌ Appointment delete error:", err);
-            reject(err);
-          } else {
-            console.log("✅ Appointment deleted:", id);
-            resolve({ deletedId: id });
-          }
-        }
-      );
-    });
+    try {
+      const db = await this.initDB();
+      await db.execute(`DELETE FROM ${Appointment.tableName} WHERE id = ?`, [
+        id,
+      ]);
+      console.log("✅ Appointment deleted:", id);
+      return { deletedId: id };
+    } catch (err) {
+      console.log("❌ Appointment delete error:", err);
+      throw err;
+    }
   }
 
   // HELPER: Generate unique appointment ID
