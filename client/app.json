@@ -15,7 +15,11 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kinikahub.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.kinikahub.app",
@@ -32,6 +36,12 @@
       "eas": {
         "projectId": "217cf780-89ca-4c63-92cb-961b76ec7b2a"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/217cf780-89ca-4c63-92cb-961b76ec7b2a"
     }
   }
 }

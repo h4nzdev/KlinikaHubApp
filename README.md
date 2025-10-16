@@ -5,6 +5,7 @@ KlinikaHub is a comprehensive healthcare management system designed to streamlin
 ## Features
 
 ### For Patients
+
 - 🏥 **Appointment Management**: Schedule, view, and manage medical appointments
 - 💬 **AI-Powered Chat**: Get instant responses to health-related queries
 - 📋 **Medical Records**: Access and track personal medical history
@@ -16,12 +17,14 @@ KlinikaHub is a comprehensive healthcare management system designed to streamlin
 ## Tech Stack
 
 ### Backend
+
 - Node.js
 - Express.js
 - SQLite Database
 - JWT Authentication
 
 ### Frontend
+
 - React Native
 - Tailwind CSS
 - Metro bundler
@@ -29,6 +32,7 @@ KlinikaHub is a comprehensive healthcare management system designed to streamlin
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js (v14 or higher)
 - npm or yarn
 - Git
@@ -37,30 +41,35 @@ KlinikaHub is a comprehensive healthcare management system designed to streamlin
 ### Installation Steps
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/h4nzdev/KlinikaHubApp.git
 cd KlinikaHubApp
 ```
 
 2. Install Backend Dependencies
+
 ```bash
 cd backend
 npm install
 ```
 
 3. Set up the Database
+
 ```bash
 # The SQLite database will be automatically created when you start the server
 npm run start
 ```
 
 4. Install Frontend Dependencies
+
 ```bash
 cd ../client
 npm install
 ```
 
 5. Start the Application
+
 ```bash
 # Start the backend server (from the backend directory)
 npm run start
@@ -72,9 +81,11 @@ npm start
 ## Environment Setup
 
 ### Backend Configuration
+
 The backend uses a SQLite database by default. The configuration can be found in `backend/config/database.js`.
 
 ### Mobile App Configuration
+
 The mobile app configuration can be found in `client/app.json` and `client/metro.config.js`.
 
 ## Application Structure
@@ -96,21 +107,25 @@ client/           # React Native application
 ## Features in Detail
 
 ### Patient Authentication
+
 - Secure login and registration
 - JWT-based authentication
 - Role-based access control
 
 ### Medical Records
+
 - View complete medical history
 - Access to past prescriptions
 - Track medical test results
 
 ### AI-Powered Chat
+
 - Instant health-related queries
 - 24/7 availability
 - Personalized responses
 
 ### Appointment Management
+
 - Real-time appointment booking
 - Cancellation and rescheduling
 - Automated reminders
