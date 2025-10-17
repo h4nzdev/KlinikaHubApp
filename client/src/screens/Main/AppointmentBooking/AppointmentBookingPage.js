@@ -18,6 +18,10 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import appointmentServices from "../../../services/appointmentsServices";
 import { doctorServices } from "../../../services/doctorServices";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
+import {
+  getSpecialties,
+  getSpecialtyDoctor,
+} from "../../../utils/getSpecialty";
 
 const AppointmentBookingPage = () => {
   const navigation = useNavigation();
@@ -116,8 +120,7 @@ const AppointmentBookingPage = () => {
   const getUniqueSpecialties = () => {
     const specialties = new Set();
     doctors.forEach((doctor) => {
-      const doctorSpecialties =
-        doctor.specialties || doctor.specialization || "";
+      const doctorSpecialties = getSpecialties(doctor.specialties);
 
       if (Array.isArray(doctorSpecialties)) {
         doctorSpecialties.forEach((spec) => {
@@ -509,10 +512,7 @@ const AppointmentBookingPage = () => {
             <View className="gap-3 pb-4">
               {filteredDoctors.map((doctor) => {
                 const doctorId = doctor._id || doctor.id || doctor.doctor_id;
-                const specialties =
-                  doctor.specialties ||
-                  doctor.specialization ||
-                  "General Medicine";
+                const specialties = getSpecialties(doctor.specialties);
                 const experience =
                   doctor.experience_years || doctor.experience || 0;
                 const rating = doctor.rating || 4.5;

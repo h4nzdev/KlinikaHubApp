@@ -15,6 +15,8 @@ import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import appointmentServices from "../../../services/appointmentsServices";
+import { useReminder } from "../../../context/ReminderContext";
+import Toast from "react-native-toast-message";
 
 // Static data for the dashboard
 const healthTips = [
@@ -32,6 +34,8 @@ const Dashboard = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const randomTip = healthTips[Math.floor(Math.random() * healthTips.length)];
+  const [remindedAppointments, setRemindedAppointments] = useState(new Set());
+  const { addReminder } = useReminder();
 
   // Fetch appointments from API
   const fetchAppointments = async () => {
@@ -86,6 +90,24 @@ const Dashboard = ({ navigation }) => {
     }
 
     return schedule;
+  };
+
+  const handleSaveReminder = (reminderData) => {
+    const reminderFormData = {
+      name: `Appointment with ${getDoctorName(reminderData)} on ${formatDate(reminderData.appointment_date)}`,
+      time: formatTime(reminderData.schedule),
+      isActive: true,
+    };
+
+    addReminder(reminderFormData);
+
+    // Add to reminded appointments set
+    setRemindedAppointments((prev) => new Set(prev).add(reminderData.id));
+
+    Toast.show({
+      type: "success",
+      text1: "Reminder Added Successfully",
+    });
   };
 
   // Get status badge
@@ -527,10 +549,28 @@ const Dashboard = ({ navigation }) => {
                       <TouchableOpacity
                         className="flex-row items-center justify-center"
                         activeOpacity={0.7}
+                        onPress={() => handleSaveReminder(appointment)}
+                        disabled={remindedAppointments.has(appointment.id)}
                       >
-                        <Feather name="bell" size={16} color="#3b82f6" />
-                        <Text className="text-blue-600 font-medium ml-2">
-                          Remind
+                        <Feather
+                          name="bell"
+                          size={16}
+                          color={`${
+                            remindedAppointments.has(appointment.id)
+                              ? "#9ca3af"
+                              : "#3b82f6"
+                          }`}
+                        />
+                        <Text
+                          className={`${
+                            remindedAppointments.has(appointment.id)
+                              ? "text-slate-400"
+                              : "text-blue-600"
+                          } font-medium ml-2`}
+                        >
+                          {remindedAppointments.has(appointment.id)
+                            ? "Reminded"
+                            : "Remind"}
                         </Text>
                       </TouchableOpacity>
 

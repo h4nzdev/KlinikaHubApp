@@ -16,6 +16,7 @@ import appointmentServices from "../../../services/appointmentsServices";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import { useReminder } from "../../../context/ReminderContext";
 import Toast from "react-native-toast-message";
+import { getSpecialty } from "../../../utils/getSpecialty";
 
 const Appointments = ({ navigation }) => {
   const { user } = useContext(AuthenticationContext);
@@ -160,11 +161,6 @@ const Appointments = ({ navigation }) => {
   // UPDATED: Get doctor name from appointment data - NOW USES REAL DATA
   const getDoctorName = (appointment) => {
     return appointment.doctor_name || "Medical Consultation";
-  };
-
-  // UPDATED: Get specialty from appointment data - NOW USES REAL DATA
-  const getSpecialty = (appointment) => {
-    return appointment.doctor_specialties || "General Medicine";
   };
 
   // UPDATED: Get clinic name from appointment data

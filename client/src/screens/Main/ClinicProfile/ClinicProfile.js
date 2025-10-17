@@ -14,6 +14,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import clinicServices from "../../../services/clinicServices";
 import reviewServices from "../../../services/reviewServices"; // 👈 ADD THIS IMPORT
+import { getSpecialties } from "../../../utils/getSpecialty";
 
 const ClinicProfile = () => {
   const route = useRoute();
@@ -211,7 +212,8 @@ const ClinicProfile = () => {
             <View className="flex-row items-center bg-white/20 px-4 py-2 rounded-full mb-4">
               <Feather name="activity" size={16} color="#ffffff" />
               <Text className="text-cyan-700 font-semibold ml-2 text-sm">
-                Specialty: {clinic.data.specialties || "General Practice"}
+                Specialty:{" "}
+                {getSpecialties(clinic.data.specialties) || "General Practice"}
               </Text>
             </View>
 
