@@ -23,6 +23,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AppointmentBookingPage from "../screens/Main/AppointmentBooking/AppointmentBookingPage";
 import Calendar from "../screens/Main/Calendar/Calendar";
 import Settings from "../screens/Main/Settings/Settings";
+import Reviews from "../screens/Main/Reviews/Reviews";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -84,6 +85,7 @@ const AppNavigation = () => {
             component={AppointmentBookingPage}
           />
           <Stack.Screen name="ClinicProfile" component={ClinicProfile} />
+          <Stack.Screen name="Reviews" component={Reviews} />
           <Stack.Screen name="Notifications" component={Notifications} />
           <Stack.Screen name="Settings" component={Settings} />
         </Stack.Navigator>

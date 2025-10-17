@@ -13,6 +13,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import clinicServices from "../../../services/clinicServices";
+import reviewServices from "../../../services/reviewServices"; // 👈 ADD THIS IMPORT
 
 const ClinicProfile = () => {
   const route = useRoute();
@@ -20,30 +21,96 @@ const ClinicProfile = () => {
   const { clinicId } = route.params;
 
   const [clinic, setClinic] = useState(null);
+  const [ratingStats, setRatingStats] = useState({
+    // 👈 ADD REAL RATING STATE
+    average: 0,
+    totalReviews: 0,
+    stars: [
+      { count: 0, percentage: 0 },
+      { count: 0, percentage: 0 },
+      { count: 0, percentage: 0 },
+      { count: 0, percentage: 0 },
+      { count: 0, percentage: 0 },
+    ],
+  });
   const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true); // 👈 ADD SEPARATE LOADING FOR REVIEWS
 
-  // Fetch clinic data
+  // Fetch clinic data AND review stats
   useEffect(() => {
-    const fetchClinic = async () => {
+    const fetchClinicData = async () => {
       try {
         setLoading(true);
+        setReviewsLoading(true);
+
+        console.log("🔄 Fetching clinic and review data...");
+
+        // Fetch clinic data
         const clinicData = await clinicServices.getClinicById(clinicId);
         setClinic(clinicData);
+
+        // Fetch REAL rating stats
+        const statsData = await reviewServices.getClinicRatingStats(clinicId);
+        console.log("🔍 REAL STATS DATA:", statsData);
+
+        if (statsData) {
+          const transformedStats = transformRatingStats(statsData);
+          console.log("🎯 TRANSFORMED STATS:", transformedStats);
+          setRatingStats(transformedStats);
+        }
       } catch (error) {
-        console.error("Error fetching clinic:", error);
+        console.error("❌ Error fetching clinic data:", error);
         Alert.alert("Error", "Failed to load clinic details");
       } finally {
         setLoading(false);
+        setReviewsLoading(false);
       }
     };
 
     if (clinicId) {
-      fetchClinic();
+      fetchClinicData();
     }
   }, [clinicId]);
 
+  // Transform backend stats to frontend format
+  const transformRatingStats = (stats) => {
+    console.log("🔍 Transforming stats:", stats);
+
+    const total = stats.total_reviews || 0;
+    const average = parseFloat(stats.average_rating || 0).toFixed(1);
+
+    const stars = [
+      {
+        count: stats.five_star || 0,
+        percentage: total > 0 ? Math.round((stats.five_star / total) * 100) : 0,
+      },
+      {
+        count: stats.four_star || 0,
+        percentage: total > 0 ? Math.round((stats.four_star / total) * 100) : 0,
+      },
+      {
+        count: stats.three_star || 0,
+        percentage:
+          total > 0 ? Math.round((stats.three_star / total) * 100) : 0,
+      },
+      {
+        count: stats.two_star || 0,
+        percentage: total > 0 ? Math.round((stats.two_star / total) * 100) : 0,
+      },
+      {
+        count: stats.one_star || 0,
+        percentage: total > 0 ? Math.round((stats.one_star / total) * 100) : 0,
+      },
+    ];
+
+    return {
+      average: parseFloat(average) || 0,
+      totalReviews: total,
+      stars: stars,
+    };
+  };
+
   const handleBookAppointment = () => {
-    // Navigate to the booking page instead of showing modal
     navigation.navigate("AppointmentBookingPage", {
       clinicId,
       clinicName: clinic?.data?.institute_name,
@@ -60,6 +127,23 @@ const ClinicProfile = () => {
     if (clinic?.institute_email) {
       Linking.openURL(`mailto:${clinic.institute_email}`);
     }
+  };
+
+  // Render star rating component
+  const renderStars = (rating) => {
+    return (
+      <View className="flex-row gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Feather
+            key={star}
+            name="star"
+            size={16}
+            color={star <= rating ? "#fbbf24" : "#e5e7eb"}
+            fill={star <= rating ? "#fbbf24" : "none"}
+          />
+        ))}
+      </View>
+    );
   };
 
   // Loading state
@@ -97,22 +181,10 @@ const ClinicProfile = () => {
     );
   }
 
-  // Calculate rating stats (mock data for now)
-  const ratingStats = {
-    average: 4.8,
-    totalReviews: 250,
-    stars: [
-      { count: 150, percentage: 60 },
-      { count: 70, percentage: 28 },
-      { count: 20, percentage: 8 },
-      { count: 8, percentage: 3 },
-      { count: 2, percentage: 1 },
-    ],
-  };
-
   return (
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
+
       {/* Main Content */}
       <ScrollView
         className="flex-1"
@@ -143,16 +215,28 @@ const ClinicProfile = () => {
               </Text>
             </View>
 
-            {/* Rating */}
+            {/* Rating - NOW WITH REAL DATA */}
             <View className="flex-row items-center gap-2">
               <View className="flex-row items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Feather key={star} name="star" size={16} color="#fbbf24" />
+                  <Feather
+                    key={star}
+                    name="star"
+                    size={16}
+                    color="#fbbf24"
+                    fill={
+                      star <= Math.floor(ratingStats.average)
+                        ? "#fbbf24"
+                        : "none"
+                    }
+                  />
                 ))}
               </View>
               <Text className="text-white font-semibold">
-                {ratingStats.average} Stars ({ratingStats.totalReviews}+
-                reviews)
+                {ratingStats.average > 0 ? ratingStats.average : "No"}
+                {ratingStats.average > 0 ? " Stars" : " Reviews Yet"}
+                {ratingStats.totalReviews > 0 &&
+                  ` (${ratingStats.totalReviews}+ reviews)`}
               </Text>
             </View>
           </View>
@@ -345,7 +429,7 @@ const ClinicProfile = () => {
             )}
           </View>
 
-          {/* Patient Reviews Summary */}
+          {/* Patient Reviews Summary - NOW WITH REAL DATA */}
           <View className="bg-white rounded-2xl p-6 shadow-lg shadow-black/5 border border-slate-100">
             <View className="flex-row items-center gap-3 mb-6">
               <View className="w-10 h-10 rounded-xl bg-amber-50 items-center justify-center">
@@ -356,50 +440,84 @@ const ClinicProfile = () => {
               </Text>
             </View>
 
-            <View className="flex-row justify-between items-center mb-6">
-              <View>
-                <Text className="text-3xl font-bold text-slate-800 mb-1">
-                  {ratingStats.average}
+            {reviewsLoading ? (
+              <View className="items-center py-8">
+                <ActivityIndicator size="small" color="#0891b2" />
+                <Text className="text-slate-500 mt-2">Loading reviews...</Text>
+              </View>
+            ) : ratingStats.totalReviews === 0 ? (
+              <View className="items-center py-8">
+                <Feather name="message-circle" size={48} color="#e5e7eb" />
+                <Text className="text-slate-500 text-lg font-medium mt-4">
+                  No Reviews Yet
                 </Text>
-                <Text className="text-slate-600">
-                  {ratingStats.totalReviews}+ reviews
+                <Text className="text-slate-400 text-center mt-2">
+                  Be the first to review this clinic!
                 </Text>
               </View>
-              <View className="flex-row items-center gap-2 mb-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Feather key={star} name="star" size={24} color="#fbbf24" />
-                ))}
-              </View>
-            </View>
-
-            {/* Star Distribution */}
-            <View className="gap-2 mb-6">
-              {[5, 4, 3, 2, 1].map((stars, index) => (
-                <View key={stars} className="flex-row items-center gap-3">
-                  <View className="flex-row items-center gap-1 w-8">
-                    <Text className="text-slate-600 text-sm font-medium">
-                      {stars}
+            ) : (
+              <>
+                <View className="flex-row justify-between items-center mb-6">
+                  <View>
+                    <Text className="text-3xl font-bold text-slate-800 mb-1">
+                      {ratingStats.average}
                     </Text>
-                    <Feather name="star" size={14} color="#fbbf24" />
+                    <Text className="text-slate-600">
+                      {ratingStats.totalReviews}+ reviews
+                    </Text>
                   </View>
-                  <View className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <View
-                      className="h-full bg-amber-400 rounded-full"
-                      style={{
-                        width: `${ratingStats.stars[index].percentage}%`,
-                      }}
-                    />
+                  <View className="flex-row items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Feather
+                        key={star}
+                        name="star"
+                        size={20}
+                        color="#fbbf24"
+                        fill={
+                          star <= Math.floor(ratingStats.average)
+                            ? "#fbbf24"
+                            : "none"
+                        }
+                      />
+                    ))}
                   </View>
-                  <Text className="text-slate-600 text-sm w-10">
-                    ({ratingStats.stars[index].count})
-                  </Text>
                 </View>
-              ))}
-            </View>
 
-            <TouchableOpacity className="flex-row items-center justify-center gap-2 py-3 border border-slate-300 rounded-xl">
+                {/* Star Distribution - REAL DATA */}
+                <View className="gap-2 mb-6">
+                  {[5, 4, 3, 2, 1].map((stars, index) => (
+                    <View key={stars} className="flex-row items-center gap-3">
+                      <View className="flex-row items-center gap-1 w-8">
+                        <Text className="text-slate-600 text-sm font-medium">
+                          {stars}
+                        </Text>
+                        <Feather name="star" size={12} color="#fbbf24" />
+                      </View>
+                      <View className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <View
+                          className="h-full bg-amber-400 rounded-full"
+                          style={{
+                            width: `${ratingStats.stars[index].percentage}%`,
+                          }}
+                        />
+                      </View>
+                      <Text className="text-slate-600 text-sm w-10">
+                        ({ratingStats.stars[index].count})
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Reviews", { clinicId })}
+              className="flex-row items-center justify-center gap-2 py-3 border border-slate-300 rounded-xl"
+            >
               <Text className="text-slate-700 font-semibold">
-                Read All Reviews
+                {ratingStats.totalReviews > 0
+                  ? "Read All Reviews"
+                  : "Write First Review"}
               </Text>
               <Feather name="chevron-right" size={16} color="#64748b" />
             </TouchableOpacity>

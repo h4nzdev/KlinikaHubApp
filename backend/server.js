@@ -9,6 +9,7 @@ import clinicRouter from "./routes/clinicRoutes.js"; // Add this
 import appointmentRouter from "./routes/appointmentRouter.js";
 import doctorRouter from "./routes/doctorRoutes.js";
 import smsRouter from "./routes/smsRoutes.js";
+import reviewRouter from "./routes/reviewRoutes.js";
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/clinics", clinicRouter);
 app.use("/api/appointments", appointmentRouter);
 app.use("/api/doctors", doctorRouter);
 app.use("/api", smsRouter);
+app.use("/api/reviews", reviewRouter);
 
 app.get("/", (req, res) => {
   res.json({

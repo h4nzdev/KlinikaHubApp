@@ -63,9 +63,6 @@ export const ReminderProvider = ({ children }) => {
     const currentTime24 = `${String(now.getHours()).padStart(2, "0")}:${String(
       now.getMinutes()
     ).padStart(2, "0")}`;
-
-    console.log("🔔 Checking reminders at:", currentTime24);
-
     const dueReminders = reminders.filter((r) => {
       const isTimeMatch = r.time24 === currentTime24;
       const isActive = r.isActive;
