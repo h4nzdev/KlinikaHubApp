@@ -37,6 +37,58 @@ const ClinicProfile = () => {
   const [loading, setLoading] = useState(true);
   const [reviewsLoading, setReviewsLoading] = useState(true); // 👈 ADD SEPARATE LOADING FOR REVIEWS
 
+  // Add this function to calculate stats from reviews array
+  const calculateStatsFromReviews = (reviews) => {
+    console.log("🔄 Calculating stats from reviews array...");
+
+    if (!reviews || reviews.length === 0) {
+      console.log("📭 No reviews found, returning default stats");
+      return {
+        average: 0,
+        totalReviews: 0,
+        stars: [
+          { count: 0, percentage: 0 },
+          { count: 0, percentage: 0 },
+          { count: 0, percentage: 0 },
+          { count: 0, percentage: 0 },
+          { count: 0, percentage: 0 },
+        ],
+      };
+    }
+
+    // Calculate total and average
+    const total = reviews.length;
+    const totalRating = reviews.reduce((sum, review) => {
+      return sum + (review.rating || 0);
+    }, 0);
+
+    const average = (totalRating / total).toFixed(1);
+
+    // Count stars (5,4,3,2,1)
+    const starCounts = [0, 0, 0, 0, 0]; // [5-star, 4-star, 3-star, 2-star, 1-star]
+
+    reviews.forEach((review) => {
+      const rating = review.rating;
+      if (rating >= 1 && rating <= 5) {
+        starCounts[5 - rating]++; // 5-star goes to index 0, 1-star goes to index 4
+      }
+    });
+
+    const stars = starCounts.map((count, index) => ({
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+    }));
+
+    const result = {
+      average: parseFloat(average),
+      totalReviews: total,
+      stars: stars,
+    };
+
+    console.log("🎯 Final calculated stats:", result);
+    return result;
+  };
+
   // Fetch clinic data AND review stats
   useEffect(() => {
     const fetchClinicData = async () => {
@@ -50,15 +102,15 @@ const ClinicProfile = () => {
         const clinicData = await clinicServices.getClinicById(clinicId);
         setClinic(clinicData);
 
-        // Fetch REAL rating stats
-        const statsData = await reviewServices.getClinicRatingStats(clinicId);
-        console.log("🔍 REAL STATS DATA:", statsData);
+        // Instead of calling the broken stats API, get reviews and calculate stats
+        const reviewsData =
+          await reviewServices.getReviewsByClinicIdWithDetails(clinicId);
+        console.log("✅ Reviews loaded for stats:", reviewsData?.length || 0);
 
-        if (statsData) {
-          const transformedStats = transformRatingStats(statsData);
-          console.log("🎯 TRANSFORMED STATS:", transformedStats);
-          setRatingStats(transformedStats);
-        }
+        // Calculate stats directly from reviews
+        const calculatedStats = calculateStatsFromReviews(reviewsData || []);
+        console.log("🎯 Calculated stats:", calculatedStats);
+        setRatingStats(calculatedStats);
       } catch (error) {
         console.error("❌ Error fetching clinic data:", error);
         Alert.alert("Error", "Failed to load clinic details");
@@ -128,23 +180,6 @@ const ClinicProfile = () => {
     if (clinic?.institute_email) {
       Linking.openURL(`mailto:${clinic.institute_email}`);
     }
-  };
-
-  // Render star rating component
-  const renderStars = (rating) => {
-    return (
-      <View className="flex-row gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Feather
-            key={star}
-            name="star"
-            size={16}
-            color={star <= rating ? "#fbbf24" : "#e5e7eb"}
-            fill={star <= rating ? "#fbbf24" : "none"}
-          />
-        ))}
-      </View>
-    );
   };
 
   // Loading state

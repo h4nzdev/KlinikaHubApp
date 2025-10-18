@@ -130,4 +130,27 @@ authRouter.post("/upload-photo", async (req, res) => {
   }
 });
 
+// In your authRoutes.js or patientRoutes.js
+authRouter.put("/:id/profile-picture", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { image } = req.body;
+
+    console.log("🔄 Route: Updating profile picture for ID:", id);
+
+    const result = await authController.updatePatientProfilePicture(id, image);
+
+    console.log("✅ Route: Result from controller:", result);
+    console.log("📤 Route: Sending response to frontend:", result);
+
+    res.json(result);
+  } catch (error) {
+    console.error("❌ Route error:", error);
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 export default authRouter;

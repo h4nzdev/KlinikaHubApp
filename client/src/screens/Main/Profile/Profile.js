@@ -128,7 +128,7 @@ const Profile = () => {
 
   const handleUpdateProfilePicture = async () => {
     try {
-      // Request camera roll permissions
+      // ... existing code ...
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
@@ -139,7 +139,6 @@ const Profile = () => {
         return;
       }
 
-      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -152,31 +151,81 @@ const Profile = () => {
         setIsUploadingPhoto(true);
         const base64Image = result.assets[0].base64;
 
-        // Upload to backend
+        // ✅ USE THE CORRECT PATIENT ID - Use the database ID, not the generated PAT ID
+        const correctPatientId = patient?.id || updatedUser.patientId;
+
+        console.log(
+          "📸 Starting photo upload for patient ID:",
+          correctPatientId
+        );
+        console.log("🔍 Patient data:", patient);
+
         const response = await patientAuthServices.updatePatientProfilePicture(
-          updatedUser.patientId,
+          correctPatientId,
           base64Image
         );
 
-        // Update local state immediately
+        console.log("✅ Raw backend response:", response);
+
+        // Extract photo URL
+        let newPhotoUrl;
+        if (response.photo) {
+          newPhotoUrl = response.photo;
+        } else if (response.result?.photo) {
+          newPhotoUrl = response.result.photo;
+        } else if (response.result?.profile_picture) {
+          newPhotoUrl = response.result.profile_picture;
+        } else if (response.profile_picture) {
+          newPhotoUrl = response.profile_picture;
+        }
+
+        if (!newPhotoUrl) {
+          throw new Error("No photo URL returned from server");
+        }
+
+        console.log("🖼️ Extracted photo URL:", newPhotoUrl);
+
+        // ✅ UPDATE LOCAL STATE (for immediate UI update)
         setUpdatedUser((prev) => ({
           ...prev,
-          profilePicture: `data:image/jpeg;base64,${base64Image}`,
+          profilePicture: newPhotoUrl,
         }));
 
-        // ✅ UPDATE THE CONTEXT - This will refresh the Header!
-        if (updateUser && response.result) {
-          const updatedUserData = {
-            ...user,
-            photo: response.result.photo, // Use the URL from backend response
-          };
+        // ✅ SAFELY UPDATE CONTEXT WITHOUT LOSING DATA
+        if (updateUser && user) {
+          console.log("🔄 Updating context safely...");
+          console.log("🔍 Current user structure:", user);
+
+          // Create the updated user data based on the actual structure
+          let updatedUserData;
+
+          if (user.patient) {
+            // If user has nested patient data
+            updatedUserData = {
+              ...user,
+              photo: newPhotoUrl,
+              patient: {
+                ...user.patient, // Keep all existing patient data
+                photo: newPhotoUrl,
+              },
+            };
+          } else {
+            // If user data is flat
+            updatedUserData = {
+              ...user, // Keep all existing user data
+              photo: newPhotoUrl,
+            };
+          }
+
+          console.log("📦 Updated user data:", updatedUserData);
           await updateUser(updatedUserData);
+          console.log("✅ Context updated successfully!");
         }
 
         Alert.alert("Success", "Profile picture updated successfully!");
       }
     } catch (error) {
-      console.error("Profile picture update error:", error);
+      console.error("❌ Profile picture update error:", error);
       Alert.alert("Error", error.message || "Failed to update profile picture");
     } finally {
       setIsUploadingPhoto(false);

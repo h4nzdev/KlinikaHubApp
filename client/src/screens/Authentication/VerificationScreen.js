@@ -46,10 +46,14 @@ const VerificationScreen = () => {
     try {
       const { confirmPassword, agreeToTerms, ...registrationData } = formData;
 
+      // 👇 FIX: Remove the extra parameter and use proper object
       const result = await patientAuthServices.verifyAndRegister(
         formData.email,
         verificationCode,
-        registrationData
+        {
+          ...registrationData,
+          localImage: formData.localImage, // This should be included in the patientData object
+        }
       );
 
       Alert.alert("Success!", "Account created successfully!", [

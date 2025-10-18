@@ -16,6 +16,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useState, useEffect, useContext, useRef } from "react";
@@ -82,6 +83,29 @@ const Reviews = () => {
     });
   };
 
+  // Add this temporary function to test the stats API
+  const testStatsAPI = async () => {
+    try {
+      console.log("🧪 Testing stats API directly...");
+      const stats = await reviewServices.getClinicRatingStats(clinicId);
+      console.log("🧪 DIRECT STATS API RESPONSE:", stats);
+
+      // Also test reviews API
+      const reviewsData =
+        await reviewServices.getReviewsByClinicIdWithDetails(clinicId);
+      console.log("🧪 DIRECT REVIEWS API RESPONSE count:", reviewsData?.length);
+    } catch (error) {
+      console.error("🧪 API TEST ERROR:", error);
+    }
+  };
+
+  // Call this in your useEffect or add a debug button
+  useEffect(() => {
+    loadReviewsData();
+    testStatsAPI(); // Add this temporary line
+  }, [clinicId]);
+
+  // Load reviews and stats
   // Load reviews and stats
   const loadReviewsData = async () => {
     try {
@@ -92,19 +116,15 @@ const Reviews = () => {
       const reviewsData =
         await reviewServices.getReviewsByClinicIdWithDetails(clinicId);
       console.log("✅ Reviews loaded:", reviewsData?.length || 0);
-
-      // Load rating stats
-      const statsData = await reviewServices.getClinicRatingStats(clinicId);
-      console.log("🔍 RAW STATS DATA FROM API:", statsData);
+      console.log("📝 Reviews data:", reviewsData);
 
       setReviews(reviewsData || []);
 
-      if (statsData) {
-        // Transform backend stats to frontend format
-        const transformedStats = transformRatingStats(statsData);
-        console.log("🔍 TRANSFORMED STATS:", transformedStats);
-        setRatingStats(transformedStats);
-      }
+      // Always calculate stats from the reviews data we just fetched
+      const calculatedStats = calculateStatsFromReviews(reviewsData || []);
+      console.log("📊 Calculated stats from reviews:", calculatedStats);
+
+      setRatingStats(calculatedStats);
     } catch (error) {
       console.error("❌ Error loading reviews data:", error);
       Alert.alert("Error", "Failed to load reviews. Please try again.");
@@ -116,15 +136,19 @@ const Reviews = () => {
 
   // Transform backend stats to frontend format
   const transformRatingStats = (stats) => {
-    console.log("🔍 Transforming stats:", stats);
+    console.log("🔍 RAW STATS FROM BACKEND:", JSON.stringify(stats, null, 2));
+    console.log("🔍 CURRENT REVIEWS COUNT:", reviews.length);
 
     // If backend returns empty stats, calculate from reviews
     if (!stats || (!stats.total_reviews && reviews.length > 0)) {
+      console.log("🔄 Calculating stats from reviews array...");
       return calculateStatsFromReviews(reviews);
     }
 
     const total = stats.total_reviews || 0;
     const average = parseFloat(stats.average_rating || 0).toFixed(1);
+
+    console.log("📊 Parsed stats - Total:", total, "Average:", average);
 
     const stars = [
       {
@@ -149,6 +173,8 @@ const Reviews = () => {
         percentage: total > 0 ? Math.round((stats.one_star / total) * 100) : 0,
       },
     ];
+
+    console.log("⭐ Star distribution:", stars);
 
     return {
       average: parseFloat(average),
@@ -226,8 +252,10 @@ const Reviews = () => {
       const result = await reviewServices.createReview(reviewData);
       console.log("✅ Review submitted:", result);
 
-      // Force reload both reviews and stats
-      await loadReviewsData();
+      // Force reload both reviews and stats with a small delay
+      setTimeout(() => {
+        loadReviewsData();
+      }, 1000);
 
       // Show success message
       Alert.alert(
@@ -439,11 +467,26 @@ const Reviews = () => {
                 key={review.id}
                 className="bg-white rounded-2xl p-5 shadow-sm shadow-black/5 border border-slate-100"
               >
-                {/* Review Header */}
-                <View className="flex-row justify-between items-start mb-3">
+                {/* Review Header with Profile Picture */}
+                <View className="flex-row items-start gap-3 mb-3">
+                  {/* Profile Picture */}
+                  <View>
+                    {review.patient_photo ? (
+                      <Image
+                        source={{ uri: review.patient_photo }}
+                        className="w-12 h-12 rounded-full"
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 items-center justify-center border border-cyan-200">
+                        <Feather name="user" size={20} color="#0891b2" />
+                      </View>
+                    )}
+                  </View>
+
                   <View className="flex-1">
                     <View className="flex-row items-center gap-2 mb-1">
-                      <Text className="text-slate-800 font-semibold text-base">
+                      <Text className="text-slate-800 font-semibold text-base flex-1">
                         {review.patient_name || "Anonymous Patient"}
                       </Text>
                       {review.is_verified && (
@@ -459,22 +502,26 @@ const Reviews = () => {
                         </View>
                       )}
                     </View>
-                    <Text className="text-slate-500 text-xs">
-                      {formatDate(review.created_at)}
-                    </Text>
+
+                    {/* Rating and Date in same row */}
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2">
+                        {renderStars(review.rating)}
+                      </View>
+                      <Text className="text-slate-500 text-xs">
+                        {formatDate(review.created_at)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
-                {/* Rating Stars */}
-                <View className="mb-3">{renderStars(review.rating)}</View>
-
                 {/* Review Text */}
-                <Text className="text-slate-700 leading-6 text-sm">
+                <Text className="text-slate-700 leading-6 text-sm mb-3">
                   {review.comment}
                 </Text>
 
                 {/* Helpful Actions */}
-                <View className="flex-row gap-4 mt-4 pt-4 border-t border-slate-100">
+                <View className="flex-row gap-4 pt-3 border-t border-slate-100">
                   <TouchableOpacity
                     className="flex-row items-center gap-2"
                     onPress={() => handleMarkHelpful(review.id)}

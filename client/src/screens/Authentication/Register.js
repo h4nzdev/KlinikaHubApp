@@ -31,6 +31,7 @@ const Register = () => {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [localImage, setLocalImage] = useState(null);
 
   //DropDowns
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
@@ -118,6 +119,30 @@ const Register = () => {
   const isLastSection = activeSection === sections[sections.length - 1];
   const isFirstSection = activeSection === sections[0];
 
+  const convertImageToBase64 = async (imageUri) => {
+    try {
+      console.log("🔄 Converting image to base64...");
+
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          // Get the base64 string (including data:image/jpeg;base64, prefix)
+          const base64 = reader.result;
+          console.log("✅ Image converted to base64, length:", base64.length);
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error("❌ Error converting image to base64:", error);
+      throw new Error("Failed to convert image to base64");
+    }
+  };
+
   const handleFinalStep = async () => {
     if (!allPasswordRequirementsMet) {
       Alert.alert("Error", "Password does not meet requirements.");
@@ -150,8 +175,18 @@ const Register = () => {
 
     setIsSendingCode(true);
     try {
+      let base64Image = null;
+      if (localImage) {
+        base64Image = await convertImageToBase64(localImage);
+      }
+
+      const formDataWithImage = {
+        ...formData,
+        localImage: base64Image, // 👈 Now it's actual base64 data, not URI
+      };
+
       await patientAuthServices.requestVerificationCode(formData.email);
-      navigation.navigate("Verification", { formData });
+      navigation.navigate("Verification", { formData: formDataWithImage });
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to send verification code");
     } finally {
@@ -159,7 +194,7 @@ const Register = () => {
     }
   };
 
-  const pickImage = async () => {
+  const handleImagePick = async () => {
     try {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -179,14 +214,14 @@ const Register = () => {
       });
 
       if (!result.canceled && result.assets?.[0]) {
-        await uploadImageToCloudinary(result.assets[0].uri);
+        setLocalImage(result.assets[0].uri); // 👈 Only store local URI, no upload!
       }
     } catch (error) {
       Alert.alert("Error", "Failed to pick image");
     }
   };
 
-  const takePhoto = async () => {
+  const handleTakePhoto = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
@@ -204,33 +239,20 @@ const Register = () => {
       });
 
       if (!result.canceled && result.assets?.[0]) {
-        await uploadImageToCloudinary(result.assets[0].uri);
+        setLocalImage(result.assets[0].uri); // 👈 Only store local URI, no upload!
       }
     } catch (error) {
       Alert.alert("Error", "Failed to take photo");
     }
   };
 
-  const uploadImageToCloudinary = async (imageUri) => {
-    try {
-      setIsUploading(true);
-      const uploadResult = await cloudinaryService.uploadImage(imageUri);
-      setFormData((prev) => ({ ...prev, photo: uploadResult.secure_url }));
-      Alert.alert("Success", "Profile photo uploaded!");
-    } catch (error) {
-      Alert.alert("Upload Failed", error.message || "Please try again.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const removePhoto = () => {
+  const removeLocalImage = () => {
     Alert.alert("Remove Photo", "Remove your profile photo?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Remove",
         style: "destructive",
-        onPress: () => setFormData((prev) => ({ ...prev, photo: "" })),
+        onPress: () => setLocalImage(null),
       },
     ]);
   };
@@ -315,15 +337,15 @@ const Register = () => {
       <Text className="text-sm font-medium text-slate-700">
         Profile Photo (Optional)
       </Text>
-      {formData.photo ? (
+      {localImage ? ( // 👈 Use localImage instead of formData.photo
         <View className="items-center gap-3">
           <Image
-            source={{ uri: formData.photo }}
+            source={{ uri: localImage }} // 👈 Preview from local URI
             className="w-32 h-32 rounded-full border-4 border-cyan-500"
             resizeMode="cover"
           />
           <TouchableOpacity
-            onPress={removePhoto}
+            onPress={removeLocalImage}
             className="flex-row items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-xl"
           >
             <Feather name="trash-2" size={16} color="#ef4444" />
@@ -337,18 +359,14 @@ const Register = () => {
           </View>
           <View className="flex-row gap-3">
             <TouchableOpacity
-              onPress={pickImage}
-              disabled={isUploading}
+              onPress={handleImagePick} // 👈 Updated function name
               className="flex-row items-center gap-2 px-4 py-2 bg-cyan-500 rounded-xl"
             >
               <Feather name="upload" size={16} color="white" />
-              <Text className="text-white font-medium">
-                {isUploading ? "Uploading..." : "Choose Photo"}
-              </Text>
+              <Text className="text-white font-medium">Choose Photo</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={takePhoto}
-              disabled={isUploading}
+              onPress={handleTakePhoto} // 👈 Updated function name
               className="flex-row items-center gap-2 px-4 py-2 bg-slate-600 rounded-xl"
             >
               <Feather name="camera" size={16} color="white" />

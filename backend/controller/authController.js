@@ -62,6 +62,56 @@ class AuthController {
     }
   }
 
+  async uploadPhotoDuringRegistration(base64Image) {
+    try {
+      console.log("🔄 Uploading patient photo during registration...");
+      console.log(
+        "📊 Base64 data sample:",
+        base64Image?.substring(0, 100) + "..."
+      );
+      console.log("📏 Base64 data length:", base64Image?.length);
+
+      // Test if it's a valid base64 string
+      if (!base64Image || typeof base64Image !== "string") {
+        throw new Error("Invalid base64 image data");
+      }
+
+      // Check if it starts with data:image/
+      if (!base64Image.startsWith("data:image/")) {
+        console.log(
+          "⚠️ Base64 data doesn't start with data:image/, adding prefix..."
+        );
+        base64Image = `data:image/jpeg;base64,${base64Image}`;
+      }
+
+      const result = await cloudinary.uploader.upload(base64Image, {
+        folder: "patient_profiles",
+        resource_type: "image",
+        transformation: [
+          { width: 300, height: 300, crop: "fill" },
+          { quality: "auto" },
+          { format: "jpg" },
+        ],
+      });
+
+      console.log(
+        "✅ Patient photo uploaded during registration:",
+        result.secure_url
+      );
+      return result.secure_url;
+    } catch (error) {
+      console.error("❌ Cloudinary upload error during registration:", error);
+      console.error("🔍 Error details:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      });
+      throw new Error(
+        "Failed to upload patient photo during registration: " + error.message
+      );
+    }
+  }
+
   // ✅ NEW: Verify code and register patient
   async verifyAndRegister(email, code, patientData) {
     try {
@@ -89,10 +139,26 @@ class AuthController {
       }
 
       // Code is valid! Proceed with registration
-      verificationCodes.delete(email); // Clean up used code
+      let photoUrl = "";
+      if (patientData.localImage) {
+        console.log("🔄 Converting local image to base64 for upload...");
 
-      // Register the patient with the provided data
-      const registrationResult = await this.register(patientData);
+        // Convert local image URI to base64
+        const base64Image = await this.convertImageToBase64(
+          patientData.localImage
+        );
+        photoUrl = await this.uploadPhotoDuringRegistration(base64Image);
+      }
+
+      // Prepare final patient data with photo URL
+      const finalPatientData = {
+        ...patientData,
+        photo: photoUrl,
+        localImage: undefined, // Remove the temporary local image field
+      };
+
+      // Register the patient
+      const registrationResult = await this.register(finalPatientData);
 
       console.log(
         `✅ Email ${email} verified and patient registered successfully`
@@ -106,6 +172,34 @@ class AuthController {
     } catch (error) {
       console.error("❌ Error in verifyAndRegister:", error);
       throw error;
+    }
+  }
+
+  async convertImageToBase64(base64Data) {
+    try {
+      console.log("🔧 Processing base64 image data from frontend...");
+      console.log(
+        "📊 Received base64 sample:",
+        base64Data?.substring(0, 100) + "..."
+      );
+
+      // The frontend already converted it, so we should just validate and use it
+      if (!base64Data || typeof base64Data !== "string") {
+        throw new Error("No base64 image data received");
+      }
+
+      // If it's already a data URL, use it directly
+      if (base64Data.startsWith("data:image/")) {
+        console.log("✅ Using frontend-provided base64 data URL");
+        return base64Data;
+      }
+
+      // If it's raw base64, add the prefix
+      console.log("🔄 Adding data URL prefix to raw base64");
+      return `data:image/jpeg;base64,${base64Data}`;
+    } catch (error) {
+      console.error("❌ Error processing base64 image:", error);
+      throw new Error("Failed to process image data: " + error.message);
     }
   }
 
@@ -287,6 +381,41 @@ class AuthController {
     } catch (error) {
       console.error("❌ Cloudinary upload error:", error);
       throw new Error("Failed to upload patient photo");
+    }
+  }
+  // ✅ NEW: Update patient profile picture
+  async updatePatientProfilePicture(patientId, base64Image) {
+    try {
+      console.log("🔄 Updating profile picture for patient:", patientId);
+
+      // Upload to Cloudinary
+      const photoUrl = await this.uploadPhotoDuringRegistration(base64Image);
+
+      const db = await this.initDB();
+
+      // Update the patient record with new photo URL
+      const sql = "UPDATE patients SET photo = ? WHERE id = ?";
+      const [result] = await db.execute(sql, [photoUrl, patientId]);
+
+      if (result.affectedRows === 0) {
+        throw new Error("Patient not found");
+      }
+
+      console.log("✅ Profile picture updated in database:", photoUrl);
+
+      // ✅ Create the response object
+      const response = {
+        success: true,
+        message: "Profile picture updated successfully",
+        photo: photoUrl,
+      };
+
+      console.log("📤 Sending response:", response);
+
+      return response;
+    } catch (error) {
+      console.error("❌ Error updating profile picture:", error);
+      throw new Error("Failed to update profile picture: " + error.message);
     }
   }
 }

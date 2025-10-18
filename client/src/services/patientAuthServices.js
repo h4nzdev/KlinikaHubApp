@@ -1,7 +1,8 @@
 import axios from "axios";
 import { API_URL } from "@env";
+import Config from "../config/api";
 
-const API_BASE_URL = API_URL || "http://192.168.1.35:5000/api";
+const API_BASE_URL = Config.API_BASE_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -191,27 +192,24 @@ export const patientAuthServices = {
       throw new Error(errorMessage);
     }
   },
+  // In patientAuthServices.js - make sure this is correct:
+  // In your patientAuthServices.updatePatientProfilePicture
   updatePatientProfilePicture: async (patientId, base64Image) => {
     try {
       console.log("🔄 Updating profile picture for:", patientId);
       const response = await api.put(`/patients/${patientId}/profile-picture`, {
         image: base64Image,
       });
-      console.log("✅ Profile picture updated successfully!");
+      console.log("✅ Profile picture update response:", response.data);
       return response.data;
     } catch (error) {
       console.log(
         "Profile picture update error:",
         error.response?.data || error
       );
-
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to update profile picture";
-
-      throw new Error(errorMessage);
+      throw new Error(
+        error.response?.data?.error || "Failed to update profile picture"
+      );
     }
   },
 
