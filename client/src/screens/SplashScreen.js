@@ -237,7 +237,7 @@ const SplashScreen = ({ onFinish }) => {
         <Animated.View style={welcomeStyle}>
           <Text style={styles.welcomeText}>Welcome to</Text>
           <Text style={styles.clinicName}>
-            <Text className="text-cyan-800">KlinikaHub</Text>
+            <Text className="text-cyan-600">KlinikaHub</Text>
           </Text>
         </Animated.View>
 

@@ -391,7 +391,7 @@ class AuthController {
       // Upload to Cloudinary
       const photoUrl = await this.uploadPhotoDuringRegistration(base64Image);
 
-      const db = await this.initDB();
+      const db = await this.initDB(); 
 
       // Update the patient record with new photo URL
       const sql = "UPDATE patients SET photo = ? WHERE id = ?";

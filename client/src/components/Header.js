@@ -53,8 +53,7 @@ const Header = () => {
           <View className="flex-row items-center justify-between">
             {/* Logo/Clinic Name */}
             <Text className="text-2xl font-bold text-cyan-600">
-              <Text className="text-cyan-800">Klinika</Text>
-              <Text className="text-green-800">Hub</Text>
+              <Text className="text-cyan-600">KlinikaHub</Text>
             </Text>
 
             {/* Right side actions */}

@@ -15,11 +15,13 @@ import {
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import chatServices from "../../../services/chatServices";
+import { useNavigation } from "@react-navigation/native";
 
 const AIChat = () => {
   const [message, setMessage] = useState("");
   const scrollViewRef = useRef(null);
   const [isShown, setIsShown] = useState(true);
+  const navigation = useNavigation();
   const [chatHistory, setChatHistory] = useState([
     {
       role: "bot",
@@ -74,7 +76,6 @@ const AIChat = () => {
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
-    // Check if user can still chat
     if (!chatCredits.canChat) {
       const errorMessage = {
         role: "bot",
@@ -107,6 +108,8 @@ const AIChat = () => {
         text: response.reply,
         severity: response.severity,
         emergency: response.emergency_trigger,
+        suggestAppointment: response.suggest_appointment, // NEW
+        appointmentReason: response.appointment_reason, // NEW
       };
 
       setChatHistory((prev) => [...prev, botMessage]);
@@ -172,6 +175,33 @@ const AIChat = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookAppointment = (reason = "Medical consultation") => {
+    Alert.alert(
+      "Book Appointment",
+      `Would you like to schedule an appointment for:\n"${reason}"?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Book Now",
+          onPress: () => {
+            // Navigate to clinics screen
+            navigation.navigate("Clinics");
+
+            // Optional: Show confirmation
+            Alert.alert(
+              "Appointment Suggested",
+              "You're being directed to our clinics list to book your appointment.",
+              [{ text: "OK" }]
+            );
+          },
+        },
+      ]
+    );
   };
 
   // Mock fallback function (same as before)
@@ -425,6 +455,23 @@ const AIChat = () => {
                 >
                   {chat.text}
                 </Text>
+
+                {/* ✅ NEW: Appointment Suggestion Button */}
+                {chat.role === "bot" &&
+                  chat.suggestAppointment &&
+                  !chat.emergency && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleBookAppointment(chat.appointmentReason)
+                      }
+                      className="mt-3 flex-row items-center gap-2 bg-cyan-600 px-4 py-2 rounded-lg border border-green-600"
+                    >
+                      <Feather name="calendar" size={16} color="#ffffff" />
+                      <Text className="text-white font-semibold text-sm">
+                        Book Appointment
+                      </Text>
+                    </TouchableOpacity>
+                  )}
               </View>
             </View>
           ))}
@@ -469,7 +516,7 @@ const AIChat = () => {
               <TouchableOpacity
                 onPress={() => setIsShown(false)}
                 className="absolute h-8 w-8 bg-cyan-100 -top-4 self-center rounded-full
-              flex items-center justify-center"
+      flex items-center justify-center"
               >
                 <Feather name="chevron-down" size={18} color="#0891b2" />
               </TouchableOpacity>
@@ -486,21 +533,33 @@ const AIChat = () => {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => setMessage("What are symptoms of flu?")}
-                  className="p-3 bg-white rounded-lg border border-blue-200"
-                >
-                  <Text className="text-sm text-blue-800">
-                    "What are symptoms of flu?"
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
                   onPress={() =>
-                    setMessage("I have chest pain and difficulty breathing")
+                    setMessage("I want to book an appointment for a check-up")
                   }
                   className="p-3 bg-white rounded-lg border border-blue-200"
                 >
                   <Text className="text-sm text-blue-800">
-                    "I have chest pain and difficulty breathing"
+                    "I want to book an appointment for a check-up"
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    setMessage("My cough has been persistent for 1 week")
+                  }
+                  className="p-3 bg-white rounded-lg border border-blue-200"
+                >
+                  <Text className="text-sm text-blue-800">
+                    "My cough has been persistent for 1 week"
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    setMessage("I need to see a doctor for prescription")
+                  }
+                  className="p-3 bg-white rounded-lg border border-blue-200"
+                >
+                  <Text className="text-sm text-blue-800">
+                    "I need to see a doctor for prescription"
                   </Text>
                 </TouchableOpacity>
               </View>
