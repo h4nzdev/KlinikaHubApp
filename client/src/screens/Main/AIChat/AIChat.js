@@ -300,9 +300,6 @@ const AIChat = () => {
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
-      <Header />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -312,6 +309,14 @@ const AIChat = () => {
         <View className="bg-white border-b border-gray-200 p-4">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-3 flex-1">
+              {/* Back Button */}
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                className="p-2"
+              >
+                <Feather name="chevron-left" size={24} color="#4b5563" />
+              </TouchableOpacity>
+
               <View className="bg-cyan-100 p-3 rounded-full">
                 <Feather name="message-circle" size={24} color="#0891b2" />
               </View>
@@ -485,9 +490,12 @@ const AIChat = () => {
                     AI Assistant
                   </Text>
                 </View>
-                <Text className="text-base text-gray-900">
-                  Medora AI is thinking...
-                </Text>
+                <View className="flex-row items-center justify-center gap-2">
+                  <Text className="text-base text-gray-900">Medora AI</Text>
+                  <View className="animate-spin">
+                    <Feather name="loader" size={18} color="#4b5563" />
+                  </View>
+                </View>
               </View>
             </View>
           )}
@@ -511,87 +519,92 @@ const AIChat = () => {
           )}
 
           {/* Sample Questions */}
-          {chatCredits.canChat && !showEmergency && isShown && (
-            <View className="bg-blue-50 rounded-xl p-4 border border-blue-200 relative">
-              <TouchableOpacity
-                onPress={() => setIsShown(false)}
-                className="absolute h-8 w-8 bg-cyan-100 -top-4 self-center rounded-full
+          {chatCredits.canChat && !showEmergency && isShown ? (
+            <View>
+              <View className="bg-blue-50 rounded-xl p-4 border border-blue-200 relative">
+                <TouchableOpacity
+                  onPress={() => setIsShown(false)}
+                  className="absolute h-8 w-8 bg-cyan-100 -top-4 self-center rounded-full
       flex items-center justify-center"
-              >
-                <Feather name="chevron-down" size={18} color="#0891b2" />
-              </TouchableOpacity>
-              <Text className="font-medium text-blue-900 mb-3">
-                Try asking about:
-              </Text>
-              <View className="gap-3">
-                <TouchableOpacity
-                  onPress={() => setMessage("I have a headache and feel tired")}
-                  className="p-3 bg-white rounded-lg border border-blue-200"
                 >
-                  <Text className="text-sm text-blue-800">
-                    "I have a headache and feel tired"
-                  </Text>
+                  <Feather name="chevron-down" size={18} color="#0891b2" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() =>
-                    setMessage("I want to book an appointment for a check-up")
-                  }
-                  className="p-3 bg-white rounded-lg border border-blue-200"
-                >
-                  <Text className="text-sm text-blue-800">
-                    "I want to book an appointment for a check-up"
+                <Text className="font-medium text-blue-900 mb-3">
+                  Try asking about:
+                </Text>
+                <View className="gap-3">
+                  <TouchableOpacity
+                    onPress={() =>
+                      setMessage("I have a headache and feel tired")
+                    }
+                    className="p-3 bg-white rounded-lg border border-blue-200"
+                  >
+                    <Text className="text-sm text-blue-800">
+                      "I have a headache and feel tired"
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setMessage("I want to book an appointment for a check-up")
+                    }
+                    className="p-3 bg-white rounded-lg border border-blue-200"
+                  >
+                    <Text className="text-sm text-blue-800">
+                      "I want to book an appointment for a check-up"
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setMessage("My cough has been persistent for 1 week")
+                    }
+                    className="p-3 bg-white rounded-lg border border-blue-200"
+                  >
+                    <Text className="text-sm text-blue-800">
+                      "My cough has been persistent for 1 week"
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setMessage("I need to see a doctor for prescription")
+                    }
+                    className="p-3 bg-white rounded-lg border border-blue-200"
+                  >
+                    <Text className="text-sm text-blue-800">
+                      "I need to see a doctor for prescription"
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View className="bg-cyan-50 rounded-xl p-4 mt-5 mb-5 border border-cyan-200">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <Feather name="cpu" size={20} color="#0891b2" />
+                  <Text className="font-medium text-cyan-900">
+                    Powered by Medora AI
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() =>
-                    setMessage("My cough has been persistent for 1 week")
-                  }
-                  className="p-3 bg-white rounded-lg border border-blue-200"
-                >
-                  <Text className="text-sm text-blue-800">
-                    "My cough has been persistent for 1 week"
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() =>
-                    setMessage("I need to see a doctor for prescription")
-                  }
-                  className="p-3 bg-white rounded-lg border border-blue-200"
-                >
-                  <Text className="text-sm text-blue-800">
-                    "I need to see a doctor for prescription"
-                  </Text>
-                </TouchableOpacity>
+                </View>
+                <Text className="text-sm text-cyan-800">
+                  Real-time symptom analysis with emergency detection. Your
+                  conversations are secure and private.
+                </Text>
               </View>
             </View>
+          ) : (
+            <View className="mt-6"></View>
           )}
-
-          {/* API Status */}
-          <View className="bg-cyan-50 rounded-xl p-4 mb-5 border border-cyan-200">
-            {!isShown && (
-              <TouchableOpacity
-                onPress={() => setIsShown(true)}
-                className="absolute h-8 w-8 bg-cyan-100 -top-3 self-center rounded-full
-              flex items-center justify-center"
-              >
-                <Feather name="chevron-up" size={18} color="#0891b2" />
-              </TouchableOpacity>
-            )}
-            <View className="flex-row items-center gap-2 mb-3">
-              <Feather name="cpu" size={20} color="#0891b2" />
-              <Text className="font-medium text-cyan-900">
-                Powered by Medora AI
-              </Text>
-            </View>
-            <Text className="text-sm text-cyan-800">
-              Real-time symptom analysis with emergency detection. Your
-              conversations are secure and private.
-            </Text>
-          </View>
         </ScrollView>
 
         {/* Message Input */}
-        <View className="bg-white border-t border-gray-200 p-4">
+        <View className="bg-white border-t border-gray-200 p-4 relative">
+          {!isShown && (
+            <TouchableOpacity
+              onPress={() => setIsShown(true)}
+              className="absolute -top-6 self-center rounded-full
+              flex items-center justify-center animate-bounce"
+            >
+              <Feather name="chevron-up" size={24} color="#0891b2" />
+            </TouchableOpacity>
+          )}
           <View className="flex-row gap-3">
             <TextInput
               placeholder={
