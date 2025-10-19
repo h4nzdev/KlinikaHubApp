@@ -184,6 +184,10 @@ const Dashboard = ({ navigation }) => {
   );
   const completedAppointments = appointments.filter((app) => app.status === 2);
 
+  const handleClinicProfile = (clinicId) => {
+    navigation.navigate("ClinicProfile", { clinicId });
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -462,7 +466,7 @@ const Dashboard = ({ navigation }) => {
                         <View className="flex-row flex-wrap gap-2">
                           <View className="bg-slate-200 px-3 py-1 rounded-full">
                             <Text className="text-slate-600 text-xs font-medium">
-                              {getSpecialty(appointment)}
+                              {getSpecialty(appointment.doctor)}
                             </Text>
                           </View>
                           <View className="bg-slate-100 px-3 py-1 rounded-full">
@@ -539,6 +543,9 @@ const Dashboard = ({ navigation }) => {
                       <TouchableOpacity
                         className="flex-row items-center justify-center"
                         activeOpacity={0.7}
+                        onPress={() =>
+                          handleClinicProfile(appointment.clinic_id)
+                        }
                       >
                         <Feather name="user" size={16} color="#3b82f6" />
                         <Text className="text-blue-600 font-medium ml-2">

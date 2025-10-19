@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-
 import { View, StatusBar } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Import screens
 import Dashboard from "../screens/Main/Dashboard/Dashboard";
@@ -15,6 +15,7 @@ import Invoices from "../screens/Main/Invoices/Invoices";
 import Reminders from "../screens/Main/Reminders/Reminders";
 import Notifications from "../screens/Main/Notification/Notifications";
 import SplashScreen from "../screens/SplashScreen";
+import AppTour from "../screens/AppTour";
 import ClinicProfile from "../screens/Main/ClinicProfile/ClinicProfile";
 
 // Import your custom BottomNavbar
@@ -36,7 +37,6 @@ function MainTabs() {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Dashboard" component={Dashboard} />
-      {/* <Tab.Screen name="AIChat" component={AIChat} /> */}
       <Tab.Screen name="Clinics" component={Clinics} />
       <Tab.Screen name="Appointments" component={Appointments} />
       <Tab.Screen
@@ -54,18 +54,82 @@ function MainTabs() {
 }
 
 const AppNavigation = () => {
+  const [showAppTour, setShowAppTour] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [showMainApp, setShowMainApp] = useState(false);
+  const [isCheckingTour, setIsCheckingTour] = useState(true);
 
+  // Check if user has seen the tour before
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
+    checkTourStatus();
   }, []);
 
+  const checkTourStatus = async () => {
+    try {
+      const hasSeenTour = await AsyncStorage.getItem("@medora_has_seen_tour");
+
+      // Show splash first
+      setShowSplash(true);
+      setShowAppTour(false);
+      setShowMainApp(false);
+
+      // After splash, decide what to show next
+      setTimeout(async () => {
+        if (hasSeenTour === "true") {
+          // User has seen tour before, go straight to main app
+          setShowSplash(false);
+          setShowMainApp(true);
+        } else {
+          // First time user, show the tour
+          setShowSplash(false);
+          setShowAppTour(true);
+        }
+        setIsCheckingTour(false);
+      }, 3000); // Splash duration
+    } catch (error) {
+      console.error("Error checking tour status:", error);
+      // On error, default to showing tour
+      setTimeout(() => {
+        setShowSplash(false);
+        setShowAppTour(true);
+        setIsCheckingTour(false);
+      }, 3000);
+    }
+  };
+
+  const handleTourFinish = async () => {
+    try {
+      // Save that user has seen the tour
+      await AsyncStorage.setItem("@medora_has_seen_tour", "true");
+
+      // Show celebratory splash before main app
+      setShowAppTour(false);
+      setShowSplash(true);
+
+      // Short splash then show main app
+      setTimeout(() => {
+        setShowSplash(false);
+        setShowMainApp(true);
+      }, 2000);
+    } catch (error) {
+      console.error("Error saving tour status:", error);
+      // Even if save fails, continue to main app
+      setShowAppTour(false);
+      setShowMainApp(true);
+    }
+  };
+
+  // Show nothing while checking (optional loading state)
+  if (isCheckingTour && showSplash) {
+    return <SplashScreen onFinish={() => {}} />;
+  }
+
+  if (showAppTour) {
+    return <AppTour isOpen={showAppTour} onClose={handleTourFinish} />;
+  }
+
   if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+    return <SplashScreen onFinish={() => {}} />;
   }
 
   return (

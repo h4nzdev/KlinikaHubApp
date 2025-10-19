@@ -305,7 +305,7 @@ export const ReminderProvider = ({ children }) => {
 
             <TouchableOpacity
               onPress={handleAcknowledge}
-              className="px-6 py-4 bg-green-500 rounded-xl shadow-lg"
+              className="px-6 py-4 bg-cyan-500 rounded-xl shadow-lg"
               activeOpacity={0.8}
             >
               <Text className="text-white font-semibold text-lg text-center">
