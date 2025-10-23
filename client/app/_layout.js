@@ -14,8 +14,15 @@ export default function RootLayout() {
           backgroundColor="transparent"
           translucent={true}
         />
-        <Stack screenOptions={{ headerShown: false }}>
-          {/* Don't manually define screens - Expo Router does this automatically */}
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="splash" options={{ headerShown: false }} />
+          <Stack.Screen name="app-tour" options={{ headerShown: false }} />
         </Stack>
         <Toast />
       </ReminderProvider>
