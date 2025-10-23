@@ -5,10 +5,11 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 const BottomNavbar = ({ state, navigation, descriptors }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const router = useRouter();
   
   // Get active tab from navigation state
   const activeTab = state.routes[state.index].name;
@@ -37,21 +38,18 @@ const BottomNavbar = ({ state, navigation, descriptors }) => {
 
     setShowMoreMenu(false);
 
-    if (isTab) {
-      // For tab screens, use the tab navigator's navigation
-      const event = navigation.emit({
-        type: 'tabPress',
-        target: tabName,
-        canPreventDefault: true,
-      });
-
-      if (!event.defaultPrevented) {
-        navigation.navigate(tabName);
-      }
-    } else {
-      // For stack screens, navigate normally
-      navigation.navigate(tabName);
-    }
+    // Convert tab names to Expo Router paths
+    const routeMap = {
+      'Dashboard': '/(tabs)/dashboard',
+      'AIChat': '/(tabs)/ai-chat',
+      'Appointments': '/(tabs)/appointments',
+      'MedicalRecords': '/(tabs)/medical-records',
+      'Reminders': '/(tabs)/reminders',
+      'Invoices': '/(tabs)/invoices',
+    };
+    
+    const route = routeMap[tabName] || `/(tabs)/${tabName.toLowerCase()}`;
+    router.push(route);
   };
 
   const isMoreMenuActive = moreMenuItems.some((item) => activeTab === item.id);

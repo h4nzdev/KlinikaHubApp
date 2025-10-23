@@ -8,7 +8,7 @@ import {
   Image,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { AuthenticationContext } from "../context/AuthenticationContext";
 import Toast from "react-native-toast-message";
 
@@ -17,8 +17,7 @@ const Header = () => {
   const [notificationCount] = useState(5);
   const { user, logout } = useContext(AuthenticationContext);
 
-  // ✅ SAFE: This will be null if no navigation context
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
@@ -38,10 +37,22 @@ const Header = () => {
 
   const handleNavigate = (screen) => {
     setIsDropdownOpen(false);
-    // ✅ SAFE: Check if navigation exists
-    if (navigation && navigation.navigate) {
-      navigation.navigate(screen);
-    }
+    // Convert screen names to Expo Router paths
+    const routeMap = {
+      'Profile': '/(tabs)/profile',
+      'Settings': '/(tabs)/settings',
+      'MedicalRecords': '/(tabs)/medical-records',
+      'Invoices': '/(tabs)/invoices',
+      'Reminders': '/(tabs)/reminders',
+      'Notifications': '/(tabs)/notifications',
+      'Reviews': '/(tabs)/reviews',
+      'Calendar': '/(tabs)/calendar',
+      'AIChat': '/(tabs)/ai-chat',
+      'ClinicProfile': '/(tabs)/clinic-profile',
+    };
+    
+    const route = routeMap[screen] || `/(tabs)/${screen.toLowerCase()}`;
+    router.push(route);
   };
 
   const userFirstName = user?.first_name || "User";
