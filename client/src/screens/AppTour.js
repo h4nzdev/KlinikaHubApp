@@ -187,7 +187,7 @@ const AppTour = ({ isOpen, onClose }) => {
           </Text>
 
           {/* Step Dots */}
-          <View className="flex-row gap-2 mb-16">
+          <View className="flex-row gap-2 mb-18">
             {tourSteps.map((_, index) => (
               <TouchableOpacity
                 key={index}

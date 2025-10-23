@@ -6,10 +6,11 @@ import {
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
-  Linking,
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Modal,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
@@ -35,6 +36,10 @@ const Dashboard = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const randomTip = healthTips[Math.floor(Math.random() * healthTips.length)];
   const [remindedAppointments, setRemindedAppointments] = useState(new Set());
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
+
   const { addReminder } = useReminder();
 
   // Fetch appointments from API
@@ -61,6 +66,49 @@ const Dashboard = ({ navigation }) => {
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  // Effect to check for expired appointments every hour
+  useEffect(() => {
+    const checkExpiredAppointments = () => {
+      const now = new Date();
+      const expiredAppointments = appointments.filter((appointment) => {
+        if ([0, 1].includes(appointment.status)) {
+          // Only check pending or scheduled
+          const appointmentDate = new Date(appointment.appointment_date);
+          return appointmentDate < now;
+        }
+        return false;
+      });
+
+      // Auto-cancel expired appointments
+      expiredAppointments.forEach(async (appointment) => {
+        try {
+          console.log(
+            `🔄 Auto-cancelling expired appointment: ${appointment.id}`
+          );
+          await appointmentServices.updateAppointmentStatus(appointment.id, 3); // 3 = cancelled
+
+          // Update local state
+          setAppointments((prev) =>
+            prev.map((app) =>
+              app.id === appointment.id ? { ...app, status: 3 } : app
+            )
+          );
+        } catch (error) {
+          console.error("❌ Error auto-cancelling appointment:", error);
+        }
+      });
+    };
+
+    // Check immediately on mount
+    checkExpiredAppointments();
+
+    // Set up interval to check every hour (3600000 ms)
+    const intervalId = setInterval(checkExpiredAppointments, 3600000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
+  }, [appointments]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -92,22 +140,80 @@ const Dashboard = ({ navigation }) => {
     return schedule;
   };
 
-  const handleSaveReminder = (reminderData) => {
+  // Handle cancel appointment
+  const handleCancelAppointment = async (appointment) => {
+    setDropdownVisible(false);
+
+    Alert.alert(
+      "Cancel Appointment",
+      `Are you sure you want to cancel your appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}?`,
+      [
+        {
+          text: "No, Keep It",
+          style: "cancel",
+        },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              console.log(`🔄 Cancelling appointment: ${appointment.id}`);
+              await appointmentServices.updateAppointmentStatus(
+                appointment.id,
+                3
+              );
+
+              setAppointments((prev) =>
+                prev.map((app) =>
+                  app.id === appointment.id ? { ...app, status: 3 } : app
+                )
+              );
+
+              Toast.show({
+                type: "success",
+                text1: "Appointment Cancelled",
+                text2: "Your appointment has been cancelled successfully.",
+              });
+            } catch (error) {
+              console.error("❌ Error cancelling appointment:", error);
+              Toast.show({
+                type: "error",
+                text1: "Cancellation Failed",
+                text2: "Failed to cancel appointment. Please try again.",
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSaveReminder = (appointment) => {
+    setDropdownVisible(false);
+
     const reminderFormData = {
-      name: `Appointment with ${getDoctorName(reminderData)} on ${formatDate(reminderData.appointment_date)}`,
-      time: formatTime(reminderData.schedule),
+      name: `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`,
+      time: formatTime(appointment.schedule),
       isActive: true,
     };
 
     addReminder(reminderFormData);
 
     // Add to reminded appointments set
-    setRemindedAppointments((prev) => new Set(prev).add(reminderData.id));
+    setRemindedAppointments((prev) => new Set(prev).add(appointment.id));
 
     Toast.show({
       type: "success",
       text1: "Reminder Added Successfully",
     });
+  };
+
+  // Show dropdown menu
+  const showDropdown = (appointment, event) => {
+    const { pageX, pageY } = event.nativeEvent;
+    setSelectedAppointment(appointment);
+    setDropdownPosition({ x: pageX - 120, y: pageY + 10 }); // Position above the button
+    setDropdownVisible(true);
   };
 
   // Get status badge
@@ -184,10 +290,6 @@ const Dashboard = ({ navigation }) => {
   );
   const completedAppointments = appointments.filter((app) => app.status === 2);
 
-  const handleClinicProfile = (clinicId) => {
-    navigation.navigate("ClinicProfile", { clinicId });
-  };
-
   // Loading state
   if (loading) {
     return (
@@ -210,6 +312,86 @@ const Dashboard = ({ navigation }) => {
 
       {/* Header */}
       <Header />
+
+      {/* Dropdown Modal */}
+      <Modal
+        visible={dropdownVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setDropdownVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
+          <View className="flex-1">
+            <View
+              className="absolute bg-white rounded-xl shadow-2xl border border-slate-200 py-2 z-50 min-w-[180px]"
+              style={{
+                top: dropdownPosition.y,
+                left: dropdownPosition.x,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setDropdownVisible(false);
+                  Toast.show({
+                    type: "info",
+                    text1: "Feature Coming Soon",
+                    text2: "View details will be available in the next update",
+                  });
+                }}
+                className="flex-row items-center px-4 py-3 border-b border-slate-100"
+                activeOpacity={0.7}
+              >
+                <Feather name="eye" size={16} color="#334155" />
+                <Text className="text-slate-700 font-medium ml-3">
+                  View Details
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setDropdownVisible(false);
+                  Toast.show({
+                    type: "info",
+                    text1: "Feature Coming Soon",
+                    text2: "Reschedule will be available in the next update",
+                  });
+                }}
+                className="flex-row items-center px-4 py-3 border-b border-slate-100"
+                activeOpacity={0.7}
+              >
+                <Feather name="calendar" size={16} color="#334155" />
+                <Text className="text-slate-700 font-medium ml-3">
+                  Reschedule
+                </Text>
+              </TouchableOpacity>
+
+              {/* Set Reminder */}
+              <TouchableOpacity
+                onPress={() => handleSaveReminder(selectedAppointment)}
+                className="flex-row items-center px-4 py-3 border-b border-slate-100"
+                activeOpacity={0.7}
+              >
+                <Feather name="bell" size={16} color="#334155" />
+                <Text className="text-slate-700 font-medium ml-3">
+                  Set Reminder
+                </Text>
+              </TouchableOpacity>
+
+              {/* Cancel Appointment */}
+              <TouchableOpacity
+                onPress={() => handleCancelAppointment(selectedAppointment)}
+                className="flex-row items-center px-4 py-3"
+                activeOpacity={0.7}
+              >
+                <Feather name="x-circle" size={16} color="#ef4444" />
+                <Text className="text-red-500 font-medium ml-3">
+                  Cancel Appointment
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* Main Content */}
       <ScrollView
@@ -339,87 +521,6 @@ const Dashboard = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Quick Actions */}
-          <View className="mb-8">
-            <Text className="text-2xl font-semibold text-slate-800 mb-6">
-              Quick Actions
-            </Text>
-
-            {/* First Row */}
-            <View className="flex-row mb-4">
-              {/* Book Appointment */}
-              <TouchableOpacity
-                onPress={() => navigation.navigate("Appointments")}
-                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-cyan-50 rounded-xl border border-cyan-200 mr-2"
-                activeOpacity={0.7}
-              >
-                <View className="bg-cyan-500 p-3 rounded-xl shadow-md">
-                  <Feather name="plus" size={24} color="#ffffff" />
-                </View>
-                <Text className="font-semibold text-slate-800 text-start">
-                  Book Appointment
-                </Text>
-                <Text className="text-slate-600 text-start text-sm">
-                  Schedule your next visit
-                </Text>
-              </TouchableOpacity>
-
-              {/* View All Appointments */}
-              <TouchableOpacity
-                onPress={() => navigation.navigate("Appointments")}
-                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-sky-50 rounded-xl border border-sky-200 ml-2"
-                activeOpacity={0.7}
-              >
-                <View className="bg-sky-500 p-3 rounded-xl shadow-md">
-                  <Feather name="list" size={24} color="#ffffff" />
-                </View>
-                <Text className="font-semibold text-slate-800 text-start">
-                  View All
-                </Text>
-                <Text className="text-slate-600 text-start text-sm">
-                  See all appointments
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Second Row */}
-            <View className="flex-row">
-              {/* Set Reminder */}
-              <TouchableOpacity
-                onPress={() => navigation.navigate("Reminders")}
-                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-blue-50 rounded-xl border border-blue-200 mr-2"
-                activeOpacity={0.7}
-              >
-                <View className="bg-blue-500 p-3 rounded-xl shadow-md">
-                  <Feather name="bell" size={24} color="#ffffff" />
-                </View>
-                <Text className="font-semibold text-slate-800 text-start">
-                  Set Reminder
-                </Text>
-                <Text className="text-slate-600 text-start text-sm">
-                  Never miss medication
-                </Text>
-              </TouchableOpacity>
-
-              {/* Emergency Call */}
-              <TouchableOpacity
-                onPress={() => Linking.openURL("tel:112")}
-                className="flex-1 flex-col items-start justify-center gap-2 p-4 bg-red-50 rounded-xl border border-red-200 ml-2"
-                activeOpacity={0.7}
-              >
-                <View className="bg-red-500 p-3 rounded-xl shadow-md">
-                  <Feather name="phone" size={24} color="#ffffff" />
-                </View>
-                <Text className="font-semibold text-slate-800 text-start">
-                  Emergency Call
-                </Text>
-                <Text className="text-slate-600 text-start text-sm">
-                  Call for immediate help
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Upcoming Appointments */}
           <View>
             <Text className="text-2xl font-semibold text-slate-800 mb-6">
@@ -483,38 +584,11 @@ const Dashboard = ({ navigation }) => {
                         <TouchableOpacity
                           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                           activeOpacity={0.7}
-                          onPress={() => {
-                            Alert.alert(
-                              "Appointment Options",
-                              "What would you like to do?",
-                              [
-                                {
-                                  text: "View Details",
-                                  onPress: () =>
-                                    navigation.navigate("Appointments"),
-                                },
-                                {
-                                  text: "Reschedule",
-                                  onPress: () =>
-                                    console.log("Reschedule", appointment.id),
-                                },
-                                {
-                                  text: "Cancel",
-                                  style: "destructive",
-                                  onPress: () =>
-                                    console.log("Cancel", appointment.id),
-                                },
-                                {
-                                  text: "Close",
-                                  style: "cancel",
-                                },
-                              ]
-                            );
-                          }}
+                          onPress={(event) => showDropdown(appointment, event)}
                         >
                           <Feather
-                            name="more-horizontal"
-                            size={20}
+                            name="more-vertical"
+                            size={18}
                             color="#64748b"
                           />
                         </TouchableOpacity>
@@ -536,60 +610,6 @@ const Dashboard = ({ navigation }) => {
                           {formatTime(appointment.schedule)}
                         </Text>
                       </View>
-                    </View>
-
-                    {/* Quick Actions Footer */}
-                    <View className="flex-row justify-between items-center pt-4 border-t border-slate-100">
-                      <TouchableOpacity
-                        className="flex-row items-center justify-center"
-                        activeOpacity={0.7}
-                        onPress={() =>
-                          handleClinicProfile(appointment.clinic_id)
-                        }
-                      >
-                        <Feather name="user" size={16} color="#3b82f6" />
-                        <Text className="text-blue-600 font-medium ml-2">
-                          Profile
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        className="flex-row items-center justify-center"
-                        activeOpacity={0.7}
-                        onPress={() => handleSaveReminder(appointment)}
-                        disabled={remindedAppointments.has(appointment.id)}
-                      >
-                        <Feather
-                          name="bell"
-                          size={16}
-                          color={`${
-                            remindedAppointments.has(appointment.id)
-                              ? "#9ca3af"
-                              : "#3b82f6"
-                          }`}
-                        />
-                        <Text
-                          className={`${
-                            remindedAppointments.has(appointment.id)
-                              ? "text-slate-400"
-                              : "text-blue-600"
-                          } font-medium ml-2`}
-                        >
-                          {remindedAppointments.has(appointment.id)
-                            ? "Reminded"
-                            : "Remind"}
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        className="flex-row items-center justify-center"
-                        activeOpacity={0.7}
-                      >
-                        <Feather name="x" size={16} color="red" />
-                        <Text className="text-red-600 font-medium ml-2">
-                          Cancel
-                        </Text>
-                      </TouchableOpacity>
                     </View>
                   </View>
                 ))}
