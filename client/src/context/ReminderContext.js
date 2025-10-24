@@ -1,13 +1,6 @@
-// context/ReminderContext.js (Expo Go compatible)
+// context/ReminderContext.js (Fixed - Modal removed from provider)
 import { createContext, useContext, useState, useEffect, useRef } from "react";
-import {
-  Alert,
-  Vibration,
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { Alert, Vibration } from "react-native";
 import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthenticationContext } from "./AuthenticationContext";
@@ -52,7 +45,7 @@ export const ReminderProvider = ({ children }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       checkDueReminders();
-    }, 10000); // Check every minute
+    }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
   }, [reminders, dueReminder]);
@@ -116,8 +109,6 @@ export const ReminderProvider = ({ children }) => {
         await soundRef.current.unloadAsync();
       }
 
-      // Use a simple beep sound (you can replace with your own sound file)
-      // For now, we'll create a simple tone using expo-av
       const { sound } = await Audio.Sound.createAsync(
         require("../../assets/reminder2.mp3")
       );
@@ -132,7 +123,6 @@ export const ReminderProvider = ({ children }) => {
       });
     } catch (error) {
       console.warn("Could not play sound:", error);
-      // Fallback to vibration only
     }
   };
 
@@ -273,48 +263,13 @@ export const ReminderProvider = ({ children }) => {
     isNotificationModalOpen,
     dueReminder,
     alertCountdown,
+    handleAcknowledge, // ✅ Export this so modal can use it
   };
 
+  // ✅ REMOVED MODAL FROM HERE - It will be rendered in App.js instead
   return (
     <ReminderContext.Provider value={value}>
       {children}
-
-      {/* Reminder Alert Modal */}
-      <Modal
-        visible={isNotificationModalOpen}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={handleAcknowledge}
-      >
-        <View className="flex-1 bg-black/50 justify-center items-center p-4">
-          <View className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-            <View className="items-center mb-6">
-              <View className="w-20 h-20 bg-red-100 rounded-full items-center justify-center mb-4">
-                <Text className="text-3xl">⏰</Text>
-              </View>
-              <Text className="text-2xl font-bold text-slate-800 mb-2">
-                Reminder Alert!
-              </Text>
-              <Text className="text-lg text-slate-600 text-center mb-1">
-                {dueReminder?.name}
-              </Text>
-              <Text className="text-sm text-red-500 font-semibold">
-                Auto-call in: {alertCountdown}s
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={handleAcknowledge}
-              className="px-6 py-4 bg-cyan-500 rounded-xl shadow-lg"
-              activeOpacity={0.8}
-            >
-              <Text className="text-white font-semibold text-lg text-center">
-                Acknowledge Reminder
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </ReminderContext.Provider>
   );
 };

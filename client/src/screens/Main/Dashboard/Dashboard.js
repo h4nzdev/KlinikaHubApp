@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -38,12 +38,15 @@ const Dashboard = ({ navigation }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
 
+  // ✅ Use ref to track if we need to refetch
+  const shouldRefetch = useRef(false);
+
   const { addReminder } = useReminder();
 
   // Fetch appointments from API
-  const fetchAppointments = async () => {
+  const fetchAppointments = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       console.log("🔄 Fetching appointments for dashboard...");
 
       const appointmentsData =
@@ -60,13 +63,27 @@ const Dashboard = ({ navigation }) => {
     }
   };
 
+  // ✅ Initial load only
   useEffect(() => {
     fetchAppointments();
   }, []);
 
+  // ✅ Listen for tab focus using navigation listener (safer than useFocusEffect)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      if (shouldRefetch.current) {
+        console.log("🔄 Tab focused, refetching appointments...");
+        fetchAppointments(true); // Silent refetch
+        shouldRefetch.current = false;
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const onRefresh = () => {
     setRefreshing(true);
-    fetchAppointments();
+    fetchAppointments(true);
   };
 
   // Format date for display
@@ -94,7 +111,7 @@ const Dashboard = ({ navigation }) => {
     return schedule;
   };
 
-  // Handle cancel appointment
+  // ✅ FINAL FIX: Update state in a way that doesn't trigger navigation errors
   const handleCancelAppointment = async (appointment) => {
     setDropdownVisible(false);
 
@@ -102,11 +119,14 @@ const Dashboard = ({ navigation }) => {
       console.log(`🔄 Cancelling appointment: ${appointment.id}`);
       await appointmentServices.updateAppointmentStatus(appointment.id, 3);
 
-      setAppointments((prev) =>
-        prev.map((app) =>
+      // ✅ Update UI immediately using functional update
+      setAppointments((prevAppointments) =>
+        prevAppointments.map((app) =>
           app.id === appointment.id ? { ...app, status: 3 } : app
         )
       );
+
+      console.log("✅ Appointment cancelled successfully");
     } catch (error) {
       console.error("❌ Error cancelling appointment:", error);
     }
@@ -214,7 +234,7 @@ const Dashboard = ({ navigation }) => {
     return (
       <SafeAreaView className="flex-1 bg-slate-50">
         <StatusBar barStyle="dark-content" />
-        <Header />
+        <Header navigation={navigation} />
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0891b2" />
           <Text className="text-slate-600 mt-4 text-lg">
@@ -230,7 +250,7 @@ const Dashboard = ({ navigation }) => {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <Header />
+      <Header navigation={navigation} />
 
       {/* Dropdown Modal */}
       <Modal
@@ -276,7 +296,7 @@ const Dashboard = ({ navigation }) => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Main Content */}
+      {/* Main Content - REST OF YOUR JSX STAYS THE SAME */}
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
