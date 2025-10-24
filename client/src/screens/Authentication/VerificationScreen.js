@@ -13,11 +13,12 @@ import {
   ScrollView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import patientAuthServices from "../../services/patientAuthServices";
 
 const VerificationScreen = () => {
-  const router = useRouter();
+  const navigation = useNavigation();
+  const route = useRoute();
 
   // Get registration data from previous screen
   const { formData } = route.params;
@@ -58,7 +59,7 @@ const VerificationScreen = () => {
       Alert.alert("Success!", "Account created successfully!", [
         {
           text: "OK",
-          onPress: () => router.push("/(auth)/login"),
+          onPress: () => navigation.navigate("Login"),
         },
       ]);
     } catch (error) {

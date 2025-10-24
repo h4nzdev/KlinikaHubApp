@@ -11,13 +11,13 @@ import {
   Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
 import klinikahub from "../../../assets/klinikahub.png";
 import { useLogin } from "../../hooks/useLogin";
 
 const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
-  const router = useRouter();
+  const navigation = useNavigation();
   const { handleLogin, isLoading } = useLogin();
 
   const [formData, setFormData] = useState({
@@ -224,7 +224,7 @@ const Login = () => {
             <Text className="text-sm text-slate-600">
               New to KlinikaHub?{" "}
               <Text
-                onPress={() => !isLoading && router.push("/(auth)/register")}
+                onPress={() => !isLoading && navigation.navigate("Register")}
                 className={`font-semibold ${isLoading ? "text-slate-400" : "text-cyan-600"}`}
               >
                 Create account

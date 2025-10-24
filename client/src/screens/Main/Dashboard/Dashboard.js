@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Alert,
   Modal,
   TouchableWithoutFeedback,
 } from "react-native";
@@ -17,7 +16,6 @@ import Header from "../../../components/Header";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import appointmentServices from "../../../services/appointmentsServices";
 import { useReminder } from "../../../context/ReminderContext";
-import Toast from "react-native-toast-message";
 
 // Static data for the dashboard
 const healthTips = [
@@ -55,7 +53,6 @@ const Dashboard = ({ navigation }) => {
       setAppointments(appointmentsData || []);
     } catch (error) {
       console.error("❌ Error fetching dashboard appointments:", error);
-      Alert.alert("Error", "Failed to load appointments. Please try again.");
       setAppointments([]);
     } finally {
       setLoading(false);
@@ -66,49 +63,6 @@ const Dashboard = ({ navigation }) => {
   useEffect(() => {
     fetchAppointments();
   }, []);
-
-  // Effect to check for expired appointments every hour
-  useEffect(() => {
-    const checkExpiredAppointments = () => {
-      const now = new Date();
-      const expiredAppointments = appointments.filter((appointment) => {
-        if ([0, 1].includes(appointment.status)) {
-          // Only check pending or scheduled
-          const appointmentDate = new Date(appointment.appointment_date);
-          return appointmentDate < now;
-        }
-        return false;
-      });
-
-      // Auto-cancel expired appointments
-      expiredAppointments.forEach(async (appointment) => {
-        try {
-          console.log(
-            `🔄 Auto-cancelling expired appointment: ${appointment.id}`
-          );
-          await appointmentServices.updateAppointmentStatus(appointment.id, 3); // 3 = cancelled
-
-          // Update local state
-          setAppointments((prev) =>
-            prev.map((app) =>
-              app.id === appointment.id ? { ...app, status: 3 } : app
-            )
-          );
-        } catch (error) {
-          console.error("❌ Error auto-cancelling appointment:", error);
-        }
-      });
-    };
-
-    // Check immediately on mount
-    checkExpiredAppointments();
-
-    // Set up interval to check every hour (3600000 ms)
-    const intervalId = setInterval(checkExpiredAppointments, 3600000);
-
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
-  }, [appointments]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -144,48 +98,18 @@ const Dashboard = ({ navigation }) => {
   const handleCancelAppointment = async (appointment) => {
     setDropdownVisible(false);
 
-    Alert.alert(
-      "Cancel Appointment",
-      `Are you sure you want to cancel your appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}?`,
-      [
-        {
-          text: "No, Keep It",
-          style: "cancel",
-        },
-        {
-          text: "Yes, Cancel",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              console.log(`🔄 Cancelling appointment: ${appointment.id}`);
-              await appointmentServices.updateAppointmentStatus(
-                appointment.id,
-                3
-              );
+    try {
+      console.log(`🔄 Cancelling appointment: ${appointment.id}`);
+      await appointmentServices.updateAppointmentStatus(appointment.id, 3);
 
-              setAppointments((prev) =>
-                prev.map((app) =>
-                  app.id === appointment.id ? { ...app, status: 3 } : app
-                )
-              );
-
-              Toast.show({
-                type: "success",
-                text1: "Appointment Cancelled",
-                text2: "Your appointment has been cancelled successfully.",
-              });
-            } catch (error) {
-              console.error("❌ Error cancelling appointment:", error);
-              Toast.show({
-                type: "error",
-                text1: "Cancellation Failed",
-                text2: "Failed to cancel appointment. Please try again.",
-              });
-            }
-          },
-        },
-      ]
-    );
+      setAppointments((prev) =>
+        prev.map((app) =>
+          app.id === appointment.id ? { ...app, status: 3 } : app
+        )
+      );
+    } catch (error) {
+      console.error("❌ Error cancelling appointment:", error);
+    }
   };
 
   const handleSaveReminder = (appointment) => {
@@ -201,18 +125,13 @@ const Dashboard = ({ navigation }) => {
 
     // Add to reminded appointments set
     setRemindedAppointments((prev) => new Set(prev).add(appointment.id));
-
-    Toast.show({
-      type: "success",
-      text1: "Reminder Added Successfully",
-    });
   };
 
   // Show dropdown menu
   const showDropdown = (appointment, event) => {
     const { pageX, pageY } = event.nativeEvent;
     setSelectedAppointment(appointment);
-    setDropdownPosition({ x: pageX - 120, y: pageY + 10 }); // Position above the button
+    setDropdownPosition({ x: pageX - 120, y: pageY + 10 });
     setDropdownVisible(true);
   };
 
@@ -276,7 +195,7 @@ const Dashboard = ({ navigation }) => {
   // Get next upcoming appointment
   const getNextAppointment = () => {
     const upcoming = appointments
-      .filter((app) => [0, 1].includes(app.status)) // Pending or Scheduled
+      .filter((app) => [0, 1].includes(app.status))
       .sort(
         (a, b) => new Date(a.appointment_date) - new Date(b.appointment_date)
       );
@@ -329,42 +248,6 @@ const Dashboard = ({ navigation }) => {
                 left: dropdownPosition.x,
               }}
             >
-              <TouchableOpacity
-                onPress={() => {
-                  setDropdownVisible(false);
-                  Toast.show({
-                    type: "info",
-                    text1: "Feature Coming Soon",
-                    text2: "View details will be available in the next update",
-                  });
-                }}
-                className="flex-row items-center px-4 py-3 border-b border-slate-100"
-                activeOpacity={0.7}
-              >
-                <Feather name="eye" size={16} color="#334155" />
-                <Text className="text-slate-700 font-medium ml-3">
-                  View Details
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setDropdownVisible(false);
-                  Toast.show({
-                    type: "info",
-                    text1: "Feature Coming Soon",
-                    text2: "Reschedule will be available in the next update",
-                  });
-                }}
-                className="flex-row items-center px-4 py-3 border-b border-slate-100"
-                activeOpacity={0.7}
-              >
-                <Feather name="calendar" size={16} color="#334155" />
-                <Text className="text-slate-700 font-medium ml-3">
-                  Reschedule
-                </Text>
-              </TouchableOpacity>
-
               {/* Set Reminder */}
               <TouchableOpacity
                 onPress={() => handleSaveReminder(selectedAppointment)}
@@ -539,7 +422,7 @@ const Dashboard = ({ navigation }) => {
                   Schedule your next appointment to get started
                 </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Appointments")}
+                  onPress={() => {}}
                   className="flex-row items-center px-6 py-3 bg-cyan-500 rounded-xl"
                 >
                   <Feather name="plus" size={18} color="#ffffff" />
@@ -616,7 +499,7 @@ const Dashboard = ({ navigation }) => {
 
                 {upcomingAppointments.length > 3 && (
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("Appointments")}
+                    onPress={() => {}}
                     className="bg-cyan-50 rounded-2xl border border-cyan-200 p-4 items-center"
                     activeOpacity={0.7}
                   >

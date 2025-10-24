@@ -14,7 +14,7 @@ import {
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { patientAuthServices } from "../../services/patientAuthServices";
@@ -22,7 +22,7 @@ import * as ImagePicker from "expo-image-picker";
 import { cloudinaryService } from "../../services/cloudinaryService";
 
 const Register = () => {
-  const router = useRouter();
+  const navigation = useNavigation();
 
   const [activeSection, setActiveSection] = useState("personal");
   const [isLoading, setIsLoading] = useState(false);
@@ -186,7 +186,7 @@ const Register = () => {
       };
 
       await patientAuthServices.requestVerificationCode(formData.email);
-      router.push("/(auth)/verification");
+      navigation.navigate("Verification", { formData: formDataWithImage });
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to send verification code");
     } finally {
@@ -840,7 +840,7 @@ const Register = () => {
               Already have an account?{" "}
               <Text
                 className="text-cyan-600 font-semibold"
-                onPress={() => router.push("/(auth)/login")}
+                onPress={() => navigation.navigate("Login")}
               >
                 Sign in
               </Text>

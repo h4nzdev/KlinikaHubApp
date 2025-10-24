@@ -133,26 +133,31 @@ const AppNavigation = () => {
 
   return (
     <View className="flex-1" style={{ paddingTop: StatusBar.currentHeight }}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen name="MedicalRecords" component={MedicalRecords} />
-        <Stack.Screen name="Invoices" component={Invoices} />
-        <Stack.Screen name="AIChat" component={AIChat} />
-        <Stack.Screen name="Reminders" component={Reminders} />
-        <Stack.Screen
-          name="AppointmentBookingPage"
-          component={AppointmentBookingPage}
-        />
-        <Stack.Screen name="ClinicProfile" component={ClinicProfile} />
-        <Stack.Screen name="Clinics" component={Clinics} />
-        <Stack.Screen name="Reviews" component={Reviews} />
-        <Stack.Screen name="Notifications" component={Notifications} />
-        <Stack.Screen name="Settings" component={Settings} />
-      </Stack.Navigator>
+      {!showSplash && !showAppTour ? (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="MedicalRecords" component={MedicalRecords} />
+          <Stack.Screen name="Invoices" component={Invoices} />
+          <Stack.Screen name="AIChat" component={AIChat} />
+          <Stack.Screen name="Reminders" component={Reminders} />
+          <Stack.Screen
+            name="AppointmentBookingPage"
+            component={AppointmentBookingPage}
+          />
+          <Stack.Screen name="ClinicProfile" component={ClinicProfile} />
+          <Stack.Screen name="Clinics" component={Clinics} />
+          <Stack.Screen name="Reviews" component={Reviews} />
+          <Stack.Screen name="Notifications" component={Notifications} />
+          <Stack.Screen name="Settings" component={Settings} />
+        </Stack.Navigator>
+      ) : (
+        <>
+          {showSplash && <SplashScreen onFinish={() => {}} />}
+          {showAppTour && (
+            <AppTour isOpen={showAppTour} onClose={handleTourFinish} />
+          )}
+        </>
+      )}
     </View>
   );
 };

@@ -10,14 +10,18 @@ export default function Role() {
   const { user } = useContext(AuthenticationContext);
 
   return (
-    <NavigationContainer>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent={true}
-      />
-      {!user ? <AuthNavigation /> : <AppNavigation />}
+    <>
+      <NavigationContainer>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={true}
+        />
+        {!user ? <AuthNavigation /> : <AppNavigation />}
+      </NavigationContainer>
+
+      {/* Toast should live outside the NavigationContainer */}
       <Toast />
-    </NavigationContainer>
+    </>
   );
 }
