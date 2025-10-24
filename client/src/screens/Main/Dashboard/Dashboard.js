@@ -442,7 +442,9 @@ const Dashboard = ({ navigation }) => {
                   Schedule your next appointment to get started
                 </Text>
                 <TouchableOpacity
-                  onPress={() => {}}
+                  onPress={() => {
+                    navigation.navigate("Clinics");
+                  }}
                   className="flex-row items-center px-6 py-3 bg-cyan-500 rounded-xl"
                 >
                   <Feather name="plus" size={18} color="#ffffff" />
