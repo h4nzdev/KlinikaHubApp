@@ -16,6 +16,7 @@ import Header from "../../../components/Header";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import appointmentServices from "../../../services/appointmentsServices";
 import { useReminder } from "../../../context/ReminderContext";
+import Toast from "react-native-toast-message";
 
 // Static data for the dashboard
 const healthTips = [
@@ -126,6 +127,10 @@ const Dashboard = ({ navigation }) => {
         )
       );
 
+      Toast.show({
+        type: "success",
+        text1: "Appointment cancelled successfully",
+      });
       console.log("✅ Appointment cancelled successfully");
     } catch (error) {
       console.error("❌ Error cancelling appointment:", error);
@@ -260,38 +265,83 @@ const Dashboard = ({ navigation }) => {
         onRequestClose={() => setDropdownVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
-          <View className="flex-1">
-            <View
-              className="absolute bg-white rounded-xl shadow-2xl border border-slate-200 py-2 z-50 min-w-[180px]"
-              style={{
-                top: dropdownPosition.y,
-                left: dropdownPosition.x,
-              }}
-            >
-              {/* Set Reminder */}
-              <TouchableOpacity
-                onPress={() => handleSaveReminder(selectedAppointment)}
-                className="flex-row items-center px-4 py-3 border-b border-slate-100"
-                activeOpacity={0.7}
-              >
-                <Feather name="bell" size={16} color="#334155" />
-                <Text className="text-slate-700 font-medium ml-3">
-                  Set Reminder
-                </Text>
-              </TouchableOpacity>
+          <View className="flex-1 justify-end bg-black/50">
+            {/* Prevent closing when tapping the menu */}
+            <TouchableWithoutFeedback>
+              <View className="bg-white rounded-t-3xl mx-2 mb-2 shadow-2xl overflow-hidden">
+                {/* Drag handle */}
+                <View className="items-center py-3">
+                  <View className="w-12 h-1 bg-slate-300 rounded-full" />
+                </View>
 
-              {/* Cancel Appointment */}
-              <TouchableOpacity
-                onPress={() => handleCancelAppointment(selectedAppointment)}
-                className="flex-row items-center px-4 py-3"
-                activeOpacity={0.7}
-              >
-                <Feather name="x-circle" size={16} color="#ef4444" />
-                <Text className="text-red-500 font-medium ml-3">
-                  Cancel Appointment
-                </Text>
-              </TouchableOpacity>
-            </View>
+                {/* Menu header */}
+                <View className="px-6 pb-3 border-b border-slate-100">
+                  <Text className="text-lg font-semibold text-slate-800">
+                    Appointment Options
+                  </Text>
+                  <Text
+                    className="text-slate-500 text-sm mt-1"
+                    numberOfLines={1}
+                  >
+                    {selectedAppointment && getDoctorName(selectedAppointment)}
+                  </Text>
+                </View>
+
+                {/* Menu items */}
+                <View className="py-2">
+                  {/* Set Reminder */}
+                  <TouchableOpacity
+                    onPress={() => handleSaveReminder(selectedAppointment)}
+                    className="flex-row items-center px-6 py-4 active:bg-slate-50"
+                    activeOpacity={0.6}
+                  >
+                    <View className="bg-blue-100 p-3 rounded-xl mr-4">
+                      <Feather name="bell" size={20} color="#3b82f6" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-slate-800 font-medium text-base">
+                        Set Reminder
+                      </Text>
+                      <Text className="text-slate-500 text-sm mt-1">
+                        Get notified before appointment
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={18} color="#94a3b8" />
+                  </TouchableOpacity>
+
+                  {/* Cancel Appointment */}
+                  <TouchableOpacity
+                    onPress={() => handleCancelAppointment(selectedAppointment)}
+                    className="flex-row items-center px-6 py-4 active:bg-red-50"
+                    activeOpacity={0.6}
+                  >
+                    <View className="bg-red-100 p-3 rounded-xl mr-4">
+                      <Feather name="x-circle" size={20} color="#ef4444" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-red-600 font-medium text-base">
+                        Cancel Appointment
+                      </Text>
+                      <Text className="text-red-400 text-sm mt-1">
+                        Free up this time slot
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={18} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Cancel button */}
+                <TouchableOpacity
+                  onPress={() => setDropdownVisible(false)}
+                  className="mx-4 my-3 bg-slate-100 py-4 rounded-xl items-center active:bg-slate-200"
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-slate-600 font-semibold text-base">
+                    Close
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
       </Modal>

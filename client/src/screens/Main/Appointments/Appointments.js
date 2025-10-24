@@ -9,6 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
@@ -25,6 +26,8 @@ const Appointments = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [remindedAppointments, setRemindedAppointments] = useState(new Set());
   const { addReminder } = useReminder();
+  const [filter, setFilter] = useState("all"); // "all", "upcoming", "completed", "cancelled"
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Plan limits
   const planLimits = {
@@ -226,6 +229,46 @@ const Appointments = ({ navigation }) => {
     });
   };
 
+  const filteredAppointments = appointments.filter((appointment) => {
+    // Filter by status
+    const statusMatch =
+      filter === "all" ||
+      (filter === "upcoming" && [0, 1].includes(appointment.status)) ||
+      (filter === "completed" && appointment.status === 2) ||
+      (filter === "cancelled" && appointment.status === 3);
+
+    // Filter by search query
+    const searchMatch =
+      searchQuery === "" ||
+      getDoctorName(appointment)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      getClinicName(appointment)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+    return statusMatch && searchMatch;
+  });
+
+  const filterTabs = [
+    { key: "all", label: "All", count: appointments.length },
+    {
+      key: "upcoming",
+      label: "Upcoming",
+      count: appointments.filter((app) => [0, 1].includes(app.status)).length,
+    },
+    {
+      key: "completed",
+      label: "Completed",
+      count: appointments.filter((app) => app.status === 2).length,
+    },
+    {
+      key: "cancelled",
+      label: "Cancelled",
+      count: appointments.filter((app) => app.status === 3).length,
+    },
+  ];
+
   // Loading state
   if (loading) {
     return (
@@ -245,11 +288,8 @@ const Appointments = ({ navigation }) => {
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
       <Header />
 
-      {/* Main Content */}
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -258,8 +298,8 @@ const Appointments = ({ navigation }) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View className="p-4 gap-8">
-          {/* Header Section - MATCHING DASHBOARD STYLE */}
+        <View className="p-4 gap-6">
+          {/* Header Section */}
           <View>
             <View className="flex-row items-center gap-3">
               <View className="bg-cyan-500 p-3 rounded-2xl shadow-lg">
@@ -270,7 +310,8 @@ const Appointments = ({ navigation }) => {
                   My Appointments
                 </Text>
                 <Text className="text-slate-600 mt-1">
-                  Manage and track your medical appointments
+                  {filteredAppointments.length} of {appointments.length}{" "}
+                  appointments
                 </Text>
               </View>
             </View>
@@ -285,130 +326,214 @@ const Appointments = ({ navigation }) => {
             )}
           </View>
 
-          {/* Stats Section - MATCHING DASHBOARD CARDS */}
-          <View>
-            <View>
-              {/* Quick Actions Card */}
-              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1 pr-3">
-                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide mb-2">
-                      Quick Actions
-                    </Text>
-                    <TouchableOpacity
-                      onPress={handleNewAppointmentClick}
-                      className={`flex-row items-center justify-between py-3 px-4 rounded-xl ${
-                        limitReached
-                          ? "bg-slate-100"
-                          : "bg-cyan-50 border border-cyan-200"
-                      }`}
-                      disabled={limitReached}
-                    >
-                      <View className="flex-row items-center">
-                        <View
-                          className={`p-2 rounded-lg ${limitReached ? "bg-slate-300" : "bg-cyan-500"}`}
-                        >
-                          <Feather name="plus" size={18} color="#ffffff" />
-                        </View>
-                        <View className="ml-3">
-                          <Text
-                            className={`font-semibold ${limitReached ? "text-slate-500" : "text-slate-800"}`}
-                          >
-                            New Appointment
-                          </Text>
-                          <Text className="text-slate-600 text-sm">
-                            Schedule your next visit
-                          </Text>
-                        </View>
-                      </View>
-                      <Feather name="chevron-right" size={18} color="#64748b" />
-                    </TouchableOpacity>
-                  </View>
-                  <View className="bg-emerald-500 p-4 rounded-2xl shadow-md">
-                    <Feather name="clock" size={32} color="#ffffff" />
-                  </View>
-                </View>
-              </View>
+          {/* Search Bar */}
+          <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4">
+            <View className="flex-row items-center">
+              <Feather name="search" size={20} color="#64748b" />
+              <TextInput
+                placeholder="Search doctors or clinics..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                className="flex-1 ml-3 text-slate-800"
+                placeholderTextColor="#94a3b8"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Feather name="x" size={20} color="#64748b" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
-          {/* Detailed Stats - MATCHING DASHBOARD GRID */}
-          <View>
-            <Text className="text-2xl font-semibold text-slate-800 mb-6">
-              Appointment Details
-            </Text>
+          {/* Filter Tabs */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="flex-row -mx-4 px-4"
+          >
+            {filterTabs.map((tab) => (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setFilter(tab.key)}
+                className={`flex-row items-center px-4 py-3 rounded-2xl mr-3 ${
+                  filter === tab.key
+                    ? "bg-cyan-500"
+                    : "bg-white border border-slate-200"
+                }`}
+              >
+                <Text
+                  className={`font-semibold ${
+                    filter === tab.key ? "text-white" : "text-slate-700"
+                  }`}
+                >
+                  {tab.label}
+                </Text>
+                <View
+                  className={`ml-2 px-2 py-1 rounded-full ${
+                    filter === tab.key ? "bg-cyan-600" : "bg-slate-100"
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-bold ${
+                      filter === tab.key ? "text-white" : "text-slate-600"
+                    }`}
+                  >
+                    {tab.count}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
-            <View className="flex-row flex-wrap -mx-2">
-              {stats.map((stat, index) => (
-                <View key={index} className="w-1/2 px-2 mb-4">
-                  <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4">
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-1">
-                        <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide mb-1">
-                          {stat.title}
-                        </Text>
-                        <Text className="text-2xl font-semibold text-slate-800">
-                          {stat.value}
-                        </Text>
-                      </View>
-                      <View
-                        className={`p-3 rounded-xl ${stat.accentColor} shadow-md`}
-                      >
-                        <Feather name={stat.icon} size={20} color="#ffffff" />
-                      </View>
-                    </View>
-                  </View>
+          {/* Quick Stats Summary (instead of detailed cards) */}
+          <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4">
+            <View className="flex-row justify-between items-center">
+              {[
+                {
+                  label: "Total",
+                  value: appointments.length,
+                  color: "text-slate-700",
+                },
+                {
+                  label: "Upcoming",
+                  value: appointments.filter((app) =>
+                    [0, 1].includes(app.status)
+                  ).length,
+                  color: "text-cyan-600",
+                },
+                {
+                  label: "Completed",
+                  value: appointments.filter((app) => app.status === 2).length,
+                  color: "text-emerald-600",
+                },
+                {
+                  label: "Cancelled",
+                  value: appointments.filter((app) => app.status === 3).length,
+                  color: "text-red-600",
+                },
+              ].map((stat, index) => (
+                <View key={index} className="items-center">
+                  <Text className={`text-lg font-bold ${stat.color}`}>
+                    {stat.value}
+                  </Text>
+                  <Text className="text-slate-500 text-xs mt-1">
+                    {stat.label}
+                  </Text>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* Appointments List - MATCHING DASHBOARD STYLE */}
-          <View>
-            <Text className="text-2xl font-semibold text-slate-800 mb-6">
-              All Appointments
-            </Text>
+          {/* Quick Action */}
+          <TouchableOpacity
+            onPress={handleNewAppointmentClick}
+            className={`flex-row items-center justify-between p-4 rounded-2xl ${
+              limitReached
+                ? "bg-slate-100"
+                : "bg-cyan-50 border border-cyan-200"
+            }`}
+            disabled={limitReached}
+          >
+            <View className="flex-row items-center">
+              <View
+                className={`p-3 rounded-xl ${
+                  limitReached ? "bg-slate-300" : "bg-cyan-500"
+                }`}
+              >
+                <Feather name="plus" size={20} color="#ffffff" />
+              </View>
+              <View className="ml-3">
+                <Text
+                  className={`font-semibold text-lg ${
+                    limitReached ? "text-slate-500" : "text-slate-800"
+                  }`}
+                >
+                  New Appointment
+                </Text>
+                <Text className="text-slate-600">
+                  {limitReached ? "Limit reached" : "Schedule your next visit"}
+                </Text>
+              </View>
+            </View>
+            <Feather
+              name="chevron-right"
+              size={20}
+              color={limitReached ? "#94a3b8" : "#0891b2"}
+            />
+          </TouchableOpacity>
 
-            {appointments.length > 0 ? (
-              <View className="gap-4">
-                {appointments.map((appointment) => (
-                  <View
+          {/* Appointments List */}
+          <View>
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-semibold text-slate-800">
+                Appointments
+                {filter !== "all" && ` (${filteredAppointments.length})`}
+              </Text>
+              {filteredAppointments.length > 0 && (
+                <Text className="text-slate-500 text-sm">
+                  Showing {Math.min(filteredAppointments.length, 10)} of{" "}
+                  {filteredAppointments.length}
+                </Text>
+              )}
+            </View>
+
+            {filteredAppointments.length > 0 ? (
+              <View className="gap-3">
+                {/* Show only first 10, user can filter/search for more */}
+                {filteredAppointments.slice(0, 10).map((appointment) => (
+                  <TouchableOpacity
                     key={appointment.id}
-                    className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6"
+                    className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5 active:bg-slate-50"
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      // You can add view details functionality here
+                      console.log("View appointment details", appointment.id);
+                    }}
                   >
-                    {/* Doctor Info Row */}
-                    <View className="flex-row justify-between items-start mb-4">
-                      <View className="flex-1 mr-2">
-                        <Text
-                          className="font-bold text-slate-800 text-lg mb-2"
-                          numberOfLines={1}
-                        >
+                    {/* Appointment Card - Simplified */}
+                    <View className="flex-row justify-between items-start mb-3">
+                      <View className="flex-1">
+                        <Text className="font-bold text-slate-800 text-base mb-1">
                           {getDoctorName(appointment)}
                         </Text>
-                        <View className="flex-row flex-wrap gap-2">
-                          <View className="bg-slate-200 px-3 py-1 rounded-full">
-                            <Text className="text-slate-600 text-xs font-medium">
-                              {getSpecialty(appointment)}
-                            </Text>
-                          </View>
-                          <View className="bg-slate-100 px-3 py-1 rounded-full">
-                            <Text className="text-slate-700 text-xs font-medium capitalize">
-                              {getClinicName(appointment)}
-                            </Text>
-                          </View>
-                        </View>
+                        <Text className="text-slate-600 text-sm">
+                          {getClinicName(appointment)}
+                        </Text>
+                      </View>
+                      {getStatusBadge(appointment.status)}
+                    </View>
+
+                    <View className="flex-row justify-between items-center">
+                      <View>
+                        <Text className="text-slate-700 font-medium text-sm">
+                          {formatDate(appointment.appointment_date)}
+                        </Text>
+                        <Text className="text-slate-500 text-xs">
+                          {formatTime(appointment.schedule)}
+                        </Text>
                       </View>
 
-                      {/* Status & Menu */}
-                      <View className="items-end gap-2">
-                        {getStatusBadge(appointment.status)}
+                      <View className="flex-row gap-3">
                         <TouchableOpacity
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          activeOpacity={0.7}
+                          onPress={() => handleSaveReminder(appointment)}
+                          disabled={remindedAppointments.has(appointment.id)}
+                        >
+                          <Feather
+                            name="bell"
+                            size={18}
+                            color={
+                              remindedAppointments.has(appointment.id)
+                                ? "#9ca3af"
+                                : "#8b5cf6"
+                            }
+                          />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
                           onPress={() => {
                             Alert.alert(
-                              "Appointment Options",
-                              "What would you like to do?",
+                              "Quick Actions",
+                              `What would you like to do with your appointment with ${getDoctorName(appointment)}?`,
                               [
                                 {
                                   text: "View Details",
@@ -416,9 +541,9 @@ const Appointments = ({ navigation }) => {
                                     console.log("View details", appointment.id),
                                 },
                                 {
-                                  text: "Reschedule",
+                                  text: "Set Reminder",
                                   onPress: () =>
-                                    console.log("Reschedule", appointment.id),
+                                    handleSaveReminder(appointment),
                                 },
                                 {
                                   text: "Cancel",
@@ -436,107 +561,69 @@ const Appointments = ({ navigation }) => {
                         >
                           <Feather
                             name="more-horizontal"
-                            size={20}
+                            size={18}
                             color="#64748b"
                           />
                         </TouchableOpacity>
                       </View>
                     </View>
-
-                    {/* Date & Time */}
-                    <View className="flex-row items-center justify-between mb-4">
-                      <View className="flex-row items-center flex-1">
-                        <Feather name="calendar" size={16} color="#64748b" />
-                        <Text className="text-slate-600 ml-2 font-medium">
-                          {formatDate(appointment.appointment_date)}
-                        </Text>
-                      </View>
-
-                      <View className="flex-row items-center">
-                        <Feather name="clock" size={16} color="#64748b" />
-                        <Text className="text-slate-600 ml-2 font-medium">
-                          {formatTime(appointment.schedule)}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Fees & Quick Actions Footer */}
-                    <View className="flex-row justify-between items-center pt-4 border-t border-slate-100">
-                      <View>
-                        <Text className="text-slate-700 font-semibold">
-                          ₱{appointment.consultation_fees || "0.00"}
-                        </Text>
-                        <Text className="text-slate-500 text-xs">
-                          Consultation Fee
-                        </Text>
-                      </View>
-
-                      <View className="flex-row gap-4">
-                        <TouchableOpacity
-                          className="flex-row items-center"
-                          activeOpacity={0.7}
-                          onPress={() => handleSaveReminder(appointment)}
-                          disabled={remindedAppointments.has(appointment.id)}
-                        >
-                          <Feather
-                            name="bell"
-                            size={16}
-                            color={
-                              remindedAppointments.has(appointment.id)
-                                ? "#9ca3af"
-                                : "#8b5cf6"
-                            }
-                          />
-                          <Text
-                            className={`font-medium ml-1 text-sm ${
-                              remindedAppointments.has(appointment.id)
-                                ? "text-slate-400"
-                                : "text-purple-600"
-                            }`}
-                          >
-                            {remindedAppointments.has(appointment.id)
-                              ? "Reminded"
-                              : "Remind"}
-                          </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          className="flex-row items-center"
-                          activeOpacity={0.7}
-                        >
-                          <Feather name="phone" size={16} color="#3b82f6" />
-                          <Text className="text-blue-600 font-medium ml-1 text-sm">
-                            Call
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
+
+                {/* Show "Load More" if there are more appointments */}
+                {filteredAppointments.length > 10 && (
+                  <View className="items-center py-4">
+                    <Text className="text-slate-500 text-sm">
+                      And {filteredAppointments.length - 10} more
+                      appointments...
+                    </Text>
+                    <Text className="text-cyan-600 text-sm mt-1">
+                      Use search or filters to find specific appointments
+                    </Text>
+                  </View>
+                )}
               </View>
             ) : (
+              // No appointments state
               <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 items-center">
-                <View className="bg-slate-100 rounded-2xl p-6 mb-6">
-                  <Feather name="calendar" size={64} color="#9ca3af" />
+                <View className="bg-slate-100 rounded-2xl p-6 mb-4">
+                  <Feather name="calendar" size={48} color="#9ca3af" />
                 </View>
-                <Text className="text-xl font-bold text-slate-700 mb-2">
-                  No appointments yet
+                <Text className="text-lg font-bold text-slate-700 mb-2 text-center">
+                  No appointments found
                 </Text>
                 <Text className="text-slate-500 text-center mb-6">
-                  Schedule your first appointment to get started
+                  {searchQuery || filter !== "all"
+                    ? "Try changing your search or filter"
+                    : "Schedule your first appointment to get started"}
                 </Text>
-                <TouchableOpacity
-                  onPress={handleNewAppointmentClick}
-                  className={`flex-row items-center px-6 py-3 rounded-xl ${
-                    limitReached ? "bg-slate-300" : "bg-cyan-500"
-                  }`}
-                  disabled={limitReached}
-                >
-                  <Feather name="plus" size={18} color="#ffffff" />
-                  <Text className="text-white font-semibold ml-2">
-                    Schedule Appointment
-                  </Text>
-                </TouchableOpacity>
+                {searchQuery || filter !== "all" ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery("");
+                      setFilter("all");
+                    }}
+                    className="flex-row items-center px-6 py-3 bg-cyan-500 rounded-xl"
+                  >
+                    <Feather name="refresh-cw" size={18} color="#ffffff" />
+                    <Text className="text-white font-semibold ml-2">
+                      Show All Appointments
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={handleNewAppointmentClick}
+                    className={`flex-row items-center px-6 py-3 rounded-xl ${
+                      limitReached ? "bg-slate-300" : "bg-cyan-500"
+                    }`}
+                    disabled={limitReached}
+                  >
+                    <Feather name="plus" size={18} color="#ffffff" />
+                    <Text className="text-white font-semibold ml-2">
+                      Schedule Appointment
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
