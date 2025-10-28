@@ -17,6 +17,8 @@ class Appointment {
     appointment_date: "DATE NOT NULL",
     status: "TINYINT DEFAULT 0", // 0=pending, 1=confirmed, 2=completed, 3=cancelled
     created_at: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    cancellation_reason: "TEXT", // Add this for auto-cancellation
+    auto_cancelled: "BOOLEAN DEFAULT FALSE", // Add this to track auto-cancelled appointments
   };
 
   // Returns SQL CREATE TABLE statement
@@ -26,6 +28,39 @@ class Appointment {
       .join(", ");
 
     return `CREATE TABLE IF NOT EXISTS ${this.tableName} (${columns})`;
+  }
+
+  // SQL for cancelling expired appointments
+  static getCancelExpiredAppointmentsSQL() {
+    return `
+      UPDATE ${this.tableName} 
+      SET 
+        status = 3, 
+        cancellation_reason = 'Automatically cancelled - appointment date passed',
+        auto_cancelled = TRUE
+      WHERE 
+        status IN (0, 1) -- pending (0) and confirmed (1) appointments
+        AND (
+          (appointment_date < CURDATE()) 
+          OR 
+          (appointment_date = CURDATE() AND schedule < NOW())
+        )
+    `;
+  }
+
+  // SQL for checking if appointment is expired
+  static getIsAppointmentExpiredSQL() {
+    return `
+      SELECT 
+        id,
+        (
+          (appointment_date < CURDATE()) 
+          OR 
+          (appointment_date = CURDATE() AND schedule < NOW())
+        ) as is_expired
+      FROM ${this.tableName} 
+      WHERE id = ? AND status IN (0, 1)
+    `;
   }
 
   // SQL for getting appointments with clinic and doctor details

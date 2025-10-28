@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  Modal,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
@@ -17,8 +19,122 @@ import appointmentServices from "../../../services/appointmentsServices";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import { useReminder } from "../../../context/ReminderContext";
 import Toast from "react-native-toast-message";
-import { getSpecialty } from "../../../utils/getSpecialty";
 
+// ==================== REUSABLE MODAL COMPONENT ====================
+const AppointmentModal = ({
+  visible,
+  onClose,
+  appointment,
+  onSetReminder,
+  onCancelAppointment,
+}) => {
+  const isCancel = appointment?.status === 3;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View className="flex-1 justify-end bg-black/50">
+          <TouchableWithoutFeedback>
+            <View className="bg-white rounded-t-3xl mx-2 mb-2 shadow-2xl overflow-hidden">
+              {/* Drag handle */}
+              <View className="items-center py-3">
+                <View className="w-12 h-1 bg-slate-300 rounded-full" />
+              </View>
+
+              {/* Menu header */}
+              <View className="px-6 pb-3 border-b border-slate-100">
+                <Text className="text-lg font-semibold text-slate-800">
+                  Appointment Options
+                </Text>
+                <Text className="text-slate-500 text-sm mt-1" numberOfLines={1}>
+                  {appointment?.doctor_name || "Medical Consultation"}
+                </Text>
+              </View>
+
+              {/* Menu items */}
+              <View className="py-2">
+                {/* Set Reminder */}
+                <TouchableOpacity
+                  onPress={() => onSetReminder(appointment)}
+                  className="flex-row items-center px-6 py-4 active:bg-slate-50"
+                  activeOpacity={0.6}
+                >
+                  <View className="bg-blue-100 p-3 rounded-xl mr-4">
+                    <Feather name="bell" size={20} color="#3b82f6" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-slate-800 font-medium text-base">
+                      Set Reminder
+                    </Text>
+                    <Text className="text-slate-500 text-sm mt-1">
+                      Get notified before appointment
+                    </Text>
+                  </View>
+                  <Feather name="chevron-right" size={18} color="#94a3b8" />
+                </TouchableOpacity>
+
+                {/* Cancel Appointment */}
+                <TouchableOpacity
+                  onPress={() => onCancelAppointment(appointment)}
+                  disabled={isCancel}
+                  className={`flex-row items-center px-6 py-4 ${isCancel ? "" : "active:bg-red-50"}`}
+                  activeOpacity={0.6}
+                >
+                  <View
+                    className={`${isCancel ? "bg-gray-100" : "bg-red-100"} p-3 rounded-xl mr-4`}
+                  >
+                    <Feather
+                      name="x-circle"
+                      size={20}
+                      color={isCancel ? "#9ca3af" : "#ef4444"}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className={`${isCancel ? "text-gray-400" : "text-red-600"} font-medium text-base`}
+                    >
+                      Cancel Appointment
+                    </Text>
+                    <Text
+                      className={`${isCancel ? "text-gray-400" : "text-red-400"} text-sm mt-1`}
+                    >
+                      {isCancel
+                        ? "Already cancelled"
+                        : "Free up this time slot"}
+                    </Text>
+                  </View>
+                  <Feather
+                    name="chevron-right"
+                    size={18}
+                    color={isCancel ? "#9ca3af" : "#ef4444"}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Cancel button */}
+              <TouchableOpacity
+                onPress={onClose}
+                className="mx-4 my-3 bg-slate-100 py-4 rounded-xl items-center active:bg-slate-200"
+                activeOpacity={0.7}
+              >
+                <Text className="text-slate-600 font-semibold text-base">
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+};
+
+// ==================== MAIN APPOINTMENTS COMPONENT ====================
 const Appointments = ({ navigation }) => {
   const { user } = useContext(AuthenticationContext);
   const [appointments, setAppointments] = useState([]);
@@ -26,8 +142,19 @@ const Appointments = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [remindedAppointments, setRemindedAppointments] = useState(new Set());
   const { addReminder } = useReminder();
-  const [filter, setFilter] = useState("all"); // "all", "upcoming", "completed", "cancelled"
+  const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
+
+  // Modal state
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+
+  // Advanced filter state
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [dateFilter, setDateFilter] = useState("all"); // all, upcoming, past
+  const [statusFilter, setStatusFilter] = useState("all"); // all, scheduled, pending, completed, cancelled
+  const [clinicFilter, setClinicFilter] = useState("all");
 
   // Plan limits
   const planLimits = {
@@ -41,13 +168,12 @@ const Appointments = ({ navigation }) => {
   const clinicAppointmentCount = appointments.length;
   const limitReached = clinicAppointmentCount >= maxAppointments;
 
-  // Fetch appointments from API - UPDATED TO USE DETAILS
+  // Fetch appointments from API
   const fetchAppointments = async () => {
     try {
       setLoading(true);
       console.log("🔄 Fetching appointments with details from API...");
 
-      // USE THE NEW METHOD WITH DETAILS!
       const appointmentsData =
         await appointmentServices.getAppointmentsByPatientIdWithDetails(
           user.id
@@ -57,7 +183,6 @@ const Appointments = ({ navigation }) => {
       setAppointments(appointmentsData || []);
     } catch (error) {
       console.error("❌ Error fetching appointments with details:", error);
-      // Fallback to regular method if details fail
       try {
         console.log("🔄 Trying regular appointments fetch...");
         const fallbackData =
@@ -116,7 +241,63 @@ const Appointments = ({ navigation }) => {
     });
   };
 
-  // Get status badge with proper API status mapping - MATCHING DASHBOARD STYLE
+  // Show dropdown menu
+  const showDropdown = (appointment) => {
+    setSelectedAppointment(appointment);
+    setDropdownVisible(true);
+  };
+
+  // Handle cancel appointment
+  const handleCancelAppointment = async (appointment) => {
+    setDropdownVisible(false);
+
+    try {
+      console.log(`🔄 Cancelling appointment: ${appointment.id}`);
+      await appointmentServices.updateAppointmentStatus(appointment.id, 3);
+
+      // Update UI immediately using functional update
+      setAppointments((prevAppointments) =>
+        prevAppointments.map((app) =>
+          app.id === appointment.id ? { ...app, status: 3 } : app
+        )
+      );
+
+      Toast.show({
+        type: "success",
+        text1: "Appointment cancelled successfully",
+      });
+      console.log("✅ Appointment cancelled successfully");
+    } catch (error) {
+      console.error("❌ Error cancelling appointment:", error);
+      Toast.show({
+        type: "error",
+        text1: "Failed to cancel appointment",
+      });
+    }
+  };
+
+  // Handle set reminder
+  const handleSaveReminder = (appointment) => {
+    setDropdownVisible(false);
+
+    const reminderFormData = {
+      name: `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`,
+      time: formatTime(appointment.schedule),
+      isActive: true,
+    };
+
+    addReminder(reminderFormData);
+
+    // Add to reminded appointments set
+    setRemindedAppointments((prev) => new Set(prev).add(appointment.id));
+
+    Toast.show({
+      type: "success",
+      text1: "Reminder Added Successfully",
+    });
+  };
+
+  // Get status badge with proper API status mapping
   const getStatusBadge = (status) => {
     const statusMap = {
       0: "pending",
@@ -161,83 +342,48 @@ const Appointments = ({ navigation }) => {
     );
   };
 
-  // UPDATED: Get doctor name from appointment data - NOW USES REAL DATA
+  // Get doctor name from appointment data
   const getDoctorName = (appointment) => {
     return appointment.doctor_name || "Medical Consultation";
   };
 
-  // UPDATED: Get clinic name from appointment data
+  // Get clinic name from appointment data
   const getClinicName = (appointment) => {
     return appointment.clinic_name || "Main Clinic";
   };
 
-  // Stats data based on real appointments - MATCHING DASHBOARD STYLE
-  const stats = [
-    {
-      title: "Total Appointments",
-      value: appointments.length,
-      icon: "calendar",
-      color: "bg-white",
-      iconColor: "#0891b2",
-      textColor: "text-slate-800",
-      accentColor: "bg-cyan-500",
-    },
-    {
-      title: "Upcoming",
-      value: appointments.filter((app) => [0, 1].includes(app.status)).length,
-      icon: "clock",
-      color: "bg-white",
-      iconColor: "#0891b2",
-      textColor: "text-slate-800",
-      accentColor: "bg-cyan-500",
-    },
-    {
-      title: "Completed",
-      value: appointments.filter((app) => app.status === 2).length,
-      icon: "check-circle",
-      color: "bg-white",
-      iconColor: "#059669",
-      textColor: "text-slate-800",
-      accentColor: "bg-emerald-500",
-    },
-    {
-      title: "Cancelled",
-      value: appointments.filter((app) => app.status === 3).length,
-      icon: "x-circle",
-      color: "bg-white",
-      iconColor: "#dc2626",
-      textColor: "text-slate-800",
-      accentColor: "bg-red-500",
-    },
+  // Get unique clinics for filter
+  const uniqueClinics = [
+    ...new Set(appointments.map((app) => getClinicName(app))),
   ];
 
-  const handleSaveReminder = (reminderData) => {
-    const reminderFormData = {
-      name: `Appointment with ${getDoctorName(reminderData)} on ${formatDate(reminderData.appointment_date)}`,
-      time: formatTime(reminderData.schedule),
-      isActive: true,
-    };
-
-    addReminder(reminderFormData);
-
-    // Add to reminded appointments set
-    setRemindedAppointments((prev) => new Set(prev).add(reminderData.id));
-
-    Toast.show({
-      type: "success",
-      text1: "Reminder Added Successfully",
-    });
-  };
-
+  // ADVANCED FILTERING LOGIC
   const filteredAppointments = appointments.filter((appointment) => {
-    // Filter by status
-    const statusMatch =
-      filter === "all" ||
-      (filter === "upcoming" && [0, 1].includes(appointment.status)) ||
-      (filter === "completed" && appointment.status === 2) ||
-      (filter === "cancelled" && appointment.status === 3);
+    const today = new Date();
+    const appointmentDate = new Date(appointment.appointment_date);
 
-    // Filter by search query
+    // Date filtering
+    const dateMatch =
+      dateFilter === "all" ||
+      (dateFilter === "upcoming" && appointmentDate >= today) ||
+      (dateFilter === "past" && appointmentDate < today);
+
+    // Status filtering
+    const statusMap = {
+      0: "pending",
+      1: "scheduled",
+      2: "completed",
+      3: "cancelled",
+    };
+    const currentStatus = statusMap[appointment.status] || "pending";
+    const statusMatch =
+      statusFilter === "all" || currentStatus === statusFilter;
+
+    // Clinic filtering
+    const clinicMatch =
+      clinicFilter === "all" || getClinicName(appointment) === clinicFilter;
+
+    // Search query filtering
     const searchMatch =
       searchQuery === "" ||
       getDoctorName(appointment)
@@ -247,8 +393,13 @@ const Appointments = ({ navigation }) => {
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
 
-    return statusMatch && searchMatch;
+    return dateMatch && statusMatch && clinicMatch && searchMatch;
   });
+
+  // Display appointments with showAll logic
+  const displayAppointments = showAll
+    ? filteredAppointments
+    : filteredAppointments.slice(0, 5);
 
   const filterTabs = [
     { key: "all", label: "All", count: appointments.length },
@@ -268,6 +419,16 @@ const Appointments = ({ navigation }) => {
       count: appointments.filter((app) => app.status === 3).length,
     },
   ];
+
+  // Reset all filters
+  const resetFilters = () => {
+    setFilter("all");
+    setSearchQuery("");
+    setDateFilter("all");
+    setStatusFilter("all");
+    setClinicFilter("all");
+    setShowAdvancedFilters(false);
+  };
 
   // Loading state
   if (loading) {
@@ -289,6 +450,15 @@ const Appointments = ({ navigation }) => {
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar barStyle="dark-content" />
       <Header />
+
+      {/* REUSABLE MODAL COMPONENT */}
+      <AppointmentModal
+        visible={dropdownVisible}
+        onClose={() => setDropdownVisible(false)}
+        appointment={selectedAppointment}
+        onSetReminder={handleSaveReminder}
+        onCancelAppointment={handleCancelAppointment}
+      />
 
       <ScrollView
         className="flex-1"
@@ -312,6 +482,8 @@ const Appointments = ({ navigation }) => {
                 <Text className="text-slate-600 mt-1">
                   {filteredAppointments.length} of {appointments.length}{" "}
                   appointments
+                  {filteredAppointments.length !== appointments.length &&
+                    " (filtered)"}
                 </Text>
               </View>
             </View>
@@ -345,47 +517,166 @@ const Appointments = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Filter Tabs */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="flex-row -mx-4 px-4"
+          {/* Advanced Filter Toggle */}
+          <TouchableOpacity
+            onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className="flex-row items-center justify-between bg-white rounded-2xl shadow-lg border border-slate-200 p-4"
           >
-            {filterTabs.map((tab) => (
-              <TouchableOpacity
-                key={tab.key}
-                onPress={() => setFilter(tab.key)}
-                className={`flex-row items-center px-4 py-3 rounded-2xl mr-3 ${
-                  filter === tab.key
-                    ? "bg-cyan-500"
-                    : "bg-white border border-slate-200"
-                }`}
-              >
-                <Text
-                  className={`font-semibold ${
-                    filter === tab.key ? "text-white" : "text-slate-700"
-                  }`}
-                >
-                  {tab.label}
-                </Text>
-                <View
-                  className={`ml-2 px-2 py-1 rounded-full ${
-                    filter === tab.key ? "bg-cyan-600" : "bg-slate-100"
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-bold ${
-                      filter === tab.key ? "text-white" : "text-slate-600"
-                    }`}
-                  >
-                    {tab.count}
-                  </Text>
+            <View className="flex-row items-center">
+              <Feather name="filter" size={20} color="#64748b" />
+              <Text className="text-slate-800 font-medium ml-3">
+                Advanced Filters
+              </Text>
+              {(dateFilter !== "all" ||
+                statusFilter !== "all" ||
+                clinicFilter !== "all") && (
+                <View className="bg-cyan-500 rounded-full w-5 h-5 items-center justify-center ml-2">
+                  <Text className="text-white text-xs font-bold">!</Text>
                 </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+              )}
+            </View>
+            <Feather
+              name={showAdvancedFilters ? "chevron-up" : "chevron-down"}
+              size={20}
+              color="#64748b"
+            />
+          </TouchableOpacity>
 
-          {/* Quick Stats Summary (instead of detailed cards) */}
+          {/* Advanced Filters */}
+          {showAdvancedFilters && (
+            <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 gap-4">
+              <View className="flex-row justify-between items-center">
+                <Text className="text-slate-800 font-semibold">
+                  Advanced Filters
+                </Text>
+                <TouchableOpacity onPress={resetFilters}>
+                  <Text className="text-cyan-600 font-medium">Reset All</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Date Filter */}
+              <View>
+                <Text className="text-slate-600 text-sm font-medium mb-2">
+                  Date
+                </Text>
+                <View className="flex-row gap-2">
+                  {[
+                    { key: "all", label: "All Dates" },
+                    { key: "upcoming", label: "Upcoming" },
+                    { key: "past", label: "Past" },
+                  ].map((item) => (
+                    <TouchableOpacity
+                      key={item.key}
+                      onPress={() => setDateFilter(item.key)}
+                      className={`px-3 py-2 rounded-xl ${
+                        dateFilter === item.key ? "bg-cyan-500" : "bg-slate-100"
+                      }`}
+                    >
+                      <Text
+                        className={
+                          dateFilter === item.key
+                            ? "text-white font-medium"
+                            : "text-slate-700"
+                        }
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Status Filter */}
+              <View>
+                <Text className="text-slate-600 text-sm font-medium mb-2">
+                  Status
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {[
+                    { key: "all", label: "All Status" },
+                    { key: "scheduled", label: "Scheduled" },
+                    { key: "pending", label: "Pending" },
+                    { key: "completed", label: "Completed" },
+                    { key: "cancelled", label: "Cancelled" },
+                  ].map((item) => (
+                    <TouchableOpacity
+                      key={item.key}
+                      onPress={() => setStatusFilter(item.key)}
+                      className={`px-3 py-2 rounded-xl ${
+                        statusFilter === item.key
+                          ? "bg-cyan-500"
+                          : "bg-slate-100"
+                      }`}
+                    >
+                      <Text
+                        className={
+                          statusFilter === item.key
+                            ? "text-white font-medium"
+                            : "text-slate-700"
+                        }
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Clinic Filter */}
+              {uniqueClinics.length > 1 && (
+                <View>
+                  <Text className="text-slate-600 text-sm font-medium mb-2">
+                    Clinic
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View className="flex-row gap-2">
+                      <TouchableOpacity
+                        onPress={() => setClinicFilter("all")}
+                        className={`px-3 py-2 rounded-xl ${
+                          clinicFilter === "all"
+                            ? "bg-cyan-500"
+                            : "bg-slate-100"
+                        }`}
+                      >
+                        <Text
+                          className={
+                            clinicFilter === "all"
+                              ? "text-white font-medium"
+                              : "text-slate-700"
+                          }
+                        >
+                          All Clinics
+                        </Text>
+                      </TouchableOpacity>
+                      {uniqueClinics.map((clinic) => (
+                        <TouchableOpacity
+                          key={clinic}
+                          onPress={() => setClinicFilter(clinic)}
+                          className={`px-3 py-2 rounded-xl ${
+                            clinicFilter === clinic
+                              ? "bg-cyan-500"
+                              : "bg-slate-100"
+                          }`}
+                        >
+                          <Text
+                            className={
+                              clinicFilter === clinic
+                                ? "text-white font-medium"
+                                : "text-slate-700"
+                            }
+                          >
+                            {clinic}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Quick Stats Summary */}
           <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4">
             <View className="flex-row justify-between items-center">
               {[
@@ -467,11 +758,12 @@ const Appointments = ({ navigation }) => {
             <View className="flex-row justify-between items-center mb-4">
               <Text className="text-xl font-semibold text-slate-800">
                 Appointments
-                {filter !== "all" && ` (${filteredAppointments.length})`}
+                {filteredAppointments.length !== appointments.length &&
+                  ` (${filteredAppointments.length} filtered)`}
               </Text>
               {filteredAppointments.length > 0 && (
                 <Text className="text-slate-500 text-sm">
-                  Showing {Math.min(filteredAppointments.length, 10)} of{" "}
+                  Showing {displayAppointments.length} of{" "}
                   {filteredAppointments.length}
                 </Text>
               )}
@@ -479,18 +771,16 @@ const Appointments = ({ navigation }) => {
 
             {filteredAppointments.length > 0 ? (
               <View className="gap-3">
-                {/* Show only first 10, user can filter/search for more */}
-                {filteredAppointments.slice(0, 10).map((appointment) => (
+                {displayAppointments.map((appointment) => (
                   <TouchableOpacity
                     key={appointment.id}
                     className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5 active:bg-slate-50"
                     activeOpacity={0.7}
                     onPress={() => {
-                      // You can add view details functionality here
                       console.log("View appointment details", appointment.id);
                     }}
                   >
-                    {/* Appointment Card - Simplified */}
+                    {/* Appointment Card */}
                     <View className="flex-row justify-between items-start mb-3">
                       <View className="flex-1">
                         <Text className="font-bold text-slate-800 text-base mb-1">
@@ -530,34 +820,7 @@ const Appointments = ({ navigation }) => {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                          onPress={() => {
-                            Alert.alert(
-                              "Quick Actions",
-                              `What would you like to do with your appointment with ${getDoctorName(appointment)}?`,
-                              [
-                                {
-                                  text: "View Details",
-                                  onPress: () =>
-                                    console.log("View details", appointment.id),
-                                },
-                                {
-                                  text: "Set Reminder",
-                                  onPress: () =>
-                                    handleSaveReminder(appointment),
-                                },
-                                {
-                                  text: "Cancel",
-                                  style: "destructive",
-                                  onPress: () =>
-                                    console.log("Cancel", appointment.id),
-                                },
-                                {
-                                  text: "Close",
-                                  style: "cancel",
-                                },
-                              ]
-                            );
-                          }}
+                          onPress={() => showDropdown(appointment)}
                         >
                           <Feather
                             name="more-horizontal"
@@ -570,17 +833,24 @@ const Appointments = ({ navigation }) => {
                   </TouchableOpacity>
                 ))}
 
-                {/* Show "Load More" if there are more appointments */}
-                {filteredAppointments.length > 10 && (
-                  <View className="items-center py-4">
-                    <Text className="text-slate-500 text-sm">
-                      And {filteredAppointments.length - 10} more
-                      appointments...
+                {/* SHOW ALL / SHOW LESS TOGGLE */}
+                {filteredAppointments.length > 5 && (
+                  <TouchableOpacity
+                    onPress={() => setShowAll(!showAll)}
+                    className="bg-cyan-50 rounded-2xl border border-cyan-200 p-4 items-center"
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-cyan-600 font-semibold">
+                      {showAll
+                        ? `Show Less`
+                        : `View All ${filteredAppointments.length} Appointments`}
                     </Text>
-                    <Text className="text-cyan-600 text-sm mt-1">
-                      Use search or filters to find specific appointments
+                    <Text className="text-cyan-500 text-sm mt-1">
+                      {showAll
+                        ? "Collapse the list"
+                        : "See your complete appointment schedule"}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 )}
               </View>
             ) : (
@@ -593,21 +863,24 @@ const Appointments = ({ navigation }) => {
                   No appointments found
                 </Text>
                 <Text className="text-slate-500 text-center mb-6">
-                  {searchQuery || filter !== "all"
-                    ? "Try changing your search or filter"
+                  {searchQuery ||
+                  dateFilter !== "all" ||
+                  statusFilter !== "all" ||
+                  clinicFilter !== "all"
+                    ? "Try changing your search or filters"
                     : "Schedule your first appointment to get started"}
                 </Text>
-                {searchQuery || filter !== "all" ? (
+                {searchQuery ||
+                dateFilter !== "all" ||
+                statusFilter !== "all" ||
+                clinicFilter !== "all" ? (
                   <TouchableOpacity
-                    onPress={() => {
-                      setSearchQuery("");
-                      setFilter("all");
-                    }}
+                    onPress={resetFilters}
                     className="flex-row items-center px-6 py-3 bg-cyan-500 rounded-xl"
                   >
                     <Feather name="refresh-cw" size={18} color="#ffffff" />
                     <Text className="text-white font-semibold ml-2">
-                      Show All Appointments
+                      Clear All Filters
                     </Text>
                   </TouchableOpacity>
                 ) : (

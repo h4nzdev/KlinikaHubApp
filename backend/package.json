@@ -20,6 +20,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "mysql2": "^3.15.2",
+    "node-cron": "^4.2.1",
     "react-native-cloudinary": "^1.0.1",
     "sqlite3": "^5.1.7",
     "twilio": "^5.10.3"
