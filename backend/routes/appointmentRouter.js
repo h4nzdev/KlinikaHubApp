@@ -229,4 +229,59 @@ appointmentRouter.get("/with-details/all", async (req, res) => {
   }
 });
 
+// @route   PATCH /api/appointments/:id/reschedule
+// @desc    Reschedule an appointment (update date and time)
+// @access  Public
+appointmentRouter.patch("/:id/reschedule", async (req, res) => {
+  try {
+    const { appointment_date, schedule } = req.body;
+
+    if (!appointment_date || !schedule) {
+      return res.status(400).json({
+        success: false,
+        message: "Both appointment_date and schedule are required",
+      });
+    }
+
+    // Validate that the new date is not in the past
+    const newDate = new Date(appointment_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (newDate < today) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot reschedule to a past date",
+      });
+    }
+
+    // If same day, validate time is not in the past
+    if (newDate.getTime() === today.getTime()) {
+      const newTime = new Date(schedule);
+      const now = new Date();
+
+      if (newTime < now) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot reschedule to a past time on today's date",
+        });
+      }
+    }
+
+    const appointment = await appointmentController.rescheduleAppointment(
+      req.params.id,
+      appointment_date,
+      schedule
+    );
+
+    res.json({
+      success: true,
+      data: appointment,
+      message: "Appointment rescheduled successfully",
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 export default appointmentRouter;

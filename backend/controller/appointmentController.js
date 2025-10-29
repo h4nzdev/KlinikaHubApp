@@ -29,7 +29,7 @@ class AppointmentController {
     }
   }
 
-  // NEW: Auto-cancel expired appointments
+  // Auto-cancel expired appointments
   async cancelExpiredAppointments() {
     try {
       const db = await this.initDB();
@@ -53,7 +53,7 @@ class AppointmentController {
     }
   }
 
-  // NEW: Check if specific appointment is expired
+  // Check if specific appointment is expired
   async isAppointmentExpired(appointmentId) {
     try {
       const db = await this.initDB();
@@ -69,9 +69,8 @@ class AppointmentController {
     }
   }
 
-  // NEW: Start cron job for auto-cancellation (runs every hour)
+  // Start cron job for auto-cancellation (runs every hour)
   startAutoCancelCron() {
-    // Run every hour at minute 0
     cron.schedule("0 * * * *", async () => {
       try {
         console.log("🕒 Running auto-cancel cron job...");
@@ -81,8 +80,6 @@ class AppointmentController {
           console.log(
             `🕒 Auto-cancelled ${result.cancelledCount} expired appointments`
           );
-          // You can emit socket event here if needed
-          // req.io.emit("appointment_updated");
         }
       } catch (error) {
         console.error("❌ Error in auto-cancel cron job:", error);
@@ -92,7 +89,7 @@ class AppointmentController {
     console.log("✅ Auto-cancel cron job started (runs every hour)");
   }
 
-  // NEW: Cancel expired appointments for specific patient
+  // Cancel expired appointments for specific patient
   async cancelExpiredAppointmentsForPatient(patientId) {
     try {
       const db = await this.initDB();
@@ -127,10 +124,9 @@ class AppointmentController {
     }
   }
 
-  // MODIFIED: Get appointments by patient ID - automatically check for expired ones first
+  // Get appointments by patient ID - automatically check for expired ones first
   async getAppointmentsByPatientId(patientId) {
     try {
-      // First, cancel any expired appointments for this patient
       await this.cancelExpiredAppointmentsForPatient(patientId);
 
       const db = await this.initDB();
@@ -148,10 +144,9 @@ class AppointmentController {
     }
   }
 
-  // MODIFIED: Get appointments by patient ID WITH clinic and doctor names - with auto-cancel check
+  // Get appointments by patient ID WITH clinic and doctor names - with auto-cancel check
   async getAppointmentsByPatientIdWithDetails(patientId) {
     try {
-      // First, cancel any expired appointments for this patient
       await this.cancelExpiredAppointmentsForPatient(patientId);
 
       const db = await this.initDB();
@@ -169,10 +164,9 @@ class AppointmentController {
     }
   }
 
-  // MODIFIED: Get all appointments - with auto-cancel check
+  // Get all appointments - with auto-cancel check
   async getAllAppointments() {
     try {
-      // Cancel any expired appointments first
       await this.cancelExpiredAppointments();
 
       const db = await this.initDB();
@@ -187,10 +181,9 @@ class AppointmentController {
     }
   }
 
-  // MODIFIED: Get all appointments WITH clinic and doctor names - with auto-cancel check
+  // Get all appointments WITH clinic and doctor names - with auto-cancel check
   async getAllAppointmentsWithDetails() {
     try {
-      // Cancel any expired appointments first
       await this.cancelExpiredAppointments();
 
       const db = await this.initDB();
@@ -205,7 +198,7 @@ class AppointmentController {
     }
   }
 
-  // ✅ FIXED: SINGLE createAppointment method with validation
+  // Create new appointment with validation
   async createAppointment(appointmentData) {
     try {
       const db = await this.initDB();
@@ -404,7 +397,92 @@ class AppointmentController {
     }
   }
 
-  // HELPER: Generate unique appointment ID
+  // Reschedule appointment (update date and time)
+  async rescheduleAppointment(appointmentId, newDate, newTime) {
+    try {
+      const db = await this.initDB();
+
+      // First, get the current appointment to validate
+      const currentAppointment = await this.getAppointmentById(appointmentId);
+      if (!currentAppointment) {
+        throw new Error("Appointment not found");
+      }
+
+      // Check if appointment is already completed or cancelled
+      if (currentAppointment.status === 2) {
+        throw new Error("Cannot reschedule a completed appointment");
+      }
+      if (currentAppointment.status === 3) {
+        throw new Error("Cannot reschedule a cancelled appointment");
+      }
+
+      // Validate new date is not in the past
+      const appointmentDate = new Date(newDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (appointmentDate < today) {
+        throw new Error("Cannot reschedule to a past date");
+      }
+
+      // If same day, validate time is not in the past
+      if (appointmentDate.getTime() === today.getTime()) {
+        const appointmentTime = new Date(newTime);
+        const now = new Date();
+
+        if (appointmentTime < now) {
+          throw new Error("Cannot reschedule to a past time on today's date");
+        }
+      }
+
+      // Check for scheduling conflicts
+      const conflictCheckSql = `
+        SELECT id FROM ${Appointment.tableName} 
+        WHERE doctor_id = ? 
+        AND appointment_date = ? 
+        AND schedule = ? 
+        AND status IN (0, 1) 
+        AND id != ?
+      `;
+
+      const [conflicts] = await db.execute(conflictCheckSql, [
+        currentAppointment.doctor_id,
+        newDate,
+        newTime,
+        appointmentId,
+      ]);
+
+      if (conflicts.length > 0) {
+        throw new Error("This time slot is already booked for the doctor");
+      }
+
+      // Update the appointment
+      const updateSql = `
+        UPDATE ${Appointment.tableName} 
+        SET appointment_date = ?, schedule = ?
+        WHERE id = ?
+      `;
+
+      await db.execute(updateSql, [newDate, newTime, appointmentId]);
+
+      console.log(
+        "✅ Appointment rescheduled:",
+        appointmentId,
+        "to",
+        newDate,
+        newTime
+      );
+
+      // Return updated appointment
+      const updatedAppointment = await this.getAppointmentById(appointmentId);
+      return updatedAppointment;
+    } catch (err) {
+      console.log("❌ Appointment reschedule error:", err);
+      throw err;
+    }
+  }
+
+  // Generate unique appointment ID
   generateAppointmentId() {
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.random().toString(36).substring(2, 5).toUpperCase();

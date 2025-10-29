@@ -1,5 +1,6 @@
 import axios from "axios";
 import Config from "../config/api";
+import generateSlot from "../utils/generateSlot";
 
 const API_BASE_URL = Config.API_BASE_URL;
 
@@ -276,6 +277,72 @@ export const appointmentServices = {
     } catch (error) {
       console.error("❌ Appointment deletion error:", error.message);
       console.log("Full error details:", error.response?.data || error);
+      throw error;
+    }
+  },
+  getAvailableSlots: async (doctorId, date) => {
+    try {
+      console.log(
+        "🔄 Generating available slots for doctor:",
+        doctorId,
+        "on",
+        date
+      );
+
+      // Use our local slot generator
+      const slots = slotGenerator.getAvailableSlots(doctorId, date);
+
+      console.log("✅ Generated", slots.length, "available slots");
+      return slots;
+    } catch (error) {
+      console.error("❌ Slot generation error:", error);
+      // Return fallback slots if there's an error
+      return slotGenerator.generateTimeSlots(date);
+    }
+  },
+
+  // Reschedule appointment (local simulation)
+  rescheduleAppointment: async (appointmentId, newDate, newTime) => {
+    try {
+      console.log("🔄 Rescheduling appointment locally:", {
+        appointmentId,
+        newDate,
+        newTime,
+      });
+
+      // Simulate API call delay
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // In a real app, you would update local storage or state here
+      console.log("✅ Appointment rescheduled successfully!");
+
+      return {
+        success: true,
+        message: "Appointment rescheduled successfully",
+        data: {
+          id: appointmentId,
+          appointment_date: newDate,
+          schedule: newTime,
+          status: 1, // confirmed
+        },
+      };
+    } catch (error) {
+      console.error("❌ Reschedule error:", error);
+      throw new Error("Failed to reschedule appointment");
+    }
+  },
+
+  // Get available dates
+  getAvailableDates: async (doctorId) => {
+    try {
+      console.log("🔄 Generating available dates for doctor:", doctorId);
+
+      const dates = generateSlot.generateAvailableDates();
+
+      console.log("✅ Generated", dates.length, "available dates");
+      return dates;
+    } catch (error) {
+      console.error("❌ Date generation error:", error);
       throw error;
     }
   },

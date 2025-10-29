@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -19,26 +19,24 @@ import patientAuthServices from "../../../services/patientAuthServices";
 import * as ImagePicker from "expo-image-picker";
 
 const Profile = () => {
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const { user, updateUser } = useContext(AuthenticationContext);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [activeTab, setActiveTab] = useState("personal");
   const { appointments, loading: appointmentsLoading } = useAppointments();
 
-  // Extract patient data - handle both nested and flat structures
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [activeTab, setActiveTab] = useState("personal");
+
   const patient = user?.patient || user;
 
-  // User state with ALL fields from your data structure
-  const [updatedUser, setUpdatedUser] = useState({
+  // Use refs to store form data to prevent re-renders
+  const formDataRef = useRef({
     name: "",
     age: "",
     gender: "",
     email: "",
     phone: "",
     address: "",
-    role: "",
-    patientId: "",
     birthday: "",
     bloodGroup: "",
     bloodPressure: "",
@@ -48,43 +46,57 @@ const Profile = () => {
     guardian: "",
     relationship: "",
     guardianPhone: "",
+  });
+
+  // Local state for display only (non-input fields)
+  const [displayData, setDisplayData] = useState({
+    name: "",
+    patientId: "",
+    role: "",
     category: "",
     source: "",
     createdAt: "",
     updatedAt: "",
+    profilePicture: null,
   });
 
-  // Sync with context data - MAP ALL FIELDS
+  // Initialize data once when component mounts
   useEffect(() => {
     if (patient) {
-      console.log("Full patient data:", patient);
+      const name =
+        patient?.first_name && patient?.last_name
+          ? `${patient.first_name} ${patient.last_name}`.trim()
+          : patient?.name || "Not provided";
 
-      setUpdatedUser({
-        name:
-          patient?.first_name && patient?.last_name
-            ? `${patient.first_name} ${patient.last_name}`.trim()
-            : patient?.name || "Not provided",
-        age: patient?.age || "Not provided",
-        gender: patient?.sex || patient?.gender || "Not provided",
-        email: patient?.email || "Not provided",
-        phone: patient?.mobileno || patient?.phone || "Not provided",
-        address: patient?.address || "Not provided",
-        role: patient?.role || "patient",
-        patientId: patient?.patient_id || patient?.id || "N/A",
-        birthday: patient?.birthday || "Not provided",
-        bloodGroup: patient?.blood_group || "Not provided",
-        bloodPressure: patient?.blood_pressure || "Not provided",
-        height: patient?.height || "Not provided",
-        weight: patient?.weight || "Not provided",
+      // Update form data ref
+      formDataRef.current = {
+        name: name,
+        age: patient?.age || "",
+        gender: patient?.sex || patient?.gender || "",
+        email: patient?.email || "",
+        phone: patient?.mobileno || patient?.phone || "",
+        address: patient?.address || "",
+        birthday: patient?.birthday || "",
+        bloodGroup: patient?.blood_group || "",
+        bloodPressure: patient?.blood_pressure || "",
+        height: patient?.height || "",
+        weight: patient?.weight || "",
         maritalStatus:
           patient?.marital_status === "1"
             ? "Single"
             : patient?.marital_status === "2"
               ? "Married"
-              : patient?.marital_status || "Not provided",
-        guardian: patient?.guardian || "Not provided",
-        relationship: patient?.relationship || "Not provided",
-        guardianPhone: patient?.gua_mobileno || "Not provided",
+              : patient?.marital_status || "",
+        guardian: patient?.guardian || "",
+        relationship: patient?.relationship || "",
+        guardianPhone: patient?.gua_mobileno || "",
+      };
+
+      // Update display data
+      setDisplayData({
+        name: name,
+        patientId: patient?.patient_id || patient?.id || "N/A",
+        role: patient?.role || "patient",
         category:
           patient?.category_id === 1
             ? "Individual"
@@ -101,14 +113,13 @@ const Profile = () => {
                 : "Not specified",
         createdAt: patient?.created_at || "Not available",
         updatedAt: patient?.updated_at || "Not available",
+        profilePicture: patient?.photo || null,
       });
     }
   }, [patient]);
 
-  // Mock appointment history
-
-  const initials = updatedUser?.name
-    ? updatedUser.name
+  const initials = displayData.name
+    ? displayData.name
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -119,16 +130,13 @@ const Profile = () => {
     setIsEditMode(!isEditMode);
   };
 
-  const handleInputChange = (name, value) => {
-    setUpdatedUser((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  // Direct update to ref without causing re-render
+  const handleInputChange = (field, value) => {
+    formDataRef.current[field] = value;
   };
 
   const handleUpdateProfilePicture = async () => {
     try {
-      // ... existing code ...
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
@@ -150,24 +158,13 @@ const Profile = () => {
       if (!result.canceled && result.assets[0].base64) {
         setIsUploadingPhoto(true);
         const base64Image = result.assets[0].base64;
-
-        // ✅ USE THE CORRECT PATIENT ID - Use the database ID, not the generated PAT ID
-        const correctPatientId = patient?.id || updatedUser.patientId;
-
-        console.log(
-          "📸 Starting photo upload for patient ID:",
-          correctPatientId
-        );
-        console.log("🔍 Patient data:", patient);
+        const correctPatientId = patient?.id || displayData.patientId;
 
         const response = await patientAuthServices.updatePatientProfilePicture(
           correctPatientId,
           base64Image
         );
 
-        console.log("✅ Raw backend response:", response);
-
-        // Extract photo URL
         let newPhotoUrl;
         if (response.photo) {
           newPhotoUrl = response.photo;
@@ -183,49 +180,36 @@ const Profile = () => {
           throw new Error("No photo URL returned from server");
         }
 
-        console.log("🖼️ Extracted photo URL:", newPhotoUrl);
-
-        // ✅ UPDATE LOCAL STATE (for immediate UI update)
-        setUpdatedUser((prev) => ({
+        // Update display data
+        setDisplayData((prev) => ({
           ...prev,
           profilePicture: newPhotoUrl,
         }));
 
-        // ✅ SAFELY UPDATE CONTEXT WITHOUT LOSING DATA
         if (updateUser && user) {
-          console.log("🔄 Updating context safely...");
-          console.log("🔍 Current user structure:", user);
-
-          // Create the updated user data based on the actual structure
           let updatedUserData;
-
           if (user.patient) {
-            // If user has nested patient data
             updatedUserData = {
               ...user,
               photo: newPhotoUrl,
               patient: {
-                ...user.patient, // Keep all existing patient data
+                ...user.patient,
                 photo: newPhotoUrl,
               },
             };
           } else {
-            // If user data is flat
             updatedUserData = {
-              ...user, // Keep all existing user data
+              ...user,
               photo: newPhotoUrl,
             };
           }
-
-          console.log("📦 Updated user data:", updatedUserData);
           await updateUser(updatedUserData);
-          console.log("✅ Context updated successfully!");
         }
 
         Alert.alert("Success", "Profile picture updated successfully!");
       }
     } catch (error) {
-      console.error("❌ Profile picture update error:", error);
+      console.error("Profile picture update error:", error);
       Alert.alert("Error", error.message || "Failed to update profile picture");
     } finally {
       setIsUploadingPhoto(false);
@@ -235,38 +219,39 @@ const Profile = () => {
   const handleSaveChanges = async () => {
     setIsLoading(true);
     try {
-      // Prepare the data for backend (map back to your database structure)
       const updateData = {
-        first_name: updatedUser.name.split(" ")[0] || "",
-        last_name: updatedUser.name.split(" ").slice(1).join(" ") || "",
-        age: updatedUser.age,
-        sex: updatedUser.gender,
-        email: updatedUser.email,
-        mobileno: updatedUser.phone,
-        address: updatedUser.address,
-        birthday: updatedUser.birthday,
-        blood_group: updatedUser.bloodGroup,
-        blood_pressure: updatedUser.bloodPressure,
-        height: updatedUser.height,
-        weight: updatedUser.weight,
-        marital_status: updatedUser.maritalStatus,
-        guardian: updatedUser.guardian,
-        relationship: updatedUser.relationship,
-        gua_mobileno: updatedUser.guardianPhone,
+        first_name: formDataRef.current.name.split(" ")[0] || "",
+        last_name: formDataRef.current.name.split(" ").slice(1).join(" ") || "",
+        age: formDataRef.current.age,
+        sex: formDataRef.current.gender,
+        email: formDataRef.current.email,
+        mobileno: formDataRef.current.phone,
+        address: formDataRef.current.address,
+        birthday: formDataRef.current.birthday,
+        blood_group: formDataRef.current.bloodGroup,
+        blood_pressure: formDataRef.current.bloodPressure,
+        height: formDataRef.current.height,
+        weight: formDataRef.current.weight,
+        marital_status: formDataRef.current.maritalStatus,
+        guardian: formDataRef.current.guardian,
+        relationship: formDataRef.current.relationship,
+        gua_mobileno: formDataRef.current.guardianPhone,
       };
 
-      // Call the update service
       await patientAuthServices.updatePatientProfile(
-        updatedUser.patientId,
+        displayData.patientId,
         updateData
       );
+
+      // Update display name after save
+      setDisplayData((prev) => ({
+        ...prev,
+        name: formDataRef.current.name,
+      }));
 
       setIsLoading(false);
       setIsEditMode(false);
       Alert.alert("Success", "Profile updated successfully!");
-
-      // Optional: Refresh user data from context
-      // You might want to update your context here
     } catch (error) {
       setIsLoading(false);
       Alert.alert("Error", error.message || "Failed to update profile");
@@ -274,50 +259,35 @@ const Profile = () => {
   };
 
   const handleCancelEdit = () => {
+    // Reset form data from original patient data
     if (patient) {
-      setUpdatedUser({
-        name:
-          patient?.first_name && patient?.last_name
-            ? `${patient.first_name} ${patient.last_name}`.trim()
-            : patient?.name || "Not provided",
-        age: patient?.age || "Not provided",
-        gender: patient?.sex || patient?.gender || "Not provided",
-        email: patient?.email || "Not provided",
-        phone: patient?.mobileno || patient?.phone || "Not provided",
-        address: patient?.address || "Not provided",
-        role: patient?.role || "patient",
-        patientId: patient?.patient_id || patient?.id || "N/A",
-        birthday: patient?.birthday || "Not provided",
-        bloodGroup: patient?.blood_group || "Not provided",
-        bloodPressure: patient?.blood_pressure || "Not provided",
-        height: patient?.height || "Not provided",
-        weight: patient?.weight || "Not provided",
+      const name =
+        patient?.first_name && patient?.last_name
+          ? `${patient.first_name} ${patient.last_name}`.trim()
+          : patient?.name || "Not provided";
+
+      formDataRef.current = {
+        name: name,
+        age: patient?.age || "",
+        gender: patient?.sex || patient?.gender || "",
+        email: patient?.email || "",
+        phone: patient?.mobileno || patient?.phone || "",
+        address: patient?.address || "",
+        birthday: patient?.birthday || "",
+        bloodGroup: patient?.blood_group || "",
+        bloodPressure: patient?.blood_pressure || "",
+        height: patient?.height || "",
+        weight: patient?.weight || "",
         maritalStatus:
           patient?.marital_status === "1"
             ? "Single"
             : patient?.marital_status === "2"
               ? "Married"
-              : patient?.marital_status || "Not provided",
-        guardian: patient?.guardian || "Not provided",
-        relationship: patient?.relationship || "Not provided",
-        guardianPhone: patient?.gua_mobileno || "Not provided",
-        category:
-          patient?.category_id === 1
-            ? "Individual"
-            : patient?.category_id === 2
-              ? "Corporate"
-              : "Not specified",
-        source:
-          patient?.source === 1
-            ? "Online Registration"
-            : patient?.source === 2
-              ? "Doctor Referral"
-              : patient?.source === 3
-                ? "Walk-in"
-                : "Not specified",
-        createdAt: patient?.created_at || "Not available",
-        updatedAt: patient?.updated_at || "Not available",
-      });
+              : patient?.marital_status || "",
+        guardian: patient?.guardian || "",
+        relationship: patient?.relationship || "",
+        guardianPhone: patient?.gua_mobileno || "",
+      };
     }
     setIsEditMode(false);
   };
@@ -336,141 +306,54 @@ const Profile = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "scheduled":
-        return "bg-cyan-100 text-cyan-700";
-      case "completed":
-        return "bg-emerald-100 text-emerald-700";
-      case "cancelled":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-slate-100 text-slate-700";
-    }
-  };
-
   // Information organized by tabs
   const personalInfo = [
-    {
-      title: "Full Name",
-      value: updatedUser.name,
-      icon: "user",
-      name: "name",
-    },
-    {
-      title: "Age",
-      value: updatedUser.age ? `${updatedUser.age} years` : "Not provided",
-      icon: "calendar",
-      name: "age",
-    },
-    {
-      title: "Gender",
-      value: updatedUser.gender,
-      icon: "user-check",
-      name: "gender",
-    },
+    { title: "Full Name", field: "name", icon: "user" },
+    { title: "Age", field: "age", icon: "calendar", suffix: " years" },
+    { title: "Gender", field: "gender", icon: "user-check" },
     {
       title: "Birthday",
-      value: formatDate(updatedUser.birthday),
+      field: "birthday",
       icon: "gift",
-      name: "birthday",
+      formatter: formatDate,
     },
-    {
-      title: "Marital Status",
-      value: updatedUser.maritalStatus,
-      icon: "heart",
-      name: "maritalStatus",
-    },
+    { title: "Marital Status", field: "maritalStatus", icon: "heart" },
   ];
 
   const medicalInfo = [
-    {
-      title: "Blood Group",
-      value: updatedUser.bloodGroup,
-      icon: "droplet",
-      name: "bloodGroup",
-    },
-    {
-      title: "Blood Pressure",
-      value: updatedUser.bloodPressure,
-      icon: "activity",
-      name: "bloodPressure",
-    },
-    {
-      title: "Height",
-      value: updatedUser.height,
-      icon: "maximize",
-      name: "height",
-    },
-    {
-      title: "Weight",
-      value: updatedUser.weight,
-      icon: "minimize",
-      name: "weight",
-    },
+    { title: "Blood Group", field: "bloodGroup", icon: "droplet" },
+    { title: "Blood Pressure", field: "bloodPressure", icon: "activity" },
+    { title: "Height", field: "height", icon: "maximize" },
+    { title: "Weight", field: "weight", icon: "minimize" },
   ];
 
   const contactInfo = [
-    {
-      title: "Email Address",
-      value: updatedUser.email,
-      icon: "mail",
-      name: "email",
-    },
-    {
-      title: "Phone Number",
-      value: updatedUser.phone,
-      icon: "phone",
-      name: "phone",
-    },
-    {
-      title: "Address",
-      value: updatedUser.address,
-      icon: "map-pin",
-      name: "address",
-    },
+    { title: "Email Address", field: "email", icon: "mail" },
+    { title: "Phone Number", field: "phone", icon: "phone" },
+    { title: "Address", field: "address", icon: "map-pin" },
   ];
 
   const guardianInfo = [
-    {
-      title: "Guardian Name",
-      value: updatedUser.guardian,
-      icon: "users",
-      name: "guardian",
-    },
-    {
-      title: "Relationship",
-      value: updatedUser.relationship,
-      icon: "link",
-      name: "relationship",
-    },
-    {
-      title: "Guardian Phone",
-      value: updatedUser.guardianPhone,
-      icon: "phone-call",
-      name: "guardianPhone",
-    },
+    { title: "Guardian Name", field: "guardian", icon: "users" },
+    { title: "Relationship", field: "relationship", icon: "link" },
+    { title: "Guardian Phone", field: "guardianPhone", icon: "phone-call" },
   ];
 
   const systemInfo = [
-    {
-      title: "Patient Category",
-      value: updatedUser.category,
-      icon: "tag",
-    },
+    { title: "Patient Category", value: displayData.category, icon: "tag" },
     {
       title: "Registration Source",
-      value: updatedUser.source,
+      value: displayData.source,
       icon: "download",
     },
     {
       title: "Member Since",
-      value: formatDate(updatedUser.createdAt),
+      value: formatDate(displayData.createdAt),
       icon: "clock",
     },
     {
       title: "Last Updated",
-      value: formatDate(updatedUser.updatedAt),
+      value: formatDate(displayData.updatedAt),
       icon: "refresh-cw",
     },
   ];
@@ -516,36 +399,43 @@ const Profile = () => {
     </TouchableOpacity>
   );
 
-  // Info card component for modern layout
-  const InfoCard = ({ info }) => (
-    <View className="bg-white rounded-2xl p-4 mb-3 border border-slate-100">
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center flex-1">
-          <View className="w-10 h-10 rounded-xl bg-cyan-50 items-center justify-center mr-3">
-            <Feather name={info.icon} size={18} color="#0891b2" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-sm text-slate-500 font-medium mb-1">
-              {info.title}
-            </Text>
-            {isEditMode && info.name ? (
-              <TextInput
-                value={info.value === "Not provided" ? "" : String(info.value)}
-                onChangeText={(text) => handleInputChange(info.name, text)}
-                className="text-base font-semibold text-slate-800 border-2 border-cyan-200 rounded-xl px-3 py-2"
-                multiline={info.name === "address"}
-                style={{ minHeight: info.name === "address" ? 60 : 40 }}
-              />
-            ) : (
-              <Text className="text-base font-semibold text-slate-800">
-                {info.value}
+  // Info card component - now using ref for input values
+  const InfoCard = ({ info }) => {
+    const currentValue = formDataRef.current[info.field];
+    const displayValue = info.formatter
+      ? info.formatter(currentValue || "Not provided")
+      : (currentValue || "Not provided") + (info.suffix || "");
+
+    return (
+      <View className="bg-white rounded-2xl p-4 mb-3 border border-slate-100">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center flex-1">
+            <View className="w-10 h-10 rounded-xl bg-cyan-50 items-center justify-center mr-3">
+              <Feather name={info.icon} size={18} color="#0891b2" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm text-slate-500 font-medium mb-1">
+                {info.title}
               </Text>
-            )}
+              {isEditMode && info.field ? (
+                <TextInput
+                  defaultValue={currentValue}
+                  onChangeText={(text) => handleInputChange(info.field, text)}
+                  className="text-base font-semibold text-slate-800 border-2 border-cyan-200 rounded-xl px-3 py-2"
+                  multiline={info.field === "address"}
+                  style={{ minHeight: info.field === "address" ? 60 : 40 }}
+                />
+              ) : (
+                <Text className="text-base font-semibold text-slate-800">
+                  {info.value || displayValue}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   // Render content based on active tab
   const renderTabContent = () => {
@@ -554,7 +444,7 @@ const Profile = () => {
         return (
           <View className="mt-4">
             {personalInfo.map((info, index) => (
-              <InfoCard key={index} info={info} />
+              <InfoCard key={`personal-${index}`} info={info} />
             ))}
           </View>
         );
@@ -562,7 +452,7 @@ const Profile = () => {
         return (
           <View className="mt-4">
             {medicalInfo.map((info, index) => (
-              <InfoCard key={index} info={info} />
+              <InfoCard key={`medical-${index}`} info={info} />
             ))}
           </View>
         );
@@ -570,7 +460,7 @@ const Profile = () => {
         return (
           <View className="mt-4">
             {contactInfo.map((info, index) => (
-              <InfoCard key={index} info={info} />
+              <InfoCard key={`contact-${index}`} info={info} />
             ))}
           </View>
         );
@@ -578,7 +468,7 @@ const Profile = () => {
         return (
           <View className="mt-4">
             {guardianInfo.map((info, index) => (
-              <InfoCard key={index} info={info} />
+              <InfoCard key={`emergency-${index}`} info={info} />
             ))}
           </View>
         );
@@ -586,11 +476,27 @@ const Profile = () => {
         return (
           <View className="mt-4">
             {systemInfo.map((info, index) => (
-              <InfoCard key={index} info={info} />
+              <View
+                key={`system-${index}`}
+                className="bg-white rounded-2xl p-4 mb-3 border border-slate-100"
+              >
+                <View className="flex-row items-center">
+                  <View className="w-10 h-10 rounded-xl bg-cyan-50 items-center justify-center mr-3">
+                    <Feather name={info.icon} size={18} color="#0891b2" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-sm text-slate-500 font-medium mb-1">
+                      {info.title}
+                    </Text>
+                    <Text className="text-base font-semibold text-slate-800">
+                      {info.value}
+                    </Text>
+                  </View>
+                </View>
+              </View>
             ))}
           </View>
         );
-      // Replace the entire "appointments" case in renderTabContent():
       case "appointments":
         return (
           <View className="mt-4">
@@ -604,8 +510,6 @@ const Profile = () => {
             ) : (
               <View className="gap-3">
                 {appointments.slice(0, 5).map((appointment) => {
-                  // Show only last 5
-                  // Format date and time
                   const appointmentDate = formatDate(
                     appointment.appointment_date
                   );
@@ -616,7 +520,6 @@ const Profile = () => {
                     minute: "2-digit",
                   });
 
-                  // Get status badge
                   const statusConfig = {
                     0: {
                       label: "Pending",
@@ -641,7 +544,6 @@ const Profile = () => {
                       key={appointment.id}
                       className="bg-white rounded-2xl p-4 border border-slate-100"
                     >
-                      {/* Doctor & Status Row */}
                       <View className="flex-row justify-between items-start mb-3">
                         <View className="flex-1">
                           <Text className="font-bold text-slate-800 text-base mb-1">
@@ -661,7 +563,6 @@ const Profile = () => {
                         </View>
                       </View>
 
-                      {/* Date & Time Row */}
                       <View className="flex-row items-center justify-between mb-2">
                         <View className="flex-row items-center">
                           <Feather name="calendar" size={14} color="#64748b" />
@@ -677,7 +578,6 @@ const Profile = () => {
                         </View>
                       </View>
 
-                      {/* Clinic & Fee Row */}
                       <View className="flex-row items-center justify-between pt-3 border-t border-slate-100">
                         <View className="flex-row items-center">
                           <Feather name="map-pin" size={14} color="#64748b" />
@@ -693,12 +593,8 @@ const Profile = () => {
                   );
                 })}
 
-                {/* Show "View All" button if more than 5 appointments */}
                 {appointments.length > 5 && (
-                  <TouchableOpacity
-                    className="bg-slate-50 rounded-2xl p-4 border border-slate-200 items-center"
-                    onPress={() => navigation.navigate("Appointments")}
-                  >
+                  <TouchableOpacity className="bg-slate-50 rounded-2xl p-4 border border-slate-200 items-center">
                     <Text className="text-cyan-600 font-semibold">
                       View All Appointments ({appointments.length})
                     </Text>
@@ -732,15 +628,15 @@ const Profile = () => {
               activeOpacity={0.7}
             >
               <View className="w-20 h-20 rounded-2xl bg-white/20 items-center justify-center mr-4 border-2 border-white/30 relative">
-                {isUploadingPhoto ? (
+                {isUploadingPhoto && (
                   <View className="absolute inset-0 bg-black/50 rounded-2xl items-center justify-center z-10">
                     <ActivityIndicator size="small" color="#ffffff" />
                   </View>
-                ) : null}
+                )}
 
-                {updatedUser.profilePicture ? (
+                {displayData.profilePicture ? (
                   <Image
-                    source={{ uri: updatedUser.profilePicture }}
+                    source={{ uri: displayData.profilePicture }}
                     className="w-full h-full rounded-2xl"
                   />
                 ) : patient?.photo ? (
@@ -754,7 +650,6 @@ const Profile = () => {
                   </Text>
                 )}
 
-                {/* Edit overlay */}
                 {!isUploadingPhoto && (
                   <View className="absolute bottom-0 right-0 bg-cyan-600 rounded-full p-1 border-2 border-white">
                     <Feather name="camera" size={14} color="#ffffff" />
@@ -765,10 +660,10 @@ const Profile = () => {
 
             <View className="flex-1">
               <Text className="text-2xl font-bold text-cyan-900 mb-1">
-                {updatedUser.name}
+                {displayData.name}
               </Text>
               <Text className="text-cyan-900 text-base mb-2">
-                {updatedUser.email}
+                {formDataRef.current.email || "Not provided"}
               </Text>
               <View className="flex-row">
                 <View className="bg-cyan-900/20 px-3 py-1 rounded-lg mr-2">
@@ -788,7 +683,7 @@ const Profile = () => {
                 Patient ID
               </Text>
               <Text className="text-cyan-800 font-bold text-lg">
-                #{updatedUser.patientId}
+                #{displayData.patientId}
               </Text>
             </View>
             <View className="items-start">
@@ -796,65 +691,39 @@ const Profile = () => {
                 Member Since
               </Text>
               <Text className="text-cyan-800 font-bold text-lg">
-                {formatDate(updatedUser.createdAt)}
+                {formatDate(displayData.createdAt)}
               </Text>
             </View>
           </View>
         </View>
+
         {/* Quick Actions */}
         <View className="px-6 -mt-4">
           <View className="bg-white rounded-2xl p-4 shadow-lg shadow-black/10 border border-slate-100">
             <View className="flex-row justify-between">
-              <TouchableOpacity
-                className="items-center flex-1"
-                activeOpacity={0.7}
-              >
-                <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
-                  <Feather name="calendar" size={20} color="#0891b2" />
-                </View>
-                <Text className="text-slate-700 font-medium text-xs text-center">
-                  Appointments
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="items-center flex-1"
-                activeOpacity={0.7}
-              >
-                <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
-                  <Feather name="bell" size={20} color="#0891b2" />
-                </View>
-                <Text className="text-slate-700 font-medium text-xs text-center">
-                  Reminders
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="items-center flex-1"
-                activeOpacity={0.7}
-              >
-                <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
-                  <Feather name="users" size={20} color="#0891b2" />
-                </View>
-                <Text className="text-slate-700 font-medium text-xs text-center">
-                  My Doctors
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="items-center flex-1"
-                activeOpacity={0.7}
-              >
-                <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
-                  <Feather name="shield" size={20} color="#0891b2" />
-                </View>
-                <Text className="text-slate-700 font-medium text-xs text-center">
-                  Insurance
-                </Text>
-              </TouchableOpacity>
+              {[
+                { icon: "calendar", label: "Appointments" },
+                { icon: "bell", label: "Reminders" },
+                { icon: "users", label: "My Doctors" },
+                { icon: "shield", label: "Insurance" },
+              ].map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  className="items-center flex-1"
+                  activeOpacity={0.7}
+                >
+                  <View className="w-12 h-12 rounded-xl bg-cyan-50 items-center justify-center mb-2">
+                    <Feather name={item.icon} size={20} color="#0891b2" />
+                  </View>
+                  <Text className="text-slate-700 font-medium text-xs text-center">
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </View>
+
         {/* Referral Banner */}
         <View className="px-6 mt-4">
           <View className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-2xl p-4">
@@ -875,6 +744,7 @@ const Profile = () => {
             </View>
           </View>
         </View>
+
         {/* Tab Navigation */}
         <View className="px-6 mt-6">
           <ScrollView
@@ -883,21 +753,27 @@ const Profile = () => {
             className="mb-4"
           >
             <View className="flex-row space-x-2">
-              <TabButton title="Personal" tabName="personal" icon="user" />
-              <TabButton title="Medical" tabName="medical" icon="heart" />
-              <TabButton title="Contact" tabName="contact" icon="phone" />
-              <TabButton title="Emergency" tabName="emergency" icon="users" />
-              <TabButton title="System" tabName="system" icon="settings" />
-              <TabButton
-                title="Appointments"
-                tabName="appointments"
-                icon="calendar"
-              />
+              {[
+                { title: "Personal", tabName: "personal", icon: "user" },
+                { title: "Medical", tabName: "medical", icon: "heart" },
+                { title: "Contact", tabName: "contact", icon: "phone" },
+                { title: "Emergency", tabName: "emergency", icon: "users" },
+                { title: "System", tabName: "system", icon: "settings" },
+                {
+                  title: "Appointments",
+                  tabName: "appointments",
+                  icon: "calendar",
+                },
+              ].map((tab) => (
+                <TabButton key={tab.tabName} {...tab} />
+              ))}
             </View>
           </ScrollView>
         </View>
+
         {/* Tab Content */}
         <View className="px-6">{renderTabContent()}</View>
+
         {/* Edit Mode Actions */}
         {isEditMode && (
           <View className="px-6 mt-6 flex-row gap-3">
@@ -922,6 +798,7 @@ const Profile = () => {
             </TouchableOpacity>
           </View>
         )}
+
         {/* Edit Profile Button */}
         {!isEditMode && (
           <View className="px-6 mt-4">
