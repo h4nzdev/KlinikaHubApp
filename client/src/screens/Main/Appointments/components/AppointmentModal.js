@@ -5,9 +5,12 @@ import {
   TouchableOpacity,
   Modal,
   TouchableWithoutFeedback,
+  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import { useNavigation } from "@react-navigation/native";
+import appointmentServices from "../../../../services/appointmentsServices";
 
 const AppointmentModal = ({
   visible,
@@ -16,19 +19,71 @@ const AppointmentModal = ({
   onSetReminder,
   onCancelAppointment,
   onViewReschedule,
+  onDeleteAppointment,
+  fetchAppointments,
+  onViewDetails, // Add this prop
 }) => {
   const isCancel = appointment?.status === 3;
+  const navigation = useNavigation();
 
-  // Add these simple functions
+  // Updated function to use navigation
   const handleViewAppointment = () => {
     console.log("View appointment:", appointment);
-    onViewDetails(true);
     onClose();
+    // Navigate to the full appointment details page
+    navigation.navigate("AppointmentDetails", {
+      appointment: appointment,
+    });
   };
 
   const handleReschedule = () => {
-    onViewReschedule(true);
     onClose();
+    navigation.navigate("Reschedule", {
+      appointment: appointment,
+      onRescheduleSuccess: () => {
+        fetchAppointments();
+      },
+    });
+  };
+
+  const handleDeleteAppointment = async (appointment) => {
+    onClose();
+
+    // Show confirmation dialog
+    Alert.alert(
+      "Delete Appointment",
+      "Are you sure you want to delete this appointment? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await appointmentServices.deleteAppointment(appointment.id);
+
+              Toast.show({
+                type: "success",
+                text1: "Appointment Deleted",
+                text2: "The appointment has been removed from your history",
+              });
+
+              fetchAppointments();
+            } catch (error) {
+              console.error("Delete error:", error);
+              Toast.show({
+                type: "error",
+                text1: "Delete Failed",
+                text2: "Could not delete appointment. Please try again.",
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -59,7 +114,7 @@ const AppointmentModal = ({
 
               {/* Menu items */}
               <View className="py-2">
-                {/* VIEW BUTTON - NEW */}
+                {/* VIEW BUTTON - UPDATED */}
                 <TouchableOpacity
                   onPress={handleViewAppointment}
                   className="flex-row items-center px-6 py-4 active:bg-slate-50"
@@ -73,50 +128,85 @@ const AppointmentModal = ({
                       View Details
                     </Text>
                     <Text className="text-slate-500 text-sm mt-1">
-                      See appointment information
+                      See full appointment information
                     </Text>
                   </View>
                   <Feather name="chevron-right" size={18} color="#94a3b8" />
                 </TouchableOpacity>
 
+                {/* Rest of your modal content remains the same */}
                 {/* Set Reminder */}
                 <TouchableOpacity
                   onPress={() => onSetReminder(appointment)}
-                  className="flex-row items-center px-6 py-4 active:bg-slate-50"
+                  disabled={isCancel}
+                  className={`flex-row items-center px-6 py-4 ${isCancel ? "" : "active:bg-slate-50"}`}
                   activeOpacity={0.6}
                 >
-                  <View className="bg-blue-100 p-3 rounded-xl mr-4">
-                    <Feather name="bell" size={20} color="#3b82f6" />
+                  <View
+                    className={`${isCancel ? "bg-gray-100" : "bg-blue-100"} p-3 rounded-xl mr-4`}
+                  >
+                    <Feather
+                      name="bell"
+                      size={20}
+                      color={isCancel ? "#9ca3af" : "#3b82f6"}
+                    />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-slate-800 font-medium text-base">
+                    <Text
+                      className={`${isCancel ? "text-gray-400" : "text-slate-800"} font-medium text-base`}
+                    >
                       Set Reminder
                     </Text>
-                    <Text className="text-slate-500 text-sm mt-1">
-                      Get notified before appointment
+                    <Text
+                      className={`${isCancel ? "text-gray-400" : "text-slate-500"} text-sm mt-1`}
+                    >
+                      {isCancel
+                        ? "Not available for cancelled appointments"
+                        : "Get notified before appointment"}
                     </Text>
                   </View>
-                  <Feather name="chevron-right" size={18} color="#94a3b8" />
+                  <Feather
+                    name="chevron-right"
+                    size={18}
+                    color={isCancel ? "#9ca3af" : "#94a3b8"}
+                  />
                 </TouchableOpacity>
 
-                {/* RESCHEDULE BUTTON - NEW */}
+                {/* RESCHEDULE BUTTON */}
                 <TouchableOpacity
                   onPress={handleReschedule}
-                  className="flex-row items-center px-6 py-4 active:bg-slate-50"
+                  disabled={isCancel}
+                  className={`flex-row items-center px-6 py-4 ${isCancel ? "" : "active:bg-slate-50"}`}
                   activeOpacity={0.6}
                 >
-                  <View className="bg-amber-100 p-3 rounded-xl mr-4">
-                    <Feather name="calendar" size={20} color="#f59e0b" />
+                  <View
+                    className={`${isCancel ? "bg-gray-100" : "bg-amber-100"} p-3 rounded-xl mr-4`}
+                  >
+                    <Feather
+                      name="calendar"
+                      size={20}
+                      color={isCancel ? "#9ca3af" : "#f59e0b"}
+                    />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-slate-800 font-medium text-base">
+                    <Text
+                      className={`${isCancel ? "text-gray-400" : "text-slate-800"} font-medium text-base`}
+                    >
                       Reschedule
                     </Text>
-                    <Text className="text-slate-500 text-sm mt-1">
-                      Change appointment time
+                    <Text
+                      className={`${isCancel ? "text-gray-400" : "text-slate-500"} text-sm mt-1`}
+                    >
+                      {isCancel
+                        ? "Not available for cancelled appointments"
+                        : "Change appointment time"}
                     </Text>
                   </View>
-                  <Feather name="chevron-right" size={18} color="#94a3b8" />
+                  <Feather
+                    name="chevron-right"
+                    size={18}
+                    color={isCancel ? "#9ca3af" : "#94a3b8"}
+                  />
                 </TouchableOpacity>
 
                 {/* Cancel Appointment */}
@@ -154,6 +244,26 @@ const AppointmentModal = ({
                     size={18}
                     color={isCancel ? "#9ca3af" : "#ef4444"}
                   />
+                </TouchableOpacity>
+
+                {/* Delete Appointment */}
+                <TouchableOpacity
+                  onPress={() => handleDeleteAppointment(appointment)}
+                  className="flex-row items-center px-6 py-4 active:bg-slate-50"
+                  activeOpacity={0.6}
+                >
+                  <View className="bg-red-100 p-3 rounded-xl mr-4">
+                    <Feather name="trash-2" size={20} color="#ef4444" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-red-600 font-medium text-base">
+                      Delete Appointment
+                    </Text>
+                    <Text className="text-red-400 text-sm mt-1">
+                      Remove from your history
+                    </Text>
+                  </View>
+                  <Feather name="chevron-right" size={18} color="#ef4444" />
                 </TouchableOpacity>
               </View>
 

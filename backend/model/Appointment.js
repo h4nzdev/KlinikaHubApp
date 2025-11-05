@@ -18,7 +18,7 @@ class Appointment {
     status: "TINYINT DEFAULT 0", // 0=pending, 1=confirmed, 2=completed, 3=cancelled
     created_at: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
     cancellation_reason: "TEXT", // Add this for auto-cancellation
-    auto_cancelled: "BOOLEAN DEFAULT FALSE", // Add this to track auto-cancelled appointments
+    auto_cancelled: "BOOLEAN DEFAULT FALSE",
   };
 
   // Returns SQL CREATE TABLE statement

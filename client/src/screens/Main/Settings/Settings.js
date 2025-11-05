@@ -11,12 +11,13 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
+import ChangePasswordModal from "../../../components/ChangePasswordModal";
 
 const Settings = () => {
   const navigation = useNavigation();
-  const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const ToggleSwitch = ({ value, onToggle, activeColor = "bg-cyan-600" }) => (
     <TouchableOpacity
@@ -124,7 +125,10 @@ const Settings = () => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity className="p-4 bg-gray-50 rounded-xl">
+              <TouchableOpacity
+                onPress={() => setShowChangePassword(true)}
+                className="p-4 bg-gray-50 rounded-xl"
+              >
                 <View className="flex-row items-center justify-between">
                   <Text className="font-medium text-gray-800">
                     Change Password
@@ -155,7 +159,10 @@ const Settings = () => {
             </View>
 
             <View className="gap-3">
-              <TouchableOpacity className="p-4 bg-gray-50 rounded-xl">
+              <TouchableOpacity
+                onPress={() => navigation.navigate("ReminderSettings")}
+                className="p-4 bg-gray-50 rounded-xl"
+              >
                 <View className="flex-row items-center justify-between">
                   <Text className="font-medium text-gray-800">
                     Reminder Settings
@@ -167,7 +174,10 @@ const Settings = () => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity className="p-4 bg-gray-50 rounded-xl">
+              <TouchableOpacity
+                onPress={() => navigation.navigate("DataStorage")}
+                className="p-4 bg-gray-50 rounded-xl"
+              >
                 <View className="flex-row items-center justify-between">
                   <Text className="font-medium text-gray-800">
                     Data & Storage
@@ -210,7 +220,10 @@ const Settings = () => {
                   your personal health information. We are committed to
                   maintaining the confidentiality and security of your data.
                 </Text>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("PrivacyPolicy")}
+                  className="p-4 bg-gray-50 rounded-xl"
+                >
                   <Text className="text-cyan-600 text-sm font-medium">
                     Read full policy →
                   </Text>
@@ -229,7 +242,11 @@ const Settings = () => {
                   which explain your rights and responsibilities as a user of
                   our platform.
                 </Text>
-                <TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("TermsOfService")}
+                  className="p-4 bg-gray-50 rounded-xl"
+                >
                   <Text className="text-cyan-600 text-sm font-medium">
                     Read full terms →
                   </Text>
@@ -248,7 +265,10 @@ const Settings = () => {
                   security measures we have in place to keep your information
                   safe.
                 </Text>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("DataSecurity")}
+                  className="p-4 bg-gray-50 rounded-xl"
+                >
                   <Text className="text-cyan-600 text-sm font-medium">
                     Learn more →
                   </Text>
@@ -274,7 +294,10 @@ const Settings = () => {
             </View>
 
             <View className="gap-3">
-              <TouchableOpacity className="p-4 bg-gray-50 rounded-xl">
+              <TouchableOpacity
+                onPress={() => navigation.navigate("FAQ")}
+                className="p-4 bg-gray-50 rounded-xl"
+              >
                 <View className="flex-row items-center justify-between">
                   <Text className="font-medium text-gray-800">FAQ</Text>
                   <Feather name="chevron-right" size={20} color="#94a3b8" />
@@ -283,7 +306,6 @@ const Settings = () => {
                   Find answers to common questions
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity className="p-4 bg-gray-50 rounded-xl">
                 <View className="flex-row items-center justify-between">
                   <Text className="font-medium text-gray-800">
@@ -295,7 +317,6 @@ const Settings = () => {
                   Get in touch with our support team
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity className="p-4 bg-gray-50 rounded-xl">
                 <View className="flex-row items-center justify-between">
                   <Text className="font-medium text-gray-800">App Version</Text>
@@ -309,6 +330,10 @@ const Settings = () => {
           </View>
         </View>
       </ScrollView>
+      <ChangePasswordModal
+        visible={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </SafeAreaView>
   );
 };

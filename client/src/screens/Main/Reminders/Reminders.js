@@ -1,5 +1,5 @@
 // screens/Reminders.js
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -14,14 +14,23 @@ import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import { useReminder } from "../../../context/ReminderContext";
 import AddReminderModal from "./components/AddReminderModal";
+import { useIsFocused } from "@react-navigation/native";
 
 const Reminders = () => {
   const { reminders, saveReminders, deleteReminder, toggleReminder } =
     useReminder();
+  const isFocused = useIsFocused();
+  const isMountedRef = useRef(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reminderToEdit, setReminderToEdit] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  React.useEffect(() => {
+    return () => {
+      isMountedRef.current = false; // 🎯 MARK AS UNMOUNTED
+    };
+  }, []);
 
   const handleSaveReminder = async (reminderData) => {
     try {
@@ -62,6 +71,7 @@ const Reminders = () => {
   };
 
   const handleRemove = async (id) => {
+    // 🎯 SAFE CONFIRMATION - No async in Alert
     Alert.alert(
       "Remove Reminder",
       "Are you sure you want to remove this reminder?",
@@ -70,9 +80,11 @@ const Reminders = () => {
         {
           text: "Remove",
           style: "destructive",
-          onPress: async () => {
-            await deleteReminder(id);
-            Alert.alert("Success", "Reminder removed!");
+          onPress: () => {
+            // 🚨 NO ASYNC HERE - just call the function
+            deleteReminder(id).catch((error) => {
+              console.log("Delete failed:", error);
+            });
           },
         },
       ]

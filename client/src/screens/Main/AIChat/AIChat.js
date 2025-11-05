@@ -16,22 +16,24 @@ import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import chatServices from "../../../services/chatServices";
 import { useNavigation } from "@react-navigation/native";
+import * as Speech from "expo-speech";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AIChat = () => {
   const [message, setMessage] = useState("");
   const scrollViewRef = useRef(null);
   const [isShown, setIsShown] = useState(true);
   const navigation = useNavigation();
-  const [chatHistory, setChatHistory] = useState([
-    {
-      role: "bot",
-      text: "Hello! I'm Medora, your clinic appointment and symptoms checker assistant. I can help you with:\n\n• Checking your symptoms\n• Providing basic health information\n• Guiding you through the appointment booking process\n• Answering questions about clinic services\n\nHow may I assist you today?",
-    },
-  ]);
+
+  // 💾 CHAT STORAGE KEYS
+  const CHAT_STORAGE_KEY = "medora_ai_chat_history";
+  const CREDITS_STORAGE_KEY = "medora_ai_chat_credits";
+
+  const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [chatCredits, setChatCredits] = useState({
     credits: 0,
-    maxCredits: 20, // Increased for real API
+    maxCredits: 5,
     canChat: true,
   });
   const [showEmergency, setShowEmergency] = useState(false);
@@ -39,35 +41,155 @@ const AIChat = () => {
   const [sessionId] = useState(
     `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
   );
-  const [user] = useState({
-    _id: "user123",
-    name: "Hanz Christian Angelo G Magbal",
-    phone: "+1 234 567 8900",
-    email: "hanz@example.com",
-  });
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // 💾 LOAD SAVED CHATS ON COMPONENT MOUNT
+  useEffect(() => {
+    loadSavedChats();
+    loadSavedCredits();
+  }, []);
+
+  // 💾 LOAD CHATS FROM STORAGE
+  const loadSavedChats = async () => {
+    try {
+      const savedChats = await AsyncStorage.getItem(CHAT_STORAGE_KEY);
+      if (savedChats) {
+        const parsedChats = JSON.parse(savedChats);
+        setChatHistory(parsedChats);
+      } else {
+        // Default welcome message if no saved chats
+        setChatHistory([
+          {
+            role: "bot",
+            text: "Hello! I'm Medora, your clinic appointment and symptoms checker assistant. I can help you with:\n\n• Checking your symptoms\n• Providing basic health information\n• Guiding you through the appointment booking process\n• Answering questions about clinic services\n\nHow may I assist you today?",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("❌ Error loading saved chats:", error);
+      setChatHistory([
+        {
+          role: "bot",
+          text: "Hello! I'm Medora, your clinic appointment and symptoms checker assistant. I can help you with:\n\n• Checking your symptoms\n• Providing basic health information\n• Guiding you through the appointment booking process\n• Answering questions about clinic services\n\nHow may I assist you today?",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
+  };
+
+  // 💾 LOAD CREDITS FROM STORAGE
+  const loadSavedCredits = async () => {
+    try {
+      const savedCredits = await AsyncStorage.getItem(CREDITS_STORAGE_KEY);
+      if (savedCredits) {
+        const parsedCredits = JSON.parse(savedCredits);
+
+        // Check if credits should reset (daily reset)
+        const lastResetDate = parsedCredits.lastResetDate;
+        const today = new Date().toDateString();
+
+        if (lastResetDate !== today) {
+          // Reset credits for new day
+          const resetCredits = {
+            credits: 0,
+            maxCredits: 5,
+            canChat: true,
+            lastResetDate: today,
+          };
+          setChatCredits(resetCredits);
+          await AsyncStorage.setItem(
+            CREDITS_STORAGE_KEY,
+            JSON.stringify(resetCredits)
+          );
+        } else {
+          setChatCredits(parsedCredits);
+        }
+      } else {
+        // First time setup
+        const initialCredits = {
+          credits: 0,
+          maxCredits: 5,
+          canChat: true,
+          lastResetDate: new Date().toDateString(),
+        };
+        setChatCredits(initialCredits);
+        await AsyncStorage.setItem(
+          CREDITS_STORAGE_KEY,
+          JSON.stringify(initialCredits)
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error loading saved credits:", error);
+    }
+  };
+
+  // 💾 SAVE CHATS TO STORAGE
+  const saveChatsToStorage = async (chats) => {
+    try {
+      await AsyncStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chats));
+    } catch (error) {
+      console.error("❌ Error saving chats:", error);
+    }
+  };
+
+  // 💾 SAVE CREDITS TO STORAGE
+  const saveCreditsToStorage = async (credits) => {
+    try {
+      await AsyncStorage.setItem(CREDITS_STORAGE_KEY, JSON.stringify(credits));
+    } catch (error) {
+      console.error("❌ Error saving credits:", error);
+    }
+  };
+
+  // 🎤 SPEECH FUNCTIONALITY
+  const speakText = (text) => {
+    const cleanText = text.replace(/[👋💡🚨•\-]/g, "");
+
+    Speech.speak(cleanText, {
+      language: "en",
+      rate: 0.9,
+      pitch: 1.0,
+      onStart: () => setIsSpeaking(true),
+      onDone: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
+  };
+
+  const stopSpeaking = () => {
+    Speech.stop();
+    setIsSpeaking(false);
+  };
 
   const handleClearHistory = () => {
     Alert.alert(
       "Clear Chat History",
-      "Are you sure you want to clear all chat messages?",
+      "Are you sure you want to clear all chat messages? This cannot be undone.",
       [
         {
           text: "Cancel",
           style: "cancel",
         },
         {
-          text: "Clear",
-          onPress: () => {
-            setChatHistory([
+          text: "Clear All",
+          style: "destructive",
+          onPress: async () => {
+            const newChatHistory = [
               {
                 role: "bot",
                 text: "Hello! I'm Medora, your clinic appointment and symptoms checker assistant. I can help you with:\n\n• Checking your symptoms\n• Providing basic health information\n• Guiding you through the appointment booking process\n• Answering questions about clinic services\n\nHow may I assist you today?",
+                timestamp: new Date().toISOString(),
               },
-            ]);
+            ];
+
+            setChatHistory(newChatHistory);
             setShowEmergency(false);
             setEmergencyData(null);
+            stopSpeaking();
+
+            // 💾 SAVE CLEARED CHAT HISTORY
+            await saveChatsToStorage(newChatHistory);
           },
-          style: "destructive",
         },
       ]
     );
@@ -80,17 +202,27 @@ const AIChat = () => {
       const errorMessage = {
         role: "bot",
         text: "You've reached your daily chat limit. Please come back tomorrow for more assistance.",
+        timestamp: new Date().toISOString(),
       };
-      setChatHistory((prev) => [...prev, errorMessage]);
+
+      const updatedChats = [...chatHistory, errorMessage];
+      setChatHistory(updatedChats);
+      await saveChatsToStorage(updatedChats);
       return;
     }
 
     const userMessage = {
       role: "user",
       text: message,
+      timestamp: new Date().toISOString(),
     };
 
-    setChatHistory((prev) => [...prev, userMessage]);
+    const updatedChatsWithUser = [...chatHistory, userMessage];
+    setChatHistory(updatedChatsWithUser);
+
+    // 💾 SAVE USER MESSAGE IMMEDIATELY
+    await saveChatsToStorage(updatedChatsWithUser);
+
     const currentMessage = message;
     setMessage("");
     setLoading(true);
@@ -108,11 +240,19 @@ const AIChat = () => {
         text: response.reply,
         severity: response.severity,
         emergency: response.emergency_trigger,
-        suggestAppointment: response.suggest_appointment, // NEW
-        appointmentReason: response.appointment_reason, // NEW
+        suggestAppointment: response.suggest_appointment,
+        appointmentReason: response.appointment_reason,
+        timestamp: new Date().toISOString(),
       };
 
-      setChatHistory((prev) => [...prev, botMessage]);
+      const updatedChatsWithBot = [...updatedChatsWithUser, botMessage];
+      setChatHistory(updatedChatsWithBot);
+
+      // 💾 SAVE BOT RESPONSE
+      await saveChatsToStorage(updatedChatsWithBot);
+
+      // 🎤 AUTO-SPEAK THE RESPONSE
+      speakText(response.reply);
 
       // Check for emergency
       if (response.emergency_trigger) {
@@ -138,11 +278,16 @@ const AIChat = () => {
       }
 
       // Update chat credits
-      setChatCredits((prev) => ({
-        ...prev,
-        credits: prev.credits + 1,
-        canChat: prev.credits + 1 < prev.maxCredits,
-      }));
+      const newCredits = {
+        ...chatCredits,
+        credits: chatCredits.credits + 1,
+        canChat: chatCredits.credits + 1 < chatCredits.maxCredits,
+        lastResetDate: new Date().toDateString(),
+      };
+
+      setChatCredits(newCredits);
+      // 💾 SAVE UPDATED CREDITS
+      await saveCreditsToStorage(newCredits);
     } catch (error) {
       console.error("❌ Real API Error:", error);
 
@@ -153,9 +298,17 @@ const AIChat = () => {
         text: fallbackResponse.reply,
         severity: fallbackResponse.severity,
         emergency: fallbackResponse.emergency_trigger,
+        timestamp: new Date().toISOString(),
       };
 
-      setChatHistory((prev) => [...prev, botMessage]);
+      const updatedChatsWithFallback = [...updatedChatsWithUser, botMessage];
+      setChatHistory(updatedChatsWithFallback);
+
+      // 💾 SAVE FALLBACK RESPONSE
+      await saveChatsToStorage(updatedChatsWithFallback);
+
+      // 🎤 SPEAK FALLBACK RESPONSE TOO
+      speakText(fallbackResponse.reply);
 
       if (fallbackResponse.emergency_trigger) {
         setShowEmergency(true);
@@ -167,11 +320,16 @@ const AIChat = () => {
       }
 
       // Still update credits even on fallback
-      setChatCredits((prev) => ({
-        ...prev,
-        credits: prev.credits + 1,
-        canChat: prev.credits + 1 < prev.maxCredits,
-      }));
+      const newCredits = {
+        ...chatCredits,
+        credits: chatCredits.credits + 1,
+        canChat: chatCredits.credits + 1 < chatCredits.maxCredits,
+        lastResetDate: new Date().toDateString(),
+      };
+
+      setChatCredits(newCredits);
+      // 💾 SAVE UPDATED CREDITS
+      await saveCreditsToStorage(newCredits);
     } finally {
       setLoading(false);
     }
@@ -204,7 +362,7 @@ const AIChat = () => {
     );
   };
 
-  // Mock fallback function (same as before)
+  // Mock fallback function
   const getMockBotResponse = (userMessage) => {
     const lowerMessage = userMessage.toLowerCase();
     const emergencyKeywords = [
@@ -230,7 +388,6 @@ const AIChat = () => {
       };
     }
 
-    // ... rest of your mock responses (keep them as backup)
     if (lowerMessage.includes("headache") || lowerMessage.includes("tired")) {
       return {
         reply:
@@ -250,7 +407,6 @@ const AIChat = () => {
 
   const handleEmergencyContact = () => {
     if (emergencyData?.contacts) {
-      // Show emergency contacts from API
       Alert.alert(
         "🚨 Emergency Contacts - PHILIPPINES",
         `Severity: ${emergencyData.severity}\n\n${emergencyData.contacts.actions.join("\n")}`,
@@ -262,7 +418,6 @@ const AIChat = () => {
         ]
       );
     } else {
-      // Fallback emergency contact
       Alert.alert(
         "Emergency Services",
         "Would you like to call emergency services?",
@@ -290,6 +445,12 @@ const AIChat = () => {
   const handleCloseEmergency = () => {
     setShowEmergency(false);
     setEmergencyData(null);
+    stopSpeaking();
+  };
+
+  // 🎤 ADD SPEAKER BUTTON TO BOT MESSAGES
+  const handleSpeakMessage = (text) => {
+    speakText(text);
   };
 
   useEffect(() => {
@@ -305,13 +466,16 @@ const AIChat = () => {
         className="flex-1"
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        {/* Chat Header */}
+        {/* Chat Header - ADDED SPEAKER BUTTON */}
         <View className="bg-white border-b border-gray-200 p-4">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-3 flex-1">
               {/* Back Button */}
               <TouchableOpacity
-                onPress={() => navigation.goBack()}
+                onPress={() => {
+                  stopSpeaking();
+                  navigation.goBack();
+                }}
                 className="p-2"
               >
                 <Feather name="chevron-left" size={24} color="#4b5563" />
@@ -338,12 +502,24 @@ const AIChat = () => {
                 </View>
               </View>
             </View>
-            <TouchableOpacity
-              onPress={handleClearHistory}
-              className="border border-cyan-200 px-3 py-1 rounded-md"
-            >
-              <Text className="text-sm text-cyan-700">Clear</Text>
-            </TouchableOpacity>
+
+            {/* 🎤 ADDED SPEAKER BUTTON IN HEADER */}
+            <View className="flex-row gap-2">
+              <TouchableOpacity onPress={stopSpeaking} className="p-2">
+                <Feather
+                  name={isSpeaking ? "volume-x" : "volume-2"}
+                  size={20}
+                  color={isSpeaking ? "#dc2626" : "#0891b2"}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleClearHistory}
+                className="border border-cyan-200 px-3 py-1 rounded-md"
+              >
+                <Text className="text-sm text-cyan-700">Clear</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -387,7 +563,7 @@ const AIChat = () => {
           </View>
         )}
 
-        {/* Chat Messages */}
+        {/* Chat Messages - ADDED SPEAKER BUTTON TO BOT MESSAGES */}
         <ScrollView
           ref={scrollViewRef}
           className="flex-1 p-4"
@@ -411,41 +587,53 @@ const AIChat = () => {
                 }`}
               >
                 {chat.role === "bot" && (
-                  <View className="flex-row items-center gap-2 mb-2">
-                    <Feather
-                      name="message-circle"
-                      size={16}
-                      color={chat.emergency ? "#dc2626" : "#0891b2"}
-                    />
-                    <Text
-                      className={`text-sm font-medium ${
-                        chat.emergency ? "text-red-600" : "text-cyan-600"
-                      }`}
-                    >
-                      {chat.emergency ? "🚨 AI Assistant" : "AI Assistant"}
-                    </Text>
-                    {chat.severity && (
-                      <View
-                        className={`px-2 py-1 rounded-full ${
-                          chat.severity === "SEVERE"
-                            ? "bg-red-100"
-                            : chat.severity === "MODERATE"
-                              ? "bg-yellow-100"
-                              : "bg-green-100"
+                  <View className="flex-row items-center justify-between mb-2">
+                    <View className="flex-row items-center gap-2">
+                      <Feather
+                        name="message-circle"
+                        size={16}
+                        color={chat.emergency ? "#dc2626" : "#0891b2"}
+                      />
+                      <Text
+                        className={`text-sm font-medium ${
+                          chat.emergency ? "text-red-600" : "text-cyan-600"
                         }`}
                       >
-                        <Text
-                          className={`text-xs ${
+                        {chat.emergency ? "🚨 AI Assistant" : "AI Assistant"}
+                      </Text>
+                      {chat.severity && (
+                        <View
+                          className={`px-2 py-1 rounded-full ${
                             chat.severity === "SEVERE"
-                              ? "text-red-800"
+                              ? "bg-red-100"
                               : chat.severity === "MODERATE"
-                                ? "text-yellow-800"
-                                : "text-green-800"
+                                ? "bg-yellow-100"
+                                : "bg-green-100"
                           }`}
                         >
-                          {chat.severity}
-                        </Text>
-                      </View>
+                          <Text
+                            className={`text-xs ${
+                              chat.severity === "SEVERE"
+                                ? "text-red-800"
+                                : chat.severity === "MODERATE"
+                                  ? "text-yellow-800"
+                                  : "text-green-800"
+                            }`}
+                          >
+                            {chat.severity}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* 🎤 SPEAKER BUTTON FOR BOT MESSAGES */}
+                    {!chat.emergency && (
+                      <TouchableOpacity
+                        onPress={() => handleSpeakMessage(chat.text)}
+                        className="p-1"
+                      >
+                        <Feather name="volume-2" size={14} color="#0891b2" />
+                      </TouchableOpacity>
                     )}
                   </View>
                 )}
@@ -461,7 +649,7 @@ const AIChat = () => {
                   {chat.text}
                 </Text>
 
-                {/* ✅ NEW: Appointment Suggestion Button */}
+                {/* Appointment Suggestion Button */}
                 {chat.role === "bot" &&
                   chat.suggestAppointment &&
                   !chat.emergency && (
@@ -524,8 +712,7 @@ const AIChat = () => {
               <View className="bg-blue-50 rounded-xl p-4 border border-blue-200 relative">
                 <TouchableOpacity
                   onPress={() => setIsShown(false)}
-                  className="absolute h-8 w-8 bg-cyan-100 -top-4 self-center rounded-full
-      flex items-center justify-center"
+                  className="absolute h-8 w-8 bg-cyan-100 -top-4 self-center rounded-full flex items-center justify-center"
                 >
                   <Feather name="chevron-down" size={18} color="#0891b2" />
                 </TouchableOpacity>
@@ -599,8 +786,7 @@ const AIChat = () => {
           {!isShown && (
             <TouchableOpacity
               onPress={() => setIsShown(true)}
-              className="absolute -top-6 self-center rounded-full
-              flex items-center justify-center animate-bounce"
+              className="absolute -top-6 self-center rounded-full flex items-center justify-center animate-bounce"
             >
               <Feather name="chevron-up" size={24} color="#0891b2" />
             </TouchableOpacity>

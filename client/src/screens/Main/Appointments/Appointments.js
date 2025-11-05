@@ -21,10 +21,8 @@ import { useReminder } from "../../../context/ReminderContext";
 import Toast from "react-native-toast-message";
 import AppointmentModal from "./components/AppointmentModal";
 import AppointmentDetails from "./components/AppointmentDetails";
-import RescheduleModal from "./components/RescheduleModal";
-
-// ==================== REUSABLE MODAL COMPONENT ====================
-// ==================== REUSABLE MODAL COMPONENT ====================
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 // ==================== MAIN APPOINTMENTS COMPONENT ====================
 const Appointments = ({ navigation }) => {
@@ -50,9 +48,6 @@ const Appointments = ({ navigation }) => {
 
   //Show Details
   const [showDetails, setShowDetails] = useState(false);
-
-  //Reschedule Modal
-  const [showReschedule, setShowReschedule] = useState(false);
 
   // Plan limits
   const planLimits = {
@@ -97,9 +92,11 @@ const Appointments = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAppointments();
+    }, [])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -115,21 +112,6 @@ const Appointments = ({ navigation }) => {
     } else {
       navigation.navigate("Clinics");
     }
-  };
-
-  const handleRescheduleAppointment = async (rescheduleData) => {
-    console.log("Rescheduling appointment:", rescheduleData);
-
-    // Here you would call your API to update the appointment
-    // For example:
-    // await appointmentServices.rescheduleAppointment(
-    //   rescheduleData.appointmentId,
-    //   rescheduleData.newDate,
-    //   rescheduleData.newTime
-    // );
-
-    // Refresh appointments after rescheduling
-    fetchAppointments();
   };
 
   // Format date for display
@@ -372,20 +354,13 @@ const Appointments = ({ navigation }) => {
         onSetReminder={handleSaveReminder}
         onCancelAppointment={handleCancelAppointment}
         onViewDetails={setShowDetails}
-        onViewReschedule={setShowReschedule}
+        fetchAppointments={fetchAppointments}
       />
 
       <AppointmentDetails
         appointment={selectedAppointment}
         visible={showDetails}
         onClose={() => setShowDetails(false)}
-      />
-
-      <RescheduleModal
-        visible={showReschedule}
-        onClose={() => setShowReschedule(false)}
-        appointment={selectedAppointment}
-        onReschedule={handleRescheduleAppointment}
       />
 
       <ScrollView

@@ -9,7 +9,7 @@ import { Feather } from "@expo/vector-icons";
 
 const BottomNavbar = ({ state, navigation, descriptors }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  
+
   // Get active tab from navigation state
   const activeTab = state.routes[state.index].name;
 
@@ -40,7 +40,7 @@ const BottomNavbar = ({ state, navigation, descriptors }) => {
     if (isTab) {
       // For tab screens, use the tab navigator's navigation
       const event = navigation.emit({
-        type: 'tabPress',
+        type: "tabPress",
         target: tabName,
         canPreventDefault: true,
       });
@@ -56,7 +56,12 @@ const BottomNavbar = ({ state, navigation, descriptors }) => {
 
   const isMoreMenuActive = moreMenuItems.some((item) => activeTab === item.id);
 
-  const NavButton = ({ item, isActive, isMoreButton = false, showClose = false }) => (
+  const NavButton = ({
+    item,
+    isActive,
+    isMoreButton = false,
+    showClose = false,
+  }) => (
     <TouchableOpacity
       onPress={() => handleTabPress(item.id, !isMoreButton)}
       className={`flex-col items-center justify-center gap-1.5 relative p-3 rounded-2xl min-w-0 ${
@@ -66,9 +71,17 @@ const BottomNavbar = ({ state, navigation, descriptors }) => {
     >
       <View className={`relative ${isActive ? "scale-105" : ""}`}>
         {showClose ? (
-          <Feather name="x" size={22} color={isActive ? "#2563eb" : "#64748b"} />
+          <Feather
+            name="x"
+            size={22}
+            color={isActive ? "#2563eb" : "#64748b"}
+          />
         ) : (
-          <Feather name={item.icon} size={22} color={isActive ? "#2563eb" : "#64748b"} />
+          <Feather
+            name={item.icon}
+            size={22}
+            color={isActive ? "#2563eb" : "#64748b"}
+          />
         )}
         {isActive && (
           <View className="absolute -inset-1 bg-blue-100 rounded-full -z-10" />
@@ -76,7 +89,9 @@ const BottomNavbar = ({ state, navigation, descriptors }) => {
       </View>
       <Text
         className={`text-xs text-center leading-tight ${
-          isActive ? "font-semibold text-blue-700" : "font-medium text-slate-600"
+          isActive
+            ? "font-semibold text-blue-700"
+            : "font-medium text-slate-600"
         }`}
         numberOfLines={1}
       >

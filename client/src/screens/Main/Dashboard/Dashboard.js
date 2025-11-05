@@ -17,27 +17,18 @@ import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import appointmentServices from "../../../services/appointmentsServices";
 import { useReminder } from "../../../context/ReminderContext";
 import Toast from "react-native-toast-message";
-
-// Static data for the dashboard
-const healthTips = [
-  "Stay hydrated by drinking at least 8 glasses of water a day.",
-  "Incorporate at least 30 minutes of moderate-intensity exercise into your daily routine.",
-  "Ensure you get 7-9 hours of quality sleep per night for better health.",
-  "A balanced diet rich in fruits, vegetables, and whole grains is key to a healthy lifestyle.",
-  "Regular health checkups can help detect potential health issues early.",
-  "Manage stress through meditation, deep breathing, or hobbies you enjoy.",
-];
+import { getRandomTip } from "../../../utils/healthTipsGenerator";
 
 const Dashboard = ({ navigation }) => {
   const { user } = useContext(AuthenticationContext);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const randomTip = healthTips[Math.floor(Math.random() * healthTips.length)];
   const [remindedAppointments, setRemindedAppointments] = useState(new Set());
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
+  const [randomTip, setRandomTip] = useState(getRandomTip());
 
   // ✅ Use ref to track if we need to refetch
   const shouldRefetch = useRef(false);
@@ -67,6 +58,17 @@ const Dashboard = ({ navigation }) => {
   // ✅ Initial load only
   useEffect(() => {
     fetchAppointments();
+  }, []);
+
+  useEffect(() => {
+    const tipInterval = setInterval(
+      () => {
+        setRandomTip(getRandomTip());
+      },
+      3 * 60 * 60 * 1000
+    ); // 3 hours
+
+    return () => clearInterval(tipInterval);
   }, []);
 
   // ✅ Listen for tab focus using navigation listener (safer than useFocusEffect)
@@ -378,6 +380,30 @@ const Dashboard = ({ navigation }) => {
           {/* Stats Cards */}
           <View>
             <View className="gap-4">
+              {/* Health Tip Card */}
+              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <View className="flex-row items-start justify-between">
+                  <View className="flex-1 pr-3">
+                    <View className="flex-row justify-between items-center mb-2">
+                      <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
+                        Health Tip of the Day
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setRandomTip(getRandomTip())}
+                      >
+                        <Feather name="refresh-cw" size={16} color="#64748b" />
+                      </TouchableOpacity>
+                    </View>
+                    <Text className="text-slate-700 leading-relaxed font-medium">
+                      {randomTip}
+                    </Text>
+                  </View>
+                  <View className="bg-blue-500 p-4 rounded-2xl shadow-md">
+                    <Feather name="heart" size={32} color="#ffffff" />
+                  </View>
+                </View>
+              </View>
+
               {/* Upcoming Appointments Card */}
               <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
                 <View className="flex-row items-center justify-between">
@@ -451,23 +477,6 @@ const Dashboard = ({ navigation }) => {
                   </View>
                   <View className="bg-emerald-500 p-4 rounded-2xl shadow-md">
                     <Feather name="activity" size={32} color="#ffffff" />
-                  </View>
-                </View>
-              </View>
-
-              {/* Health Tip Card */}
-              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1 pr-3">
-                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide mb-2">
-                      Health Tip of the Day
-                    </Text>
-                    <Text className="text-slate-700 leading-relaxed font-medium">
-                      {randomTip}
-                    </Text>
-                  </View>
-                  <View className="bg-blue-500 p-4 rounded-2xl shadow-md">
-                    <Feather name="heart" size={32} color="#ffffff" />
                   </View>
                 </View>
               </View>

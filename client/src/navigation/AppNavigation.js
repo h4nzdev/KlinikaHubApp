@@ -24,6 +24,14 @@ import AppointmentBookingPage from "../screens/Main/AppointmentBooking/Appointme
 import Calendar from "../screens/Main/Calendar/Calendar";
 import Settings from "../screens/Main/Settings/Settings";
 import Reviews from "../screens/Main/Reviews/Reviews";
+import Reschedule from "../screens/Main/Reschedule/Reschedule";
+import PrivacyPolicy from "../screens/Main/Settings/PrivacyPolicy";
+import TermsOfService from "../screens/Main/Settings/TermsOfService";
+import DataSecurity from "../screens/Main/Settings/DataSecurity";
+import FAQ from "../screens/Main/Settings/FAQ";
+import AppointmentDetails from "../screens/Main/Appointments/AppointmentDetails";
+import ReminderSettings from "../screens/Main/Settings/ReminderSettings";
+import DataStorageSettings from "../screens/Main/Settings/DataStorageSettings";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -38,6 +46,7 @@ function MainTabs() {
       <Tab.Screen name="Dashboard" component={Dashboard} />
       <Tab.Screen name="Clinics" component={Clinics} />
       <Tab.Screen name="Appointments" component={Appointments} />
+      <Tab.Screen name="AppointmentDetails" component={AppointmentDetails} />
       <Tab.Screen
         name="AppointmentBookingPage"
         component={AppointmentBookingPage}
@@ -144,11 +153,19 @@ const AppNavigation = () => {
             name="AppointmentBookingPage"
             component={AppointmentBookingPage}
           />
+          <Stack.Screen name="Reschedule" component={Reschedule} />
           <Stack.Screen name="ClinicProfile" component={ClinicProfile} />
           <Stack.Screen name="Clinics" component={Clinics} />
           <Stack.Screen name="Reviews" component={Reviews} />
           <Stack.Screen name="Notifications" component={Notifications} />
+
           <Stack.Screen name="Settings" component={Settings} />
+          <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
+          <Stack.Screen name="TermsOfService" component={TermsOfService} />
+          <Stack.Screen name="DataSecurity" component={DataSecurity} />
+          <Stack.Screen name="FAQ" component={FAQ} />
+          <Stack.Screen name="ReminderSettings" component={ReminderSettings} />
+          <Stack.Screen name="DataStorage" component={DataStorageSettings} />
         </Stack.Navigator>
       ) : (
         <>

@@ -391,7 +391,7 @@ class AuthController {
       // Upload to Cloudinary
       const photoUrl = await this.uploadPhotoDuringRegistration(base64Image);
 
-      const db = await this.initDB(); 
+      const db = await this.initDB();
 
       // Update the patient record with new photo URL
       const sql = "UPDATE patients SET photo = ? WHERE id = ?";
@@ -416,6 +416,129 @@ class AuthController {
     } catch (error) {
       console.error("❌ Error updating profile picture:", error);
       throw new Error("Failed to update profile picture: " + error.message);
+    }
+  }
+  // Add to your existing AuthController class
+
+  // Send password change verification
+  async sendPasswordChangeVerification(email, currentPassword) {
+    try {
+      const db = await this.initDB();
+
+      // 1. Find patient by email
+      const [rows] = await db.execute(
+        "SELECT * FROM patients WHERE email = ?",
+        [email]
+      );
+      const patient = rows[0];
+
+      if (!patient) {
+        throw new Error("Patient not found");
+      }
+
+      // 2. Verify current password
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        patient.password
+      );
+      if (!isPasswordValid) {
+        throw new Error("Current password is incorrect");
+      }
+
+      // 3. Generate verification code
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Store code in memory (you can reuse your existing verificationCodes map)
+      verificationCodes.set(email, { code, expiresAt });
+
+      // 4. Send email via Brevo
+      const emailResult = await brevoService.sendVerificationEmail(email, code);
+
+      if (!emailResult.success) {
+        throw new Error("Failed to send verification email");
+      }
+
+      console.log(
+        `✅ Password change verification code ${code} sent to ${email}`
+      );
+
+      return {
+        success: true,
+        message: "Verification code sent successfully",
+      };
+    } catch (error) {
+      console.error("❌ Error in sendPasswordChangeVerification:", error);
+      throw error;
+    }
+  }
+
+  // Verify and change password
+  async verifyAndChangePassword(
+    email,
+    verificationCode,
+    currentPassword,
+    newPassword
+  ) {
+    try {
+      const db = await this.initDB();
+
+      // 1. Verify the code
+      const storedData = verificationCodes.get(email);
+      if (!storedData) {
+        throw new Error("No verification code found for this email");
+      }
+
+      if (storedData.code !== verificationCode) {
+        throw new Error("Invalid verification code");
+      }
+
+      if (new Date() > storedData.expiresAt) {
+        verificationCodes.delete(email);
+        throw new Error("Verification code has expired");
+      }
+
+      // 2. Find patient and verify current password again
+      const [rows] = await db.execute(
+        "SELECT * FROM patients WHERE email = ?",
+        [email]
+      );
+      const patient = rows[0];
+
+      if (!patient) {
+        throw new Error("Patient not found");
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        patient.password
+      );
+      if (!isPasswordValid) {
+        throw new Error("Current password is incorrect");
+      }
+
+      // 3. Hash new password and update
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      const updateSql = "UPDATE patients SET password = ? WHERE email = ?";
+      const [result] = await db.execute(updateSql, [hashedNewPassword, email]);
+
+      if (result.affectedRows === 0) {
+        throw new Error("Failed to update password");
+      }
+
+      // 4. Clean up verification code
+      verificationCodes.delete(email);
+
+      console.log(`✅ Password changed successfully for ${email}`);
+
+      return {
+        success: true,
+        message: "Password changed successfully",
+      };
+    } catch (error) {
+      console.error("❌ Error in verifyAndChangePassword:", error);
+      throw error;
     }
   }
 }

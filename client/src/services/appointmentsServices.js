@@ -302,33 +302,45 @@ export const appointmentServices = {
   },
 
   // Reschedule appointment (local simulation)
-  rescheduleAppointment: async (appointmentId, newDate, newTime) => {
+  async rescheduleAppointment(appointmentId, newDate, newTime) {
     try {
-      console.log("🔄 Rescheduling appointment locally:", {
+      console.log("🔄 Rescheduling appointment:", {
         appointmentId,
         newDate,
         newTime,
       });
 
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // In a real app, you would update local storage or state here
-      console.log("✅ Appointment rescheduled successfully!");
-
-      return {
-        success: true,
-        message: "Appointment rescheduled successfully",
-        data: {
-          id: appointmentId,
+      const response = await api.patch(
+        `/appointments/${appointmentId}/reschedule`,
+        {
           appointment_date: newDate,
           schedule: newTime,
-          status: 1, // confirmed
-        },
-      };
+        }
+      );
+
+      console.log("✅ Reschedule API response:", response.data);
+      return response.data;
     } catch (error) {
-      console.error("❌ Reschedule error:", error);
-      throw new Error("Failed to reschedule appointment");
+      console.error("❌ Reschedule service error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to reschedule appointment"
+      );
+    }
+  },
+
+  // Also add this function to update status to pending
+  async updateAppointmentToPending(appointmentId) {
+    try {
+      const response = await api.patch(
+        `/appointments/${appointmentId}/status`,
+        {
+          status: 0, // 0 = pending
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("❌ Update status error:", error);
+      throw new Error("Failed to update appointment status");
     }
   },
 

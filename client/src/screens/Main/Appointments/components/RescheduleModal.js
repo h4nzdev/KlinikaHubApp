@@ -36,7 +36,6 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
   const loadAvailableDates = async () => {
     setFetchingSlots(true);
     try {
-      // Use our local date generator
       const dates = generateSlot.generateAvailableDates();
       setAvailableDates(dates);
       console.log("✅ Loaded", dates.length, "available dates");
@@ -61,7 +60,6 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
   const loadAvailableTimes = async (date) => {
     setFetchingSlots(true);
     try {
-      // Use our local time slot generator
       const times = generateSlot.generateTimeSlots(date);
       setAvailableTimes(times);
       console.log("✅ Loaded", times.length, "available times for", date);
@@ -102,7 +100,7 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
     }
   };
 
-  // Handle reschedule confirmation
+  // Handle reschedule confirmation - UPDATED FUNCTION
   const handleReschedule = async () => {
     if (!selectedDate || !selectedTime) {
       Toast.show({
@@ -121,12 +119,15 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
     setLoading(true);
 
     try {
-      // Call our local reschedule service
+      // Step 1: Reschedule the appointment (this updates date and time)
       await appointmentServices.rescheduleAppointment(
         appointment.id,
         selectedDate,
         selectedTime
       );
+
+      // Step 2: Update status to pending (0)
+      await appointmentServices.updateAppointmentToPending(appointment.id);
 
       // Find the selected date and time details for display
       const selectedDateObj = availableDates.find(
@@ -140,7 +141,7 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
       Toast.show({
         type: "success",
         text1: "Appointment Rescheduled!",
-        text2: `New time: ${selectedTimeObj?.formattedTime} on ${selectedDateObj?.fullFormattedDate}`,
+        text2: `New time: ${selectedTimeObj?.formattedTime} on ${selectedDateObj?.fullFormattedDate}. Status set to pending.`,
       });
 
       // Call parent callback to refresh appointments
@@ -149,15 +150,17 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
           appointmentId: appointment.id,
           newDate: selectedDate,
           newTime: selectedTime,
+          newStatus: 0, // pending
         });
       }
 
       onClose();
     } catch (error) {
+      console.error("❌ Reschedule error:", error);
       Toast.show({
         type: "error",
         text1: "Reschedule Failed",
-        text2: error.message,
+        text2: error.message || "Please try again",
       });
     } finally {
       setLoading(false);
@@ -197,6 +200,9 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
                     </Text>
                     <Text className="text-slate-500 text-sm mt-1">
                       {appointment.doctor_name} • {appointment.clinic_name}
+                    </Text>
+                    <Text className="text-amber-600 text-xs mt-1">
+                      💡 Status will be set to pending after reschedule
                     </Text>
                   </View>
                   <TouchableOpacity onPress={onClose} className="p-2">
@@ -240,6 +246,43 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
                         <Text className="text-slate-800 font-semibold">
                           {originalDateTime.time}
                         </Text>
+                      </View>
+
+                      <View className="flex-row justify-between items-center py-2">
+                        <Text className="text-slate-600 font-medium">
+                          Status:
+                        </Text>
+                        <View
+                          className={`px-3 py-1 rounded-full ${
+                            appointment.status === 0
+                              ? "bg-yellow-100"
+                              : appointment.status === 1
+                                ? "bg-cyan-100"
+                                : appointment.status === 2
+                                  ? "bg-emerald-100"
+                                  : "bg-red-100"
+                          }`}
+                        >
+                          <Text
+                            className={`text-xs font-semibold ${
+                              appointment.status === 0
+                                ? "text-yellow-700"
+                                : appointment.status === 1
+                                  ? "text-cyan-700"
+                                  : appointment.status === 2
+                                    ? "text-emerald-700"
+                                    : "text-red-700"
+                            }`}
+                          >
+                            {appointment.status === 0
+                              ? "Pending"
+                              : appointment.status === 1
+                                ? "Scheduled"
+                                : appointment.status === 2
+                                  ? "Completed"
+                                  : "Cancelled"}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   </View>
@@ -376,6 +419,17 @@ const RescheduleModal = ({ visible, onClose, appointment, onReschedule }) => {
                           <Text className="text-slate-800 font-semibold">
                             {selectedTimeObj.formattedTime}
                           </Text>
+                        </View>
+
+                        <View className="flex-row justify-between items-center py-2">
+                          <Text className="text-slate-600 font-medium">
+                            New Status:
+                          </Text>
+                          <View className="bg-yellow-100 px-3 py-1 rounded-full">
+                            <Text className="text-yellow-700 text-xs font-semibold">
+                              Pending
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     </View>

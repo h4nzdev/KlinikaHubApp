@@ -57,6 +57,60 @@ authRouter.post("/resend-verification", async (req, res) => {
   }
 });
 
+// ✅ NEW: Send password change verification
+authRouter.post("/send-password-verification", async (req, res) => {
+  try {
+    const { email, currentPassword } = req.body;
+
+    if (!email || !currentPassword) {
+      return res.status(400).json({
+        success: false,
+        error: "Email and current password are required",
+      });
+    }
+
+    const result = await authController.sendPasswordChangeVerification(
+      email,
+      currentPassword
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("❌ Password verification error:", error);
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// ✅ NEW: Verify and change password
+authRouter.post("/verify-change-password", async (req, res) => {
+  try {
+    const { email, verificationCode, currentPassword, newPassword } = req.body;
+
+    if (!email || !verificationCode || !currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: "All fields are required",
+      });
+    }
+
+    const result = await authController.verifyAndChangePassword(
+      email,
+      verificationCode,
+      currentPassword,
+      newPassword
+    );
+    res.json(result);
+  } catch (error) {
+    console.error("❌ Password change error:", error);
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // ⚠️ UPDATE: Old register route (keep for backward compatibility or remove)
 authRouter.post("/register", async (req, res) => {
   try {
@@ -130,7 +184,7 @@ authRouter.post("/upload-photo", async (req, res) => {
   }
 });
 
-// In your authRoutes.js or patientRoutes.js
+// Update profile picture
 authRouter.put("/:id/profile-picture", async (req, res) => {
   try {
     const { id } = req.params;

@@ -17,6 +17,13 @@ export const ReminderProvider = ({ children }) => {
   const [dueReminder, setDueReminder] = useState(null);
   const [alertCountdown, setAlertCountdown] = useState(30);
 
+  // ✅ ADDED: Simple settings state
+  const [settings, setSettings] = useState({
+    pushNotifications: true,
+    soundEnabled: true,
+    vibrationEnabled: true,
+  });
+
   const callTimer = useRef(null);
   const soundRef = useRef(null);
   const vibrationInterval = useRef(null);
@@ -26,6 +33,7 @@ export const ReminderProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       loadReminders();
+      loadSettings(); // ✅ ADDED: Load settings
     }
   }, [user]);
 
@@ -41,6 +49,45 @@ export const ReminderProvider = ({ children }) => {
     }
   };
 
+  // ✅ ADDED: Load settings
+  const loadSettings = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(`reminder_settings_${user.id}`);
+      if (stored) {
+        setSettings(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error("Error loading settings:", error);
+    }
+  };
+
+  // ✅ ADDED: Save settings
+  const saveSettings = async (newSettings) => {
+    setSettings(newSettings);
+    if (user) {
+      await AsyncStorage.setItem(
+        `reminder_settings_${user.id}`,
+        JSON.stringify(newSettings)
+      );
+    }
+  };
+
+  // ✅ ADDED: Update single setting
+  const updateSetting = async (key, value) => {
+    const newSettings = { ...settings, [key]: value };
+    await saveSettings(newSettings);
+  };
+
+  // ✅ ADDED: Reset to defaults
+  const resetSettings = async () => {
+    const defaultSettings = {
+      pushNotifications: true,
+      soundEnabled: true,
+      vibrationEnabled: true,
+    };
+    await saveSettings(defaultSettings);
+  };
+
   // Check for due reminders
   useEffect(() => {
     const interval = setInterval(() => {
@@ -51,6 +98,9 @@ export const ReminderProvider = ({ children }) => {
   }, [reminders, dueReminder]);
 
   const checkDueReminders = () => {
+    // ✅ ADDED: Check if notifications are enabled
+    if (!settings.pushNotifications) return;
+
     const now = new Date();
     const today = now.toISOString().split("T")[0];
     const currentTime24 = `${String(now.getHours()).padStart(2, "0")}:${String(
@@ -90,11 +140,15 @@ export const ReminderProvider = ({ children }) => {
       });
     }, 1000);
 
-    // Play alarm sound
-    await playAlarmSound();
+    // ✅ ADDED: Condition for sound
+    if (settings.soundEnabled) {
+      await playAlarmSound();
+    }
 
-    // Start vibration
-    startVibration();
+    // ✅ ADDED: Condition for vibration
+    if (settings.vibrationEnabled) {
+      startVibration();
+    }
 
     // Set auto-call timer
     callTimer.current = setTimeout(() => {
@@ -239,6 +293,11 @@ export const ReminderProvider = ({ children }) => {
     await saveReminders(updatedReminders);
   };
 
+  // ✅ ADDED: Delete all reminders
+  const deleteAllReminders = async () => {
+    await saveReminders([]);
+  };
+
   const toggleReminder = async (id) => {
     const reminder = reminders.find((r) => r.id === id);
     if (reminder) {
@@ -264,6 +323,12 @@ export const ReminderProvider = ({ children }) => {
     dueReminder,
     alertCountdown,
     handleAcknowledge, // ✅ Export this so modal can use it
+
+    // ✅ ADDED: Settings related values
+    settings,
+    updateSetting,
+    resetSettings,
+    deleteAllReminders,
   };
 
   // ✅ REMOVED MODAL FROM HERE - It will be rendered in App.js instead
