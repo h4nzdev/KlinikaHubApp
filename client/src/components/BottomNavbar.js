@@ -6,9 +6,11 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BottomNavbar = ({ state, navigation, descriptors }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Get active tab from navigation state
   const activeTab = state.routes[state.index].name;
@@ -148,7 +150,10 @@ const BottomNavbar = ({ state, navigation, descriptors }) => {
       )}
 
       {/* Main Navbar */}
-      <View className="bg-white/90 border-t border-slate-100 shadow-2xl">
+      <View
+        className="bg-white/90 border-t border-slate-100 shadow-2xl"
+        style={{ paddingBottom: insets.bottom }}
+      >
         <View className="h-px bg-slate-200" />
         <View className="flex-row justify-between items-center h-20 px-3 max-w-md mx-auto relative">
           {/* Left menu items */}

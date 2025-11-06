@@ -10,8 +10,10 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useReminder } from "../../../context/ReminderContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ReminderSettings = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const {
     reminders,
     settings,
@@ -84,7 +86,10 @@ const ReminderSettings = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView
+      className="flex-1 bg-gray-50"
+      style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
+    >
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}

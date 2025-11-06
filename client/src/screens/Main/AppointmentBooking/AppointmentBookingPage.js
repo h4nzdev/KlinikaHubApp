@@ -17,11 +17,13 @@ import Time from "./Time";
 import Details from "./Details";
 import Confirm from "./Confirm";
 import DateScreen from "./DateScreen";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AppointmentBookingPage = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { clinicId, clinicName } = route.params;
+  const insets = useSafeAreaInsets();
 
   const [currentTab, setCurrentTab] = useState(1);
   const [formData, setFormData] = useState({
@@ -92,7 +94,10 @@ const AppointmentBookingPage = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      className="flex-1 bg-white"
+      style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
+    >
       <StatusBar barStyle="dark-content" />
 
       <View className="bg-cyan-500 px-6 pt-4 pb-6">

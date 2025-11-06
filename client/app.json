@@ -4,7 +4,7 @@
     "slug": "KinikaHub",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/klinikahub.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/klinikahub.png",
@@ -25,7 +25,9 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "permissions": ["RECEIVE_BOOT_COMPLETED", "WAKE_LOCK", "VIBRATE"],
+      "useNextNotificationsApi": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -52,6 +54,15 @@
           "ios": {
             "newArchEnabled": true
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/klinikahub.png",
+          "color": "#0891b2",
+          "defaultChannel": "reminders",
+          "sounds": ["./assets/reminder2.mp3"]
         }
       ]
     ]

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { View, StatusBar } from "react-native";
+import { View, StatusBar, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Import screens
@@ -46,17 +46,14 @@ function MainTabs() {
       <Tab.Screen name="Dashboard" component={Dashboard} />
       <Tab.Screen name="Clinics" component={Clinics} />
       <Tab.Screen name="Appointments" component={Appointments} />
-      <Tab.Screen name="AppointmentDetails" component={AppointmentDetails} />
       <Tab.Screen
         name="AppointmentBookingPage"
         component={AppointmentBookingPage}
       />
-      <Tab.Screen name="Profile" component={Profile} />
       <Tab.Screen name="MedicalRecords" component={MedicalRecords} />
       <Tab.Screen name="Invoices" component={Invoices} />
       <Tab.Screen name="Reminders" component={Reminders} />
       <Tab.Screen name="Notifications" component={Notifications} />
-      <Tab.Screen name="Calendar" component={Calendar} />
     </Tab.Navigator>
   );
 }
@@ -76,32 +73,31 @@ const AppNavigation = () => {
     try {
       const hasSeenTour = await AsyncStorage.getItem("@medora_has_seen_tour");
 
-      // Show splash first
-      setShowSplash(true);
-      setShowAppTour(false);
-      setShowMainApp(false);
+      if (hasSeenTour === "true") {
+        // ✅ RETURNING USER: Show splash screen first, then main app
+        setShowSplash(true);
+        setShowAppTour(false);
+        setShowMainApp(false);
 
-      // After splash, decide what to show next
-      setTimeout(async () => {
-        if (hasSeenTour === "true") {
-          // User has seen tour before, go straight to main app
+        setTimeout(() => {
           setShowSplash(false);
           setShowMainApp(true);
-        } else {
-          // First time user, show the tour
-          setShowSplash(false);
-          setShowAppTour(true);
-        }
-        setIsCheckingTour(false);
-      }, 3000); // Splash duration
-    } catch (error) {
-      console.error("Error checking tour status:", error);
-      // On error, default to showing tour
-      setTimeout(() => {
+          setIsCheckingTour(false);
+        }, 3000); // Splash duration
+      } else {
+        // ✅ NEW USER: Show tour first (no splash yet)
         setShowSplash(false);
         setShowAppTour(true);
+        setShowMainApp(false);
         setIsCheckingTour(false);
-      }, 3000);
+      }
+    } catch (error) {
+      console.error("Error checking tour status:", error);
+      // On error, default to showing tour (new user flow)
+      setShowSplash(false);
+      setShowAppTour(true);
+      setShowMainApp(false);
+      setIsCheckingTour(false);
     }
   };
 
@@ -110,7 +106,7 @@ const AppNavigation = () => {
       // Save that user has seen the tour
       await AsyncStorage.setItem("@medora_has_seen_tour", "true");
 
-      // Show celebratory splash before main app
+      // ✅ NEW USER FLOW: After tour, show splash screen
       setShowAppTour(false);
       setShowSplash(true);
 
@@ -128,22 +124,41 @@ const AppNavigation = () => {
   };
 
   // Show nothing while checking (optional loading state)
-  if (isCheckingTour && showSplash) {
+  if (isCheckingTour) {
     return <SplashScreen onFinish={() => {}} />;
   }
 
+  // ✅ NEW USER: Show tour first
   if (showAppTour) {
     return <AppTour isOpen={showAppTour} onClose={handleTourFinish} />;
   }
 
+  // ✅ SPLASH SCREEN: Shows for both flows but at different times
   if (showSplash) {
     return <SplashScreen onFinish={() => {}} />;
   }
 
   return (
-    <View className="flex-1" style={{ paddingTop: StatusBar.currentHeight }}>
-      {!showSplash && !showAppTour ? (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <View className="flex-1 bg-white">
+      {/* Global Status Bar Configuration */}
+      <StatusBar
+        backgroundColor="#ffffff" // White background
+        barStyle="dark-content" // Dark icons (for light background)
+        translucent={false}
+      />
+
+      {showMainApp ? (
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            animation: "none",
+            animationDuration: 0,
+            contentStyle: {
+              backgroundColor: "#ffffff", // Ensure white background for all screens
+            },
+          }}
+        >
+          {/* Your screens remain the same */}
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="MedicalRecords" component={MedicalRecords} />
           <Stack.Screen name="Invoices" component={Invoices} />
@@ -158,7 +173,12 @@ const AppNavigation = () => {
           <Stack.Screen name="Clinics" component={Clinics} />
           <Stack.Screen name="Reviews" component={Reviews} />
           <Stack.Screen name="Notifications" component={Notifications} />
-
+          <Stack.Screen name="Profile" component={Profile} />
+          <Stack.Screen name="Calendar" component={Calendar} />
+          <Stack.Screen
+            name="AppointmentDetails"
+            component={AppointmentDetails}
+          />
           <Stack.Screen name="Settings" component={Settings} />
           <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
           <Stack.Screen name="TermsOfService" component={TermsOfService} />
@@ -168,12 +188,8 @@ const AppNavigation = () => {
           <Stack.Screen name="DataStorage" component={DataStorageSettings} />
         </Stack.Navigator>
       ) : (
-        <>
-          {showSplash && <SplashScreen onFinish={() => {}} />}
-          {showAppTour && (
-            <AppTour isOpen={showAppTour} onClose={handleTourFinish} />
-          )}
-        </>
+        // This should not happen due to our logic, but as fallback
+        <SplashScreen onFinish={() => {}} />
       )}
     </View>
   );

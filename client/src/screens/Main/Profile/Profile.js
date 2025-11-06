@@ -10,6 +10,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
@@ -17,6 +18,8 @@ import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import { useAppointments } from "../../../hooks/useAppointments";
 import patientAuthServices from "../../../services/patientAuthServices";
 import * as ImagePicker from "expo-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Profile = () => {
   const { user, updateUser } = useContext(AuthenticationContext);
@@ -26,6 +29,11 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const insets = useSafeAreaInsets();
 
   const patient = user?.patient || user;
 
@@ -71,7 +79,7 @@ const Profile = () => {
       // Update form data ref
       formDataRef.current = {
         name: name,
-        age: patient?.age || "",
+        age: patient?.age ? String(patient.age) : "",
         gender: patient?.sex || patient?.gender || "",
         email: patient?.email || "",
         phone: patient?.mobileno || patient?.phone || "",
@@ -117,6 +125,32 @@ const Profile = () => {
       });
     }
   }, [patient]);
+
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(Platform.OS === "ios"); // Keep open on iOS
+
+    if (date) {
+      setSelectedDate(date);
+
+      // ✅ FIX: Use local date string instead of ISO string to avoid timezone issues
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const localDateString = `${year}-${month}-${day}`;
+
+      formDataRef.current.birthday = localDateString;
+    }
+  };
+
+  const handleShowDatePicker = () => {
+    // Parse current birthday or use today
+    const currentBirthday = formDataRef.current.birthday
+      ? new Date(formDataRef.current.birthday)
+      : new Date();
+
+    setSelectedDate(currentBirthday);
+    setShowDatePicker(true);
+  };
 
   const initials = displayData.name
     ? displayData.name
@@ -222,7 +256,9 @@ const Profile = () => {
       const updateData = {
         first_name: formDataRef.current.name.split(" ")[0] || "",
         last_name: formDataRef.current.name.split(" ").slice(1).join(" ") || "",
-        age: formDataRef.current.age,
+        age: formDataRef.current.age
+          ? parseInt(formDataRef.current.age, 10)
+          : null,
         sex: formDataRef.current.gender,
         email: formDataRef.current.email,
         mobileno: formDataRef.current.phone,
@@ -238,22 +274,46 @@ const Profile = () => {
         gua_mobileno: formDataRef.current.guardianPhone,
       };
 
-      await patientAuthServices.updatePatientProfile(
-        displayData.patientId,
+      console.log("📤 Sending update data:", updateData);
+
+      // ✅ CHANGE THIS - Use patient.id instead of displayData.patientId
+      const correctId = patient?.id; // The actual database ID, not patient_id
+      console.log("📤 Using ID:", correctId);
+
+      // ✅ CAPTURE THE RESPONSE
+      const response = await patientAuthServices.updatePatientProfile(
+        correctId,
         updateData
       );
 
-      // Update display name after save
-      setDisplayData((prev) => ({
-        ...prev,
-        name: formDataRef.current.name,
-      }));
+      const freshPatientData =
+        await patientAuthServices.getPatientProfile(correctId);
+
+      // ✅ UPDATE CONTEXT WITH FRESH DATA
+      if (updateUser && user) {
+        let updatedUserData;
+        if (user.patient) {
+          updatedUserData = {
+            ...user,
+            patient: freshPatientData,
+          };
+        } else {
+          updatedUserData = freshPatientData;
+        }
+
+        await updateUser(updatedUserData);
+      }
+
+      setIsLoading(false);
+      setIsEditMode(false);
+      Alert.alert("Success", "Profile updated successfully!");
 
       setIsLoading(false);
       setIsEditMode(false);
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
       setIsLoading(false);
+      console.error("❌ Full error:", error);
       Alert.alert("Error", error.message || "Failed to update profile");
     }
   };
@@ -295,7 +355,20 @@ const Profile = () => {
   const formatDate = (dateString) => {
     if (!dateString || dateString === "Not available") return "Not available";
     try {
+      // ✅ Handle both ISO strings and local date strings (YYYY-MM-DD)
       const date = new Date(dateString);
+
+      // If it's an invalid date, try parsing as local date string
+      if (isNaN(date.getTime())) {
+        const [year, month, day] = dateString.split("-");
+        const localDate = new Date(year, month - 1, day);
+        return localDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      }
+
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
@@ -406,6 +479,9 @@ const Profile = () => {
       ? info.formatter(currentValue || "Not provided")
       : (currentValue || "Not provided") + (info.suffix || "");
 
+    // ✅ Check if this is the birthday field
+    const isBirthdayField = info.field === "birthday";
+
     return (
       <View className="bg-white rounded-2xl p-4 mb-3 border border-slate-100">
         <View className="flex-row items-center justify-between">
@@ -417,14 +493,30 @@ const Profile = () => {
               <Text className="text-sm text-slate-500 font-medium mb-1">
                 {info.title}
               </Text>
+
               {isEditMode && info.field ? (
-                <TextInput
-                  defaultValue={currentValue}
-                  onChangeText={(text) => handleInputChange(info.field, text)}
-                  className="text-base font-semibold text-slate-800 border-2 border-cyan-200 rounded-xl px-3 py-2"
-                  multiline={info.field === "address"}
-                  style={{ minHeight: info.field === "address" ? 60 : 40 }}
-                />
+                isBirthdayField ? (
+                  // ✅ Birthday field with date picker
+                  <TouchableOpacity
+                    onPress={handleShowDatePicker}
+                    className="text-base font-semibold text-slate-800 border-2 border-cyan-200 rounded-xl px-3 py-2 flex-row items-center justify-between"
+                    style={{ minHeight: 40 }}
+                  >
+                    <Text className="text-base font-semibold text-slate-800">
+                      {formatDate(currentValue) || "Select date"}
+                    </Text>
+                    <Feather name="calendar" size={16} color="#0891b2" />
+                  </TouchableOpacity>
+                ) : (
+                  // Regular text input for other fields
+                  <TextInput
+                    defaultValue={currentValue}
+                    onChangeText={(text) => handleInputChange(info.field, text)}
+                    className="text-base font-semibold text-slate-800 border-2 border-cyan-200 rounded-xl px-3 py-2"
+                    multiline={info.field === "address"}
+                    style={{ minHeight: info.field === "address" ? 60 : 40 }}
+                  />
+                )
               ) : (
                 <Text className="text-base font-semibold text-slate-800">
                   {info.value || displayValue}
@@ -610,7 +702,10 @@ const Profile = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      className="flex-1 bg-white"
+      style={{ paddingBottom: insets.bottom }}
+    >
       <StatusBar barStyle="dark-content" />
       <Header />
 
@@ -773,6 +868,17 @@ const Profile = () => {
 
         {/* Tab Content */}
         <View className="px-6">{renderTabContent()}</View>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={handleDateChange}
+            maximumDate={new Date()} // Can't select future dates
+            minimumDate={new Date(1900, 0, 1)} // Reasonable minimum date
+          />
+        )}
 
         {/* Edit Mode Actions */}
         {isEditMode && (

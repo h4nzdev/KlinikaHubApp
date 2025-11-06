@@ -11,6 +11,7 @@ import { Feather } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useNavigation } from "@react-navigation/native";
 import appointmentServices from "../../../../services/appointmentsServices";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AppointmentModal = ({
   visible,
@@ -25,6 +26,7 @@ const AppointmentModal = ({
 }) => {
   const isCancel = appointment?.status === 3;
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   // Updated function to use navigation
   const handleViewAppointment = () => {
@@ -92,6 +94,7 @@ const AppointmentModal = ({
       transparent={true}
       animationType="fade"
       onRequestClose={onClose}
+      style={{ paddingBottom: insets.bottom }}
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <View className="flex-1 justify-end bg-black/50">

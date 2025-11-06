@@ -8,10 +8,15 @@ import {
   StatusBar,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TermsOfService = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      className="flex-1 bg-white"
+      style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
+    >
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}

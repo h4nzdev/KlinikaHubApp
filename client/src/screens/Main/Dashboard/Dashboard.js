@@ -18,6 +18,7 @@ import appointmentServices from "../../../services/appointmentsServices";
 import { useReminder } from "../../../context/ReminderContext";
 import Toast from "react-native-toast-message";
 import { getRandomTip } from "../../../utils/healthTipsGenerator";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Dashboard = ({ navigation }) => {
   const { user } = useContext(AuthenticationContext);
@@ -29,6 +30,8 @@ const Dashboard = ({ navigation }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
   const [randomTip, setRandomTip] = useState(getRandomTip());
+
+  const insets = useSafeAreaInsets();
 
   // ✅ Use ref to track if we need to refetch
   const shouldRefetch = useRef(false);
@@ -265,6 +268,7 @@ const Dashboard = ({ navigation }) => {
         transparent={true}
         animationType="fade"
         onRequestClose={() => setDropdownVisible(false)}
+        style={{ paddingBottom: insets.bottom }}
       >
         <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
           <View className="flex-1 justify-end bg-black/50">

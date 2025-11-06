@@ -156,12 +156,15 @@ const Login = () => {
                     clearError("password");
                   }}
                   secureTextEntry={!showPassword}
-                  className={`w-full px-4 py-4 bg-white border rounded-2xl pr-12 ${errors.password ? "border-red-500" : "border-slate-300"}`}
+                  className={`w-full px-4 py-4 bg-white border rounded-2xl pr-12 ${
+                    errors.password ? "border-red-500" : "border-slate-300"
+                  }`}
                   placeholder="Enter your password"
                   placeholderTextColor="#94a3b8"
                   autoCapitalize="none"
                   editable={!isLoading}
                   onSubmitEditing={onLogin}
+                  style={{ color: "#000000" }}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}

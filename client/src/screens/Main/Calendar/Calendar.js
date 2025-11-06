@@ -11,11 +11,13 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useAppointments } from "../../../hooks/useAppointments";
 import Header from "../../../components/Header";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [filter, setFilter] = useState("All");
+  const insets = useSafeAreaInsets();
 
   const { appointments: allAppointments, loading } = useAppointments();
 
@@ -145,7 +147,10 @@ export default function Calendar() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      className="flex-1 bg-white"
+      style={{ paddingBottom: insets.bottom }}
+    >
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <Header />
         <View className="px-5 pt-2 pb-6">

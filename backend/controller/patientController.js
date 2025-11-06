@@ -96,9 +96,11 @@ class PatientController {
   }
 
   // Update patient
+  // In patientController.js
   async updatePatient(id, patientData) {
     try {
       const db = await this.initDB();
+
       const updates = Object.keys(patientData)
         .filter((key) => key !== "id")
         .map((key) => `${key} = ?`)
@@ -109,10 +111,12 @@ class PatientController {
         .map((key) => patientData[key])
         .concat(id);
 
+      // ✅ USE 'id' INSTEAD OF 'patient_id'
       const sql = `UPDATE patients SET ${updates}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
-      await db.execute(sql, values);
 
-      console.log("✅ Patient updated:", id);
+      const [result] = await db.execute(sql, values);
+
+      console.log("✅ Update result:", result);
       return { id, ...patientData };
     } catch (err) {
       console.log("❌ Patient update error:", err);

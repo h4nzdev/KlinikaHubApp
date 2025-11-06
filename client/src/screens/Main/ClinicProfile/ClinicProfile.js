@@ -15,11 +15,13 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import clinicServices from "../../../services/clinicServices";
 import reviewServices from "../../../services/reviewServices"; // 👈 ADD THIS IMPORT
 import { getSpecialties } from "../../../utils/getSpecialty";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ClinicProfile = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { clinicId } = route.params;
+  const insets = useSafeAreaInsets();
 
   const [clinic, setClinic] = useState(null);
   const [ratingStats, setRatingStats] = useState({
@@ -218,7 +220,10 @@ const ClinicProfile = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      className="flex-1 bg-white"
+      style={{ paddingBottom: insets.bottom }}
+    >
       <StatusBar barStyle="dark-content" />
 
       {/* Main Content */}

@@ -23,6 +23,7 @@ import { useState, useEffect, useContext, useRef } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import reviewServices from "../../../services/reviewServices";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -31,6 +32,7 @@ const Reviews = () => {
   const { clinicId } = route.params;
   const { user } = useContext(AuthenticationContext);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   // State for real data
   const [reviews, setReviews] = useState([]);
@@ -356,7 +358,10 @@ const Reviews = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView
+      className="flex-1 bg-slate-50"
+      style={{ paddingBottom: insets.bottom }}
+    >
       <StatusBar barStyle="dark-content" />
 
       {/* Fixed Write Review Button */}

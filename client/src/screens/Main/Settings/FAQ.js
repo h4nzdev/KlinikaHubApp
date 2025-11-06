@@ -8,9 +8,11 @@ import {
   StatusBar,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const FAQ = ({ navigation }) => {
   const [expandedItems, setExpandedItems] = useState({});
+  const insets = useSafeAreaInsets();
 
   const toggleItem = (id) => {
     setExpandedItems((prev) => ({
@@ -112,7 +114,10 @@ const FAQ = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      className="flex-1 bg-white"
+      style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
+    >
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}

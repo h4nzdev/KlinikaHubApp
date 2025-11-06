@@ -11,11 +11,13 @@ import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { AuthenticationContext } from "../context/AuthenticationContext";
 import Toast from "react-native-toast-message";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notificationCount] = useState(5);
   const { user, logout } = useContext(AuthenticationContext);
+  const insets = useSafeAreaInsets();
 
   // ✅ SAFE: This will be null if no navigation context
   const navigation = useNavigation();
@@ -49,7 +51,10 @@ const Header = () => {
 
   return (
     <>
-      <View className="bg-white/80 border-b border-slate-100/80">
+      <View
+        className="bg-white/80 border-b border-slate-100/80"
+        style={{ paddingTop: insets.top }}
+      >
         <View className="px-4 py-4">
           <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-bold text-cyan-600">KlinikaHub</Text>

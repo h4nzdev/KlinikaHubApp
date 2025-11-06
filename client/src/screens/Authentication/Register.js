@@ -685,6 +685,7 @@ const Register = () => {
           secureTextEntry
           onFocus={() => setShowPasswordValidation(true)}
           onBlur={() => setShowPasswordValidation(false)}
+          style={{ color: "#000000" }}
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
         {showPasswordValidation && (
@@ -715,6 +716,7 @@ const Register = () => {
         <TextInput
           value={formData.confirmPassword}
           onChangeText={(text) => handleInputChange("confirmPassword", text)}
+          style={{ color: "#000000" }}
           placeholder="••••••••"
           secureTextEntry
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"

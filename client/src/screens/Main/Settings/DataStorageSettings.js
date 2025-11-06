@@ -9,8 +9,10 @@ import {
   Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DataStorageSettings = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [storageSettings, setStorageSettings] = useState({
     autoBackup: true,
     cloudSync: false,
@@ -118,7 +120,10 @@ const DataStorageSettings = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView
+      className="flex-1 bg-gray-50"
+      style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
+    >
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}

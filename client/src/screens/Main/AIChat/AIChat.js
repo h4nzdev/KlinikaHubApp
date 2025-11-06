@@ -18,12 +18,14 @@ import chatServices from "../../../services/chatServices";
 import { useNavigation } from "@react-navigation/native";
 import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AIChat = () => {
   const [message, setMessage] = useState("");
   const scrollViewRef = useRef(null);
   const [isShown, setIsShown] = useState(true);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   // 💾 CHAT STORAGE KEYS
   const CHAT_STORAGE_KEY = "medora_ai_chat_history";
@@ -458,7 +460,10 @@ const AIChat = () => {
   }, [chatHistory, loading]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView
+      className="flex-1 bg-slate-50"
+      style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
+    >
       <StatusBar barStyle="dark-content" />
 
       <KeyboardAvoidingView
@@ -786,43 +791,120 @@ const AIChat = () => {
           {!isShown && (
             <TouchableOpacity
               onPress={() => setIsShown(true)}
-              className="absolute -top-6 self-center rounded-full flex items-center justify-center animate-bounce"
+              className="absolute -top-8 self-center bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg border border-gray-200 animate-bounce"
             >
-              <Feather name="chevron-up" size={24} color="#0891b2" />
+              <Feather name="chevron-up" size={20} color="#0891b2" />
             </TouchableOpacity>
           )}
-          <View className="flex-row gap-3">
-            <TextInput
-              placeholder={
-                !chatCredits.canChat
-                  ? "Daily chat limit reached"
-                  : showEmergency
-                    ? "Emergency detected - use buttons above"
-                    : "Describe your symptoms..."
-              }
-              value={message}
-              onChangeText={setMessage}
-              onSubmitEditing={handleSendMessage}
-              editable={chatCredits.canChat && !showEmergency}
-              multiline
-              className={`flex-1 px-4 py-3 border border-gray-300 rounded-lg ${
-                !chatCredits.canChat || showEmergency
-                  ? "bg-gray-100"
-                  : "bg-white"
-              }`}
-              style={{ maxHeight: 100 }}
-            />
+
+          <View className="flex-row gap-3 items-end">
+            {/* Message Input */}
+            <View className="flex-1 relative">
+              <TextInput
+                placeholder={
+                  !chatCredits.canChat
+                    ? "Daily chat limit reached - Try again tomorrow"
+                    : showEmergency
+                      ? "Emergency detected - Please use emergency options above"
+                      : "Describe your symptoms or health concerns..."
+                }
+                value={message}
+                onChangeText={setMessage}
+                onSubmitEditing={handleSendMessage}
+                editable={chatCredits.canChat && !showEmergency}
+                multiline
+                className={`px-4 py-3 border rounded-xl text-base ${
+                  !chatCredits.canChat || showEmergency
+                    ? "bg-gray-100 border-gray-300 text-gray-500"
+                    : "bg-white border-cyan-200 text-gray-800"
+                }`}
+                style={{
+                  maxHeight: 120,
+                  minHeight: 50,
+                  textAlignVertical: "center",
+                }}
+                placeholderTextColor={
+                  !chatCredits.canChat || showEmergency ? "#9ca3af" : "#6b7280"
+                }
+              />
+
+              {/* Character count (optional) */}
+              {message.length > 0 && chatCredits.canChat && !showEmergency && (
+                <Text className="absolute bottom-1 right-3 text-xs text-gray-400">
+                  {message.length}/500
+                </Text>
+              )}
+            </View>
+
+            {/* Send Button */}
             <TouchableOpacity
               onPress={handleSendMessage}
-              disabled={loading || !chatCredits.canChat || showEmergency}
-              className={`px-4 py-3 rounded-lg items-center justify-center min-w-[56px] ${
-                !chatCredits.canChat || showEmergency
-                  ? "bg-gray-400"
-                  : "bg-cyan-600"
+              disabled={
+                loading ||
+                !chatCredits.canChat ||
+                showEmergency ||
+                message.trim().length === 0
+              }
+              className={`w-12 h-12 rounded-xl items-center justify-center shadow-sm ${
+                !chatCredits.canChat ||
+                showEmergency ||
+                message.trim().length === 0
+                  ? "bg-gray-300"
+                  : loading
+                    ? "bg-cyan-400"
+                    : "bg-cyan-500 active:bg-cyan-600"
               }`}
             >
-              <Feather name="send" size={20} color="#ffffff" />
+              {loading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Feather
+                  name="send"
+                  size={20}
+                  color={
+                    !chatCredits.canChat ||
+                    showEmergency ||
+                    message.trim().length === 0
+                      ? "#9ca3af"
+                      : "#ffffff"
+                  }
+                />
+              )}
             </TouchableOpacity>
+          </View>
+
+          {/* Status Indicators */}
+          <View className="flex-row justify-between items-center mt-2">
+            <View className="flex-row items-center gap-2">
+              {/* Chat Credits Indicator */}
+              {!chatCredits.canChat ? (
+                <View className="flex-row items-center gap-1">
+                  <Feather name="alert-circle" size={14} color="#ef4444" />
+                  <Text className="text-red-500 text-xs font-medium">
+                    Daily limit reached
+                  </Text>
+                </View>
+              ) : (
+                <Text className="text-gray-500 text-xs">
+                  {chatCredits.remaining} chats remaining today
+                </Text>
+              )}
+
+              {/* Emergency Mode Indicator */}
+              {showEmergency && (
+                <View className="flex-row items-center gap-1 bg-red-50 px-2 py-1 rounded-full">
+                  <Feather name="alert-triangle" size={12} color="#dc2626" />
+                  <Text className="text-red-600 text-xs font-medium">
+                    Emergency Mode
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Message Tips */}
+            {chatCredits.canChat && !showEmergency && message.length === 0 && (
+              <Text className="text-gray-400 text-xs">Press ↵ to send</Text>
+            )}
           </View>
         </View>
       </KeyboardAvoidingView>

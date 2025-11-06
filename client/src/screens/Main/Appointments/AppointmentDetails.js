@@ -11,11 +11,13 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import appointmentServices from "../../../services/appointmentsServices";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AppointmentDetails = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { appointment } = route.params;
+  const insets = useSafeAreaInsets();
 
   // Status configuration
   const statusConfig = {
@@ -164,14 +166,17 @@ const AppointmentDetails = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      className="flex-1 bg-white"
+      style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
+    >
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View className="px-4 py-3 border-b border-slate-200">
         <View className="flex-row items-center">
           <TouchableOpacity
-            onPress={() => navigation.navigate("Appointments")}
+            onPress={() => navigation.goBack()}
             className="w-10 h-10 items-center justify-center"
           >
             <Feather name="chevron-left" size={28} color="#0891b2" />

@@ -12,12 +12,14 @@ import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
 import ChangePasswordModal from "../../../components/ChangePasswordModal";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Settings = () => {
   const navigation = useNavigation();
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const ToggleSwitch = ({ value, onToggle, activeColor = "bg-cyan-600" }) => (
     <TouchableOpacity
@@ -31,7 +33,10 @@ const Settings = () => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView
+      className="flex-1 bg-gray-50"
+      style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
+    >
       <StatusBar style="dark" />
 
       <View className="px-4 py-3 flex-row items-center">
