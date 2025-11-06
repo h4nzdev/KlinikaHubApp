@@ -1,4 +1,4 @@
-// context/ReminderContext.js (With Expo Push Notifications)
+// context/ReminderContext.js (Enhanced Version)
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { Alert, Vibration, Platform } from "react-native";
 import { Audio } from "expo-av";
@@ -6,6 +6,10 @@ import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthenticationContext } from "./AuthenticationContext";
 import smsService from "../services/smsServices";
+import {
+  cancelHealthTipNotifications,
+  scheduleHealthTipNotification,
+} from "../utils/healthTipsGenerator";
 
 const ReminderContext = createContext();
 
@@ -17,6 +21,7 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    healthTipsEnabled: true,
   }),
 });
 
@@ -45,32 +50,68 @@ export const ReminderProvider = ({ children }) => {
   useEffect(() => {
     registerForPushNotificationsAsync();
 
-    // Listen for incoming notifications
+    // Listen for incoming notifications when app is in foreground
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
         console.log("📱 Notification received:", notification);
+        // Handle notification when app is in foreground
+        handleNotificationReceived(notification);
       });
 
-    // Listen for notification responses
+    // Listen for notification responses (user taps notification)
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log("👆 Notification tapped:", response);
-        // You can handle when user taps the notification here
+        handleNotificationResponse(response);
       });
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(
-          notificationListener.current
-        );
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, []);
 
-  // 2. Register for push notifications
+  // 2. Load and schedule existing reminders when app starts
+  useEffect(() => {
+    if (user) {
+      loadReminders();
+      loadSettings();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (reminders.length > 0) {
+      rescheduleAllReminders();
+    }
+  }, [reminders]);
+
+  // 3. Handle notification when received in foreground
+  const handleNotificationReceived = (notification) => {
+    const { reminderId } = notification.request.content.data;
+    const reminder = reminders.find((r) => r.id === reminderId);
+
+    if (reminder && reminder.isActive) {
+      console.log("🚨 Notification triggered for:", reminder.name);
+      triggerReminderAlert(reminder);
+    }
+  };
+
+  // 4. Handle when user taps notification
+  const handleNotificationResponse = (response) => {
+    const { reminderId } = response.notification.request.content.data;
+    const reminder = reminders.find((r) => r.id === reminderId);
+
+    if (reminder) {
+      console.log("👆 User tapped notification for:", reminder.name);
+      // You can show additional options or mark as acknowledged
+    }
+  };
+
+  // 5. Register for push notifications (your existing code)
   const registerForPushNotificationsAsync = async () => {
     try {
       const { status: existingStatus } =
@@ -87,7 +128,6 @@ export const ReminderProvider = ({ children }) => {
         return;
       }
 
-      // Get the token
       const token = (await Notifications.getExpoPushTokenAsync()).data;
       setExpoPushToken(token);
       console.log("✅ Push token:", token);
@@ -96,48 +136,84 @@ export const ReminderProvider = ({ children }) => {
     }
   };
 
-  // 3. Schedule a push notification
-  const schedulePushNotification = async (reminder) => {
+  // 6. NEW: Calculate trigger time for a reminder
+  const calculateTriggerTime = (reminderTime24) => {
+    const [hours, minutes] = reminderTime24.split(":").map(Number);
+    const now = new Date();
+    const triggerTime = new Date();
+
+    // Set to today's date with reminder time
+    triggerTime.setHours(hours, minutes, 0, 0);
+
+    // If time already passed today, schedule for tomorrow
+    if (triggerTime <= now) {
+      triggerTime.setDate(triggerTime.getDate() + 1);
+    }
+
+    return triggerTime;
+  };
+
+  // 7. NEW: Schedule a single reminder notification
+  const scheduleReminderNotification = async (reminder) => {
+    if (!reminder.isActive || !settings.pushNotifications) {
+      return;
+    }
+
     try {
-      const trigger = new Date(Date.now() + 1000); // Show in 1 second
+      const triggerTime = calculateTriggerTime(reminder.time24);
 
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "🔔 KlinikaHub Reminder",
           body: reminder.name,
-          data: { reminderId: reminder.id },
+          data: {
+            reminderId: reminder.id,
+            reminderName: reminder.name,
+          },
           sound: true,
         },
-        trigger,
+        trigger: triggerTime,
       });
 
-      console.log("✅ Push notification scheduled for:", reminder.name);
+      console.log(
+        "✅ Notification scheduled for:",
+        reminder.name,
+        "at",
+        triggerTime.toLocaleString()
+      );
     } catch (error) {
-      console.log("❌ Error scheduling notification:", error);
+      console.log(
+        "❌ Error scheduling notification for",
+        reminder.name,
+        ":",
+        error
+      );
     }
   };
 
-  // 4. Cancel all scheduled notifications
-  const cancelAllScheduledNotifications = async () => {
+  // 8. NEW: Reschedule all reminders
+  const rescheduleAllReminders = async () => {
+    // First cancel all existing notifications
     await Notifications.cancelAllScheduledNotificationsAsync();
-    console.log("✅ All scheduled notifications cancelled");
-  };
 
-  // 5. Cancel specific reminder notification
-  const cancelReminderNotification = async (reminderId) => {
-    // Note: Expo doesn't have direct cancellation by ID for one-time notifications
-    // We'll handle this by not scheduling if reminder is inactive
-    console.log("ℹ️ Reminder cancelled:", reminderId);
-  };
+    // Then schedule active reminders
+    const activeReminders = reminders.filter((r) => r.isActive);
 
-  // Load reminders from storage
-  useEffect(() => {
-    if (user) {
-      loadReminders();
-      loadSettings();
+    for (const reminder of activeReminders) {
+      await scheduleReminderNotification(reminder);
     }
-  }, [user]);
 
+    console.log(`✅ Rescheduled ${activeReminders.length} reminders`);
+  };
+
+  // 9. NEW: Cancel specific reminder notification
+  const cancelReminderNotification = async (reminderId) => {
+    // Since Expo doesn't support direct cancellation by ID for one-time notifications,
+    // we'll reschedule all reminders except this one
+    await rescheduleAllReminders();
+  };
+
+  // 10. Load reminders from storage
   const loadReminders = async () => {
     try {
       const stored = await AsyncStorage.getItem(`reminders_${user.id}`);
@@ -174,6 +250,18 @@ export const ReminderProvider = ({ children }) => {
   const updateSetting = async (key, value) => {
     const newSettings = { ...settings, [key]: value };
     await saveSettings(newSettings);
+
+    if (key === "healthTipsEnabled") {
+      if (value) {
+        await scheduleHealthTipNotification();
+      } else {
+        await cancelHealthTipNotifications();
+      }
+    }
+
+    if (key === "pushNotifications") {
+      await rescheduleAllReminders();
+    }
   };
 
   const resetSettings = async () => {
@@ -183,9 +271,10 @@ export const ReminderProvider = ({ children }) => {
       vibrationEnabled: true,
     };
     await saveSettings(defaultSettings);
+    await rescheduleAllReminders();
   };
 
-  // Check for due reminders
+  // 11. Check for due reminders (for when app is in foreground)
   useEffect(() => {
     const interval = setInterval(() => {
       checkDueReminders();
@@ -209,7 +298,12 @@ export const ReminderProvider = ({ children }) => {
       const notAcknowledgedToday = r.lastAcknowledgedDate !== today;
 
       if (isTimeMatch && isActive && notAcknowledgedToday) {
-        console.log("🎯 Reminder due:", r.name, "at", r.time24);
+        console.log(
+          "🎯 Reminder due (foreground check):",
+          r.name,
+          "at",
+          r.time24
+        );
         return true;
       }
       return false;
@@ -221,15 +315,11 @@ export const ReminderProvider = ({ children }) => {
     }
   };
 
+  // 12. Trigger reminder alert (your existing code with enhancements)
   const triggerReminderAlert = async (reminder) => {
     setDueReminder(reminder);
     setIsNotificationModalOpen(true);
     setAlertCountdown(30);
-
-    // ✅ ADDED: Schedule push notification
-    if (settings.pushNotifications) {
-      await schedulePushNotification(reminder);
-    }
 
     // Start countdown
     countdownInterval.current = setInterval(() => {
@@ -254,6 +344,9 @@ export const ReminderProvider = ({ children }) => {
     callTimer.current = setTimeout(() => {
       handleAutoCall();
     }, 30000);
+
+    // Reschedule this reminder for tomorrow
+    await scheduleReminderNotification(reminder);
   };
 
   const playAlarmSound = async () => {
@@ -354,6 +447,7 @@ export const ReminderProvider = ({ children }) => {
     }
   };
 
+  // 13. Enhanced reminder management functions
   const saveReminders = async (updatedReminders) => {
     setReminders(updatedReminders);
     if (user) {
@@ -364,7 +458,6 @@ export const ReminderProvider = ({ children }) => {
     }
   };
 
-  // Public methods
   const addReminder = async (reminderData) => {
     const newReminder = {
       id: Date.now().toString(),
@@ -372,9 +465,14 @@ export const ReminderProvider = ({ children }) => {
       createdAt: new Date().toISOString(),
       notifiedCount: 0,
       lastAcknowledgedDate: null,
+      isActive: true,
     };
     const updatedReminders = [...reminders, newReminder];
     await saveReminders(updatedReminders);
+
+    // Schedule notification for new reminder
+    await scheduleReminderNotification(newReminder);
+
     return newReminder;
   };
 
@@ -383,16 +481,20 @@ export const ReminderProvider = ({ children }) => {
       reminder.id === id ? { ...reminder, ...updates } : reminder
     );
     await saveReminders(updatedReminders);
+
+    // Reschedule all reminders to ensure proper timing
+    await rescheduleAllReminders();
   };
 
   const deleteReminder = async (id) => {
     const updatedReminders = reminders.filter((reminder) => reminder.id !== id);
     await saveReminders(updatedReminders);
+    await rescheduleAllReminders();
   };
 
   const deleteAllReminders = async () => {
     await saveReminders([]);
-    await cancelAllScheduledNotifications();
+    await Notifications.cancelAllScheduledNotificationsAsync();
   };
 
   const toggleReminder = async (id) => {
@@ -427,11 +529,13 @@ export const ReminderProvider = ({ children }) => {
     resetSettings,
     deleteAllReminders,
 
-    // ✅ NEW: Push notification methods
+    // Push notification methods
     expoPushToken,
-    schedulePushNotification,
-    cancelAllScheduledNotifications,
+    schedulePushNotification: scheduleReminderNotification, // Updated reference
+    cancelAllScheduledNotifications: () =>
+      Notifications.cancelAllScheduledNotificationsAsync(),
     cancelReminderNotification,
+    rescheduleAllReminders, // NEW: Export this function
   };
 
   return (

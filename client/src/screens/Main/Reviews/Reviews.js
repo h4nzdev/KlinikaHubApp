@@ -360,12 +360,15 @@ const Reviews = () => {
   return (
     <SafeAreaView
       className="flex-1 bg-slate-50"
-      style={{ paddingBottom: insets.bottom }}
+      style={{ paddingTop: insets.top }}
     >
       <StatusBar barStyle="dark-content" />
 
       {/* Fixed Write Review Button */}
-      <View className="absolute bottom-6 left-6 right-6 z-10">
+      <View
+        className="absolute bottom-6 left-6 right-6 z-10"
+        style={{ paddingBottom: insets.bottom }}
+      >
         <TouchableOpacity
           onPress={openModal}
           className="bg-cyan-600 rounded-2xl py-4 flex-row items-center justify-center gap-3 shadow-lg shadow-cyan-600/30"
@@ -550,6 +553,7 @@ const Reviews = () => {
         transparent={true}
         animationType="none"
         statusBarTranslucent={true}
+        style={{ paddingBottom: insets.bottom }}
       >
         <View className="flex-1 bg-black/50">
           {/* Backdrop */}

@@ -17,12 +17,8 @@ const AppointmentModal = ({
   visible,
   onClose,
   appointment,
-  onSetReminder,
   onCancelAppointment,
-  onViewReschedule,
-  onDeleteAppointment,
   fetchAppointments,
-  onViewDetails, // Add this prop
 }) => {
   const isCancel = appointment?.status === 3;
   const navigation = useNavigation();
@@ -94,10 +90,12 @@ const AppointmentModal = ({
       transparent={true}
       animationType="fade"
       onRequestClose={onClose}
-      style={{ paddingBottom: insets.bottom }}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View className="flex-1 justify-end bg-black/50">
+        <View
+          className="flex-1 justify-end bg-black/50"
+          style={{ paddingBottom: insets.bottom }}
+        >
           <TouchableWithoutFeedback>
             <View className="bg-white rounded-t-3xl mx-2 mb-2 shadow-2xl overflow-hidden">
               {/* Drag handle */}
@@ -135,44 +133,6 @@ const AppointmentModal = ({
                     </Text>
                   </View>
                   <Feather name="chevron-right" size={18} color="#94a3b8" />
-                </TouchableOpacity>
-
-                {/* Rest of your modal content remains the same */}
-                {/* Set Reminder */}
-                <TouchableOpacity
-                  onPress={() => onSetReminder(appointment)}
-                  disabled={isCancel}
-                  className={`flex-row items-center px-6 py-4 ${isCancel ? "" : "active:bg-slate-50"}`}
-                  activeOpacity={0.6}
-                >
-                  <View
-                    className={`${isCancel ? "bg-gray-100" : "bg-blue-100"} p-3 rounded-xl mr-4`}
-                  >
-                    <Feather
-                      name="bell"
-                      size={20}
-                      color={isCancel ? "#9ca3af" : "#3b82f6"}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className={`${isCancel ? "text-gray-400" : "text-slate-800"} font-medium text-base`}
-                    >
-                      Set Reminder
-                    </Text>
-                    <Text
-                      className={`${isCancel ? "text-gray-400" : "text-slate-500"} text-sm mt-1`}
-                    >
-                      {isCancel
-                        ? "Not available for cancelled appointments"
-                        : "Get notified before appointment"}
-                    </Text>
-                  </View>
-                  <Feather
-                    name="chevron-right"
-                    size={18}
-                    color={isCancel ? "#9ca3af" : "#94a3b8"}
-                  />
                 </TouchableOpacity>
 
                 {/* RESCHEDULE BUTTON */}

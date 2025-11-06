@@ -31,7 +31,7 @@ const Appointments = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [remindedAppointments, setRemindedAppointments] = useState(new Set());
-  const { addReminder } = useReminder();
+  const { addReminder, reminders } = useReminder();
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
@@ -101,6 +101,16 @@ const Appointments = ({ navigation }) => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchAppointments();
+  };
+
+  const checkIfReminderExists = (appointment) => {
+    if (!appointment) {
+      return false;
+    }
+    const reminderName = `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`;
+    return reminders.some(
+      (reminder) => reminder.name === reminderName && reminder.isActive
+    );
   };
 
   const handleNewAppointmentClick = () => {
@@ -173,7 +183,15 @@ const Appointments = ({ navigation }) => {
 
   // Handle set reminder
   const handleSaveReminder = (appointment) => {
-    setDropdownVisible(false);
+    // ✅ Check if reminder already exists FIRST
+    if (checkIfReminderExists(appointment)) {
+      Toast.show({
+        type: "info",
+        text1: "Reminder already exists",
+        text2: "This appointment already has an active reminder",
+      });
+      return;
+    }
 
     const reminderFormData = {
       name: `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`,
@@ -709,15 +727,23 @@ const Appointments = ({ navigation }) => {
                       <View className="flex-row gap-3">
                         <TouchableOpacity
                           onPress={() => handleSaveReminder(appointment)}
-                          disabled={remindedAppointments.has(appointment.id)}
+                          disabled={
+                            checkIfReminderExists(appointment) ||
+                            remindedAppointments.has(appointment.id)
+                          }
                         >
                           <Feather
-                            name="bell"
+                            name={
+                              checkIfReminderExists(appointment)
+                                ? "check"
+                                : "bell"
+                            }
                             size={18}
                             color={
+                              checkIfReminderExists(appointment) ||
                               remindedAppointments.has(appointment.id)
-                                ? "#9ca3af"
-                                : "#8b5cf6"
+                                ? "#059669" // Green for active reminder
+                                : "#8b5cf6" // Purple for new reminder
                             }
                           />
                         </TouchableOpacity>

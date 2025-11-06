@@ -23,7 +23,7 @@
       "package": "com.kinikahub.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/klinikahub-icon.png",
         "backgroundColor": "#FFFFFF"
       },
       "permissions": ["RECEIVE_BOOT_COMPLETED", "WAKE_LOCK", "VIBRATE"],
@@ -59,7 +59,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/klinikahub.png",
+          "icon": "./assets/klinikahub-icon.png",
           "color": "#0891b2",
           "defaultChannel": "reminders",
           "sounds": ["./assets/reminder2.mp3"]

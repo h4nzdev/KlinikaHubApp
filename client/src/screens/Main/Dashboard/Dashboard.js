@@ -30,13 +30,14 @@ const Dashboard = ({ navigation }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
   const [randomTip, setRandomTip] = useState(getRandomTip());
+  const [showAllAppointments, setShowAllAppointments] = useState(false);
 
   const insets = useSafeAreaInsets();
 
   // ✅ Use ref to track if we need to refetch
   const shouldRefetch = useRef(false);
 
-  const { addReminder } = useReminder();
+  const { addReminder, reminders } = useReminder();
 
   // Fetch appointments from API
   const fetchAppointments = async (silent = false) => {
@@ -143,6 +144,17 @@ const Dashboard = ({ navigation }) => {
   };
 
   const handleSaveReminder = (appointment) => {
+    // ✅ Check if reminder already exists FIRST
+    if (checkIfReminderExists(appointment)) {
+      Toast.show({
+        type: "info",
+        text1: "Reminder already exists",
+        text2: "This appointment already has an active reminder",
+      });
+      setDropdownVisible(false);
+      return;
+    }
+
     setDropdownVisible(false);
 
     const reminderFormData = {
@@ -155,6 +167,25 @@ const Dashboard = ({ navigation }) => {
 
     // Add to reminded appointments set
     setRemindedAppointments((prev) => new Set(prev).add(appointment.id));
+
+    Toast.show({
+      type: "success",
+      text1: "Reminder set successfully",
+    });
+  };
+
+  const checkIfReminderExists = (appointment) => {
+    // ✅ SAFETY CHECK: If no appointment, return false
+    if (!appointment) {
+      return false;
+    }
+
+    const reminderName = `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`;
+
+    // Check if any reminder matches this appointment
+    return reminders.some(
+      (reminder) => reminder.name === reminderName && reminder.isActive
+    );
   };
 
   // Show dropdown menu
@@ -261,17 +292,18 @@ const Dashboard = ({ navigation }) => {
 
       {/* Header */}
       <Header navigation={navigation} />
-
       {/* Dropdown Modal */}
       <Modal
         visible={dropdownVisible}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setDropdownVisible(false)}
-        style={{ paddingBottom: insets.bottom }}
       >
         <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
-          <View className="flex-1 justify-end bg-black/50">
+          <View
+            className="flex-1 justify-end bg-black/50"
+            style={{ paddingBottom: insets.bottom }}
+          >
             {/* Prevent closing when tapping the menu */}
             <TouchableWithoutFeedback>
               <View className="bg-white rounded-t-3xl mx-2 mb-2 shadow-2xl overflow-hidden">
@@ -295,18 +327,39 @@ const Dashboard = ({ navigation }) => {
 
                 {/* Menu items */}
                 <View className="py-2">
-                  {/* Set Reminder */}
+                  {/* Simple disabled version */}
                   <TouchableOpacity
                     onPress={() => handleSaveReminder(selectedAppointment)}
                     className="flex-row items-center px-6 py-4 active:bg-slate-50"
                     activeOpacity={0.6}
+                    disabled={checkIfReminderExists(selectedAppointment)}
                   >
-                    <View className="bg-blue-100 p-3 rounded-xl mr-4">
-                      <Feather name="bell" size={20} color="#3b82f6" />
+                    <View
+                      className={`p-3 rounded-xl mr-4 ${
+                        checkIfReminderExists(selectedAppointment)
+                          ? "bg-slate-200"
+                          : "bg-blue-100"
+                      }`}
+                    >
+                      <Feather
+                        name={
+                          checkIfReminderExists(selectedAppointment)
+                            ? "check"
+                            : "bell"
+                        }
+                        size={20}
+                        color={
+                          checkIfReminderExists(selectedAppointment)
+                            ? "#059669"
+                            : "#3b82f6"
+                        }
+                      />
                     </View>
                     <View className="flex-1">
                       <Text className="text-slate-800 font-medium text-base">
-                        Set Reminder
+                        {checkIfReminderExists(selectedAppointment)
+                          ? "Reminder Active"
+                          : "Set Reminder"}
                       </Text>
                       <Text className="text-slate-500 text-sm mt-1">
                         Get notified before appointment
@@ -518,81 +571,98 @@ const Dashboard = ({ navigation }) => {
               </View>
             ) : (
               <View className="gap-4">
-                {upcomingAppointments.slice(0, 3).map((appointment) => (
-                  <View
-                    key={appointment.id}
-                    className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6"
-                  >
-                    {/* Doctor Info Row */}
-                    <View className="flex-row justify-between items-start mb-4">
-                      <View className="flex-1 mr-2">
-                        <Text
-                          className="font-bold text-slate-800 text-lg mb-2"
-                          numberOfLines={1}
-                        >
-                          {getDoctorName(appointment)}
-                        </Text>
-                        <View className="flex-row flex-wrap gap-2">
-                          <View className="bg-slate-200 px-3 py-1 rounded-full">
-                            <Text className="text-slate-600 text-xs font-medium">
-                              {getSpecialty(appointment.doctor)}
-                            </Text>
+                {upcomingAppointments
+                  .slice(
+                    0,
+                    showAllAppointments ? upcomingAppointments.length : 3
+                  )
+                  .map((appointment) => (
+                    <View
+                      key={appointment.id}
+                      className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6"
+                    >
+                      {/* Your existing appointment card JSX remains the same */}
+                      {/* Doctor Info Row */}
+                      <View className="flex-row justify-between items-start mb-4">
+                        <View className="flex-1 mr-2">
+                          <Text
+                            className="font-bold text-slate-800 text-lg mb-2"
+                            numberOfLines={1}
+                          >
+                            {getDoctorName(appointment)}
+                          </Text>
+                          <View className="flex-row flex-wrap gap-2">
+                            <View className="bg-slate-200 px-3 py-1 rounded-full">
+                              <Text className="text-slate-600 text-xs font-medium">
+                                {getSpecialty(appointment.doctor)}
+                              </Text>
+                            </View>
+                            <View className="bg-slate-100 px-3 py-1 rounded-full">
+                              <Text className="text-slate-700 text-xs font-medium capitalize">
+                                Consultation
+                              </Text>
+                            </View>
                           </View>
-                          <View className="bg-slate-100 px-3 py-1 rounded-full">
-                            <Text className="text-slate-700 text-xs font-medium capitalize">
-                              Consultation
-                            </Text>
-                          </View>
+                        </View>
+
+                        {/* Status & Menu */}
+                        <View className="items-end gap-2">
+                          {getStatusBadge(appointment.status)}
+                          <TouchableOpacity
+                            hitSlop={{
+                              top: 10,
+                              bottom: 10,
+                              left: 10,
+                              right: 10,
+                            }}
+                            activeOpacity={0.7}
+                            onPress={(event) =>
+                              showDropdown(appointment, event)
+                            }
+                          >
+                            <Feather
+                              name="more-vertical"
+                              size={18}
+                              color="#64748b"
+                            />
+                          </TouchableOpacity>
                         </View>
                       </View>
 
-                      {/* Status & Menu */}
-                      <View className="items-end gap-2">
-                        {getStatusBadge(appointment.status)}
-                        <TouchableOpacity
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          activeOpacity={0.7}
-                          onPress={(event) => showDropdown(appointment, event)}
-                        >
-                          <Feather
-                            name="more-vertical"
-                            size={18}
-                            color="#64748b"
-                          />
-                        </TouchableOpacity>
+                      {/* Date & Time */}
+                      <View className="flex-row items-center justify-between mb-4">
+                        <View className="flex-row items-center flex-1">
+                          <Feather name="calendar" size={16} color="#64748b" />
+                          <Text className="text-slate-600 ml-2 font-medium">
+                            {formatDate(appointment.appointment_date)}
+                          </Text>
+                        </View>
+
+                        <View className="flex-row items-center">
+                          <Feather name="clock" size={16} color="#64748b" />
+                          <Text className="text-slate-600 ml-2 font-medium">
+                            {formatTime(appointment.schedule)}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-
-                    {/* Date & Time */}
-                    <View className="flex-row items-center justify-between mb-4">
-                      <View className="flex-row items-center flex-1">
-                        <Feather name="calendar" size={16} color="#64748b" />
-                        <Text className="text-slate-600 ml-2 font-medium">
-                          {formatDate(appointment.appointment_date)}
-                        </Text>
-                      </View>
-
-                      <View className="flex-row items-center">
-                        <Feather name="clock" size={16} color="#64748b" />
-                        <Text className="text-slate-600 ml-2 font-medium">
-                          {formatTime(appointment.schedule)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                ))}
+                  ))}
 
                 {upcomingAppointments.length > 3 && (
                   <TouchableOpacity
-                    onPress={() => {}}
+                    onPress={() => setShowAllAppointments(!showAllAppointments)}
                     className="bg-cyan-50 rounded-2xl border border-cyan-200 p-4 items-center"
                     activeOpacity={0.7}
                   >
                     <Text className="text-cyan-600 font-semibold">
-                      View All {upcomingAppointments.length} Appointments
+                      {showAllAppointments
+                        ? "Show Less"
+                        : `View All ${upcomingAppointments.length} Appointments`}
                     </Text>
                     <Text className="text-cyan-500 text-sm mt-1">
-                      See your complete appointment schedule
+                      {showAllAppointments
+                        ? "Collapse appointment list"
+                        : "See your complete appointment schedule"}
                     </Text>
                   </TouchableOpacity>
                 )}

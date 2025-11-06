@@ -1,4 +1,7 @@
 // 🌟 Modern ES6 health tips with arrow functions and const
+import * as Notifications from "expo-notifications";
+import { useEffect } from "react";
+
 const healthTips = [
   "💧 Hydration Station! Drink a glass of water, you beautiful human!",
   "👀 Screen break! Look 20 feet away for 20 seconds - your eyes will thank you!",
@@ -24,24 +27,38 @@ export const getRandomTip = () => {
   return healthTips[randomIndex];
 };
 
-// 🆕 Bonus: Get multiple random tips
-export const getMultipleTips = (count = 3) => {
-  const shuffled = [...healthTips].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
+// 🔥 NEW: Simple notification scheduler
+export const scheduleHealthTipNotification = async () => {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "🌟 KlinikaHub Health Tip!",
+        body: getRandomTip(),
+        sound: true,
+      },
+      trigger: {
+        seconds: 3 * 60 * 60, // 3 hours
+        repeats: true, // 🔁 This is the magic!
+      },
+    });
+    console.log("✅ Health tips scheduled every 3 hours!");
+  } catch (error) {
+    console.log("❌ Error:", error);
+  }
 };
 
-// 🕒 Auto-refresh tip every 3 hours
-export const useAutoRefreshTip = (refreshInterval = 3 * 60 * 60 * 1000) => {
-  const [currentTip, setCurrentTip] = useState(getRandomTip());
+// 🔥 NEW: Cancel health tips
+export const cancelHealthTipNotifications = async () => {
+  const allNotifications =
+    await Notifications.getAllScheduledNotificationsAsync();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTip(getRandomTip());
-      console.log("🔄 Health tip refreshed automatically!");
-    }, refreshInterval);
-
-    return () => clearInterval(interval);
-  }, [refreshInterval]);
-
-  return currentTip;
+  // Cancel all repeating notifications (health tips)
+  for (const notification of allNotifications) {
+    if (notification.trigger.repeats) {
+      await Notifications.cancelScheduledNotificationAsync(
+        notification.identifier
+      );
+    }
+  }
+  console.log("🔕 Health tips cancelled");
 };

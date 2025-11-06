@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
@@ -467,36 +468,36 @@ const AIChat = () => {
       <StatusBar barStyle="dark-content" />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
         className="flex-1"
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
-        {/* Chat Header - ADDED SPEAKER BUTTON */}
-        <View className="bg-white border-b border-gray-200 p-4">
+        {/* Chat Header */}
+        <View className="bg-white border-b border-gray-200 px-4 py-2">
           <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center gap-3 flex-1">
-              {/* Back Button */}
+            <View className="flex-row items-center gap-2 flex-1">
               <TouchableOpacity
                 onPress={() => {
                   stopSpeaking();
                   navigation.goBack();
                 }}
-                className="p-2"
+                className="p-1"
               >
-                <Feather name="chevron-left" size={24} color="#4b5563" />
+                <Feather name="chevron-left" size={20} color="#4b5563" />
               </TouchableOpacity>
 
-              <View className="bg-cyan-100 p-3 rounded-full">
-                <Feather name="message-circle" size={24} color="#0891b2" />
+              <View className="bg-cyan-100 p-2 rounded-full">
+                <Feather name="message-circle" size={18} color="#0891b2" />
               </View>
-              <View className="flex-1">
-                <Text className="text-xl font-bold text-gray-900">
+
+              <View className="flex-1 ml-1">
+                <Text className="text-lg font-semibold text-gray-900">
                   AI Symptom Checker
                 </Text>
-                <View className="flex-row items-center gap-2 mt-1">
-                  <Feather name="clock" size={16} color="#0891b2" />
+                <View className="flex-row items-center gap-1 mt-0.5">
+                  <Feather name="clock" size={14} color="#0891b2" />
                   <Text
-                    className={`text-sm font-medium ${
+                    className={`text-xs font-medium ${
                       chatCredits.canChat ? "text-cyan-600" : "text-red-600"
                     }`}
                   >
@@ -508,21 +509,20 @@ const AIChat = () => {
               </View>
             </View>
 
-            {/* 🎤 ADDED SPEAKER BUTTON IN HEADER */}
-            <View className="flex-row gap-2">
-              <TouchableOpacity onPress={stopSpeaking} className="p-2">
+            <View className="flex-row gap-1">
+              <TouchableOpacity onPress={stopSpeaking} className="p-1">
                 <Feather
                   name={isSpeaking ? "volume-x" : "volume-2"}
-                  size={20}
+                  size={18}
                   color={isSpeaking ? "#dc2626" : "#0891b2"}
                 />
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleClearHistory}
-                className="border border-cyan-200 px-3 py-1 rounded-md"
+                className="border border-cyan-200 px-2 py-1 rounded-md"
               >
-                <Text className="text-sm text-cyan-700">Clear</Text>
+                <Text className="text-xs text-cyan-700">Clear</Text>
               </TouchableOpacity>
             </View>
           </View>

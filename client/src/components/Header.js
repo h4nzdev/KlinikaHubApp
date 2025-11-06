@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [notificationCount] = useState(5);
   const { user, logout } = useContext(AuthenticationContext);
   const insets = useSafeAreaInsets();
 
@@ -68,13 +67,8 @@ const Header = () => {
                   activeOpacity={0.7}
                 >
                   <Feather name="bell" size={24} color="#94a3b8" />
-                  {notificationCount > 0 && (
-                    <View className="absolute top-0 right-0 bg-red-400 rounded-full w-4 h-4 items-center justify-center">
-                      <Text className="text-white text-[10px] font-medium">
-                        {notificationCount}
-                      </Text>
-                    </View>
-                  )}
+
+                  <View className="absolute bottom-8 left-8 bg-red-400 rounded-full w-2 h-2 items-center justify-center"></View>
                 </TouchableOpacity>
               )}
 
