@@ -392,6 +392,7 @@ const Register = () => {
             value={formData.first_name}
             onChangeText={(text) => handleInputChange("first_name", text)}
             placeholder="Maria"
+            placeholderTextColor="#9CA3AF"
             className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
           />
         </View>
@@ -403,6 +404,7 @@ const Register = () => {
             value={formData.last_name}
             onChangeText={(text) => handleInputChange("last_name", text)}
             placeholder="Santos"
+            placeholderTextColor="#9CA3AF"
             className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
           />
         </View>
@@ -415,6 +417,7 @@ const Register = () => {
           value={formData.middle_name}
           onChangeText={(text) => handleInputChange("middle_name", text)}
           placeholder="Reyes"
+          placeholderTextColor="#9CA3AF"
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
@@ -443,6 +446,7 @@ const Register = () => {
             onChangeText={(text) => handleInputChange("age", text)}
             placeholder="30"
             keyboardType="number-pad"
+            placeholderTextColor="#9CA3AF"
             className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
           />
         </View>
@@ -493,6 +497,7 @@ const Register = () => {
             value={formData.marital_status}
             onChangeText={(text) => handleInputChange("marital_status", text)}
             placeholder="Single/Married/Divorced"
+            placeholderTextColor="#9CA3AF"
             className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
           />
         </View>
@@ -521,6 +526,7 @@ const Register = () => {
           placeholder="maria.santos@example.com"
           keyboardType="email-address"
           autoCapitalize="none"
+          placeholderTextColor="#9CA3AF"
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
@@ -534,6 +540,7 @@ const Register = () => {
           placeholder="09171234567"
           keyboardType="phone-pad"
           maxLength={11}
+          placeholderTextColor="#9CA3AF"
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
@@ -545,6 +552,7 @@ const Register = () => {
           value={formData.address}
           onChangeText={(text) => handleInputChange("address", text)}
           placeholder="123 Main Street, Manila"
+          placeholderTextColor="#9CA3AF"
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
@@ -603,6 +611,7 @@ const Register = () => {
             value={formData.blood_pressure}
             onChangeText={(text) => handleInputChange("blood_pressure", text)}
             placeholder="120/80"
+            placeholderTextColor="#9CA3AF"
             className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
           />
         </View>
@@ -616,6 +625,7 @@ const Register = () => {
             value={formData.height}
             onChangeText={(text) => handleInputChange("height", text)}
             placeholder="165 cm"
+            placeholderTextColor="#9CA3AF"
             className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
           />
         </View>
@@ -627,6 +637,7 @@ const Register = () => {
             value={formData.weight}
             onChangeText={(text) => handleInputChange("weight", text)}
             placeholder="58 kg"
+            placeholderTextColor="#9CA3AF"
             className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
           />
         </View>
@@ -644,6 +655,7 @@ const Register = () => {
           value={formData.guardian}
           onChangeText={(text) => handleInputChange("guardian", text)}
           placeholder="Pedro Santos"
+          placeholderTextColor="#9CA3AF"
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
@@ -655,6 +667,7 @@ const Register = () => {
           value={formData.relationship}
           onChangeText={(text) => handleInputChange("relationship", text)}
           placeholder="Father / Mother / Spouse"
+          placeholderTextColor="#9CA3AF"
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
@@ -668,6 +681,7 @@ const Register = () => {
           placeholder="09170000001"
           keyboardType="phone-pad"
           maxLength={11}
+          placeholderTextColor="#9CA3AF"
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
       </View>
@@ -688,6 +702,7 @@ const Register = () => {
           onFocus={() => setShowPasswordValidation(true)}
           onBlur={() => setShowPasswordValidation(false)}
           style={{ color: "#000000" }}
+          placeholderTextColor="#9CA3AF"
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />
         {showPasswordValidation && (
@@ -720,6 +735,7 @@ const Register = () => {
           onChangeText={(text) => handleInputChange("confirmPassword", text)}
           style={{ color: "#000000" }}
           placeholder="••••••••"
+          placeholderTextColor="#9CA3AF"
           secureTextEntry
           className="px-4 py-3 border border-slate-300 rounded-xl bg-white"
         />

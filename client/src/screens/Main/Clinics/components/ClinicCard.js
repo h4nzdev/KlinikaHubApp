@@ -16,7 +16,7 @@ const ClinicCard = ({ clinic, onPress }) => {
   };
 
   return (
-    <View className="bg-white rounded-2xl shadow-lg border border-cyan-100 p-6 shadow-cyan-200/30 mb-4">
+    <View className="bg-white rounded-2xl shadow-lg border border-cyan-100 p-6 shadow-cyan-200/30 mb-0">
       {/* Clinic Header */}
       <View className="flex-row gap-4 mb-4">
         <View className="relative">

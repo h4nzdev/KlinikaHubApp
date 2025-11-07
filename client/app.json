@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "KinikaHub",
-    "slug": "KinikaHub",
+    "name": "KlinikaHub",
+    "slug": "KlinikaHub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/klinikahub.png",
@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kinikahub.app",
@@ -20,29 +22,32 @@
       }
     },
     "android": {
-      "package": "com.kinikahub.app",
+      "package": "com.klinikahub.app",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/klinikahub-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "permissions": ["RECEIVE_BOOT_COMPLETED", "WAKE_LOCK", "VIBRATE"],
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "WAKE_LOCK",
+        "VIBRATE"
+      ],
       "useNextNotificationsApi": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "217cf780-89ca-4c63-92cb-961b76ec7b2a"
+        "projectId": "305b7419-87ac-4484-be77-62297b16ecde"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {
-      "url": "https://u.expo.dev/217cf780-89ca-4c63-92cb-961b76ec7b2a"
-    },
+    "updates": {},
     "plugins": [
       "expo-router",
       [
@@ -62,9 +67,12 @@
           "icon": "./assets/klinikahub-icon.png",
           "color": "#0891b2",
           "defaultChannel": "reminders",
-          "sounds": ["./assets/reminder2.mp3"]
+          "sounds": [
+            "./assets/reminder2.mp3"
+          ]
         }
       ]
-    ]
+    ],
+    "owner": "medora"
   }
 }

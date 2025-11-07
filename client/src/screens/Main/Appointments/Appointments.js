@@ -107,9 +107,9 @@ const Appointments = ({ navigation }) => {
     if (!appointment) {
       return false;
     }
-    const reminderName = `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`;
     return reminders.some(
-      (reminder) => reminder.name === reminderName && reminder.isActive
+      (reminder) =>
+        reminder.appointmentId === appointment.id && reminder.isActive
     );
   };
 
@@ -196,6 +196,9 @@ const Appointments = ({ navigation }) => {
     const reminderFormData = {
       name: `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`,
       time: formatTime(appointment.schedule),
+      time24: `${new Date(appointment.schedule).getHours().toString().padStart(2, "0")}:${new Date(appointment.schedule).getMinutes().toString().padStart(2, "0")}`,
+      date: appointment.appointment_date, // NEW: Use appointment date
+      appointmentId: appointment.id, // NEW: Link to appointment
       isActive: true,
     };
 

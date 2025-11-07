@@ -10,6 +10,7 @@ import {
   cancelHealthTipNotifications,
   scheduleHealthTipNotification,
 } from "../utils/healthTipsGenerator";
+import { reminderData } from "../../data/reminderData";
 
 const ReminderContext = createContext();
 
@@ -28,6 +29,7 @@ Notifications.setNotificationHandler({
 export const ReminderProvider = ({ children }) => {
   const { user } = useContext(AuthenticationContext);
   const [reminders, setReminders] = useState([]);
+  const [lastReminderId, setLastReminderId] = useState(0);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [dueReminder, setDueReminder] = useState(null);
   const [alertCountdown, setAlertCountdown] = useState(30);
@@ -45,6 +47,35 @@ export const ReminderProvider = ({ children }) => {
   const countdownInterval = useRef(null);
   const notificationListener = useRef(null);
   const responseListener = useRef(null);
+
+  const loadLastReminderId = async () => {
+    try {
+      const storedId = await AsyncStorage.getItem(`lastReminderId_${user.id}`);
+      if (storedId) {
+        setLastReminderId(parseInt(storedId));
+      } else {
+        setLastReminderId(0);
+      }
+    } catch (error) {
+      console.error("Error loading last reminder ID:", error);
+      setLastReminderId(0);
+    }
+  };
+
+  const saveLastReminderId = async (id) => {
+    try {
+      await AsyncStorage.setItem(`lastReminderId_${user.id}`, id.toString());
+      setLastReminderId(id);
+    } catch (error) {
+      console.error("Error saving last reminder ID:", error);
+    }
+  };
+
+  const getNextReminderId = async () => {
+    const nextId = lastReminderId + 1;
+    await saveLastReminderId(nextId);
+    return nextId;
+  };
 
   // 1. Initialize Push Notifications
   useEffect(() => {
@@ -220,7 +251,15 @@ export const ReminderProvider = ({ children }) => {
       if (stored) {
         const parsedReminders = JSON.parse(stored);
         setReminders(parsedReminders);
+
+        // Find the highest ID from existing reminders
+        if (parsedReminders.length > 0) {
+          const maxId = Math.max(...parsedReminders.map((r) => r.id));
+          await saveLastReminderId(maxId);
+        }
       }
+      // Also load the last ID separately
+      await loadLastReminderId();
     } catch (error) {
       console.error("Error loading reminders:", error);
     }
@@ -459,14 +498,21 @@ export const ReminderProvider = ({ children }) => {
   };
 
   const addReminder = async (reminderData) => {
+    const nextId = await getNextReminderId();
+
     const newReminder = {
-      id: Date.now().toString(),
+      id: nextId,
+      userId: user.id,
       ...reminderData,
       createdAt: new Date().toISOString(),
       notifiedCount: 0,
       lastAcknowledgedDate: null,
       isActive: true,
+      // Ensure appointmentId and date have default values if not provided
+      appointmentId: reminderData.appointmentId || null,
+      date: reminderData.date || new Date().toISOString().split("T")[0], // Default to today
     };
+
     const updatedReminders = [...reminders, newReminder];
     await saveReminders(updatedReminders);
 

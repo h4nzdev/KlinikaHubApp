@@ -470,7 +470,7 @@ const AIChat = () => {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
         className="flex-1"
-        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         {/* Chat Header */}
         <View className="bg-white border-b border-gray-200 px-4 py-2">
@@ -791,7 +791,7 @@ const AIChat = () => {
           {!isShown && (
             <TouchableOpacity
               onPress={() => setIsShown(true)}
-              className="absolute -top-8 self-center bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg border border-gray-200 animate-bounce"
+              className="absolute -top-4 self-center bg-white rounded-full w-8 h-8 items-center justify-center shadow-lg border border-gray-200 animate-bounce"
             >
               <Feather name="chevron-up" size={20} color="#0891b2" />
             </TouchableOpacity>

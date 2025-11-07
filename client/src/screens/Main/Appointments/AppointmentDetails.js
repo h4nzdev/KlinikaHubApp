@@ -214,11 +214,11 @@ const AppointmentDetails = () => {
                   >
                     {currentStatus.label}
                   </Text>
+                  <Text className="text-gray-500 text-sm">
+                    ID: {appointment.appointment_id}
+                  </Text>
                 </View>
               </View>
-              <Text className="text-gray-500 text-sm">
-                ID: {appointment.appointment_id}
-              </Text>
             </View>
 
             {appointment.auto_cancelled && (

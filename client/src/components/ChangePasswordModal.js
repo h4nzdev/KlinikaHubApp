@@ -196,6 +196,7 @@ const ChangePasswordModal = ({ visible, onClose }) => {
                       value={currentPassword}
                       onChangeText={setCurrentPassword}
                       placeholder="Enter current password"
+                      placeholderTextColor="#9CA3AF"
                       className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-800 pr-12"
                     />
                     <TouchableOpacity
@@ -256,6 +257,7 @@ const ChangePasswordModal = ({ visible, onClose }) => {
                     placeholder="Enter 6-digit code"
                     maxLength={6}
                     keyboardType="number-pad"
+                    placeholderTextColor="#9CA3AF"
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-800 text-center text-lg"
                   />
                 </View>
@@ -271,6 +273,7 @@ const ChangePasswordModal = ({ visible, onClose }) => {
                       value={newPassword}
                       onChangeText={setNewPassword}
                       placeholder="Enter new password"
+                      placeholderTextColor="#9CA3AF"
                       className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-800 pr-12"
                     />
                     <TouchableOpacity
@@ -319,6 +322,7 @@ const ChangePasswordModal = ({ visible, onClose }) => {
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
                       placeholder="Confirm new password"
+                      placeholderTextColor="#9CA3AF"
                       className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-800 pr-12"
                     />
                     <TouchableOpacity

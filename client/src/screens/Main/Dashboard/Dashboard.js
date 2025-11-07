@@ -160,6 +160,9 @@ const Dashboard = ({ navigation }) => {
     const reminderFormData = {
       name: `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`,
       time: formatTime(appointment.schedule),
+      time24: `${new Date(appointment.schedule).getHours().toString().padStart(2, "0")}:${new Date(appointment.schedule).getMinutes().toString().padStart(2, "0")}`,
+      date: appointment.appointment_date, // NEW: Use appointment date
+      appointmentId: appointment.id, // NEW: Link to appointment
       isActive: true,
     };
 
@@ -180,11 +183,10 @@ const Dashboard = ({ navigation }) => {
       return false;
     }
 
-    const reminderName = `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`;
-
-    // Check if any reminder matches this appointment
+    // Check if there's already a reminder linked to this appointment
     return reminders.some(
-      (reminder) => reminder.name === reminderName && reminder.isActive
+      (reminder) =>
+        reminder.appointmentId === appointment.id && reminder.isActive
     );
   };
 
@@ -337,8 +339,8 @@ const Dashboard = ({ navigation }) => {
                     <View
                       className={`p-3 rounded-xl mr-4 ${
                         checkIfReminderExists(selectedAppointment)
-                          ? "bg-slate-200"
-                          : "bg-blue-100"
+                          ? "bg-emerald-100" // Green for active reminder
+                          : "bg-blue-100" // Blue for new reminder
                       }`}
                     >
                       <Feather
@@ -350,8 +352,8 @@ const Dashboard = ({ navigation }) => {
                         size={20}
                         color={
                           checkIfReminderExists(selectedAppointment)
-                            ? "#059669"
-                            : "#3b82f6"
+                            ? "#059669" // Green check
+                            : "#3b82f6" // Blue bell
                         }
                       />
                     </View>
@@ -362,10 +364,20 @@ const Dashboard = ({ navigation }) => {
                           : "Set Reminder"}
                       </Text>
                       <Text className="text-slate-500 text-sm mt-1">
-                        Get notified before appointment
+                        {checkIfReminderExists(selectedAppointment)
+                          ? "You'll be notified before appointment"
+                          : "Get notified before appointment"}
                       </Text>
                     </View>
-                    <Feather name="chevron-right" size={18} color="#94a3b8" />
+                    <Feather
+                      name="chevron-right"
+                      size={18}
+                      color={
+                        checkIfReminderExists(selectedAppointment)
+                          ? "#059669" // Green for active
+                          : "#94a3b8" // Gray for available
+                      }
+                    />
                   </TouchableOpacity>
 
                   {/* Cancel Appointment */}
