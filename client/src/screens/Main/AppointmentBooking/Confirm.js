@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import appointmentServices from "../../../services/appointmentsServices";
+import { getSpecialties } from "../../../utils/getSpecialty";
 
 const Confirm = ({
   formData,
@@ -111,7 +112,7 @@ const Confirm = ({
             <View className="flex-row justify-between items-center">
               <Text className="text-slate-600">Specialty:</Text>
               <Text className="font-semibold text-cyan-600 text-right flex-1 ml-2">
-                {selectedDoctor?.specialties || selectedDoctor?.specialization}
+                {getSpecialties(selectedDoctor?.specialties)}
               </Text>
             </View>
             <View className="flex-row justify-between items-center">
@@ -162,7 +163,7 @@ const Confirm = ({
         <TouchableOpacity
           onPress={handleAddAppointment}
           disabled={isLoading}
-          className={`flex-1 py-4 rounded-xl items-center justify-center ${isLoading ? "bg-emerald-300" : "bg-emerald-500"}`}
+          className={`flex-1 py-4 rounded-xl items-center justify-center ${isLoading ? "bg-cyan-300" : "bg-cyan-500"}`}
         >
           {isLoading ? (
             <ActivityIndicator size="small" color="#ffffff" />

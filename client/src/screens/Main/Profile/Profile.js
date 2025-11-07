@@ -740,9 +740,9 @@ const Profile = () => {
                     className="w-full h-full rounded-2xl"
                   />
                 ) : (
-                  <Text className="text-2xl font-bold text-white">
-                    {initials}
-                  </Text>
+                  <View className="w-full bg-cyan-500 h-full items-center justify-center rounded-md">
+                    <Feather name="user" color={"white"} size={34} />
+                  </View>
                 )}
 
                 {!isUploadingPhoto && (

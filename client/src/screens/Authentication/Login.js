@@ -14,11 +14,13 @@ import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import klinikahub from "../../../assets/klinikahub.png";
 import { useLogin } from "../../hooks/useLogin";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigation = useNavigation();
   const { handleLogin, isLoading } = useLogin();
+  const insets = useSafeAreaInsets();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -76,7 +78,10 @@ const Login = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 pt-4">
+    <SafeAreaView
+      className="flex-1 bg-gray-50 pt-4"
+      style={{ paddingBottom: insets.bottom }}
+    >
       <StatusBar barStyle="dark-content" backgroundColor="#f9fafb" />
 
       <ScrollView

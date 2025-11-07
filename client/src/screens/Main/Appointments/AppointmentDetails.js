@@ -19,30 +19,26 @@ const AppointmentDetails = () => {
   const { appointment } = route.params;
   const insets = useSafeAreaInsets();
 
-  // Status configuration
+  // Status configuration - using single color scheme
   const statusConfig = {
     0: {
       label: "Pending",
-      color: "text-yellow-600",
-      bg: "bg-yellow-100",
+      color: "#f59e0b",
       icon: "clock",
     },
     1: {
       label: "Confirmed",
-      color: "text-green-600",
-      bg: "bg-green-100",
+      color: "#10b981",
       icon: "check-circle",
     },
     2: {
       label: "Completed",
-      color: "text-blue-600",
-      bg: "bg-blue-100",
+      color: "#3b82f6",
       icon: "check-square",
     },
     3: {
       label: "Cancelled",
-      color: "text-red-600",
-      bg: "bg-red-100",
+      color: "#ef4444",
       icon: "x-circle",
     },
   };
@@ -173,7 +169,7 @@ const AppointmentDetails = () => {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View className="px-4 py-3 border-b border-slate-200">
+      <View className="px-4 py-3 border-b border-gray-200">
         <View className="flex-row items-center">
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -182,10 +178,10 @@ const AppointmentDetails = () => {
             <Feather name="chevron-left" size={28} color="#0891b2" />
           </TouchableOpacity>
           <View className="flex-1 ml-3">
-            <Text className="text-xl font-bold text-slate-800">
+            <Text className="text-xl font-bold text-gray-800">
               Appointment Details
             </Text>
-            <Text className="text-slate-500 text-sm">
+            <Text className="text-gray-500 text-sm">
               {appointment.appointment_id}
             </Text>
           </View>
@@ -194,31 +190,39 @@ const AppointmentDetails = () => {
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-4 gap-6 pb-8">
-          {/* Status Banner */}
-          <View
-            className={`${currentStatus.bg} rounded-2xl p-5 border ${currentStatus.bg.replace("bg-", "border-")}200`}
-          >
-            <View className="flex-row items-center justify-between">
+          {/* Status Banner with better spacing */}
+          <View className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+            <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
-                <Feather
-                  name={currentStatus.icon}
-                  size={24}
-                  color={currentStatus.color
-                    .replace("text-", "#")
-                    .replace("-600", "")}
-                />
-                <Text
-                  className={`${currentStatus.color} font-bold text-lg ml-3`}
+                <View
+                  className="w-12 h-12 rounded-full items-center justify-center mr-3"
+                  style={{ backgroundColor: `${currentStatus.color}20` }}
                 >
-                  {currentStatus.label}
-                </Text>
+                  <Feather
+                    name={currentStatus.icon}
+                    size={24}
+                    color={currentStatus.color}
+                  />
+                </View>
+                <View>
+                  <Text className="text-gray-500 text-sm font-medium">
+                    Status
+                  </Text>
+                  <Text
+                    className="font-bold text-xl"
+                    style={{ color: currentStatus.color }}
+                  >
+                    {currentStatus.label}
+                  </Text>
+                </View>
               </View>
-              <Text className="text-slate-600 text-sm">
+              <Text className="text-gray-500 text-sm">
                 ID: {appointment.appointment_id}
               </Text>
             </View>
+
             {appointment.auto_cancelled && (
-              <View className="bg-amber-100 rounded-lg p-2 mt-3">
+              <View className="bg-amber-50 rounded-lg p-3 border border-amber-200">
                 <Text className="text-amber-800 text-sm text-center">
                   ⚠️ Automatically cancelled - appointment date passed
                 </Text>
@@ -226,36 +230,36 @@ const AppointmentDetails = () => {
             )}
           </View>
 
-          {/* Doctor & Clinic Info */}
-          <View className="bg-white rounded-2xl p-5 border border-slate-200">
-            <Text className="text-lg font-bold text-slate-800 mb-4">
+          {/* Healthcare Provider */}
+          <View className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+            <Text className="text-lg font-bold text-gray-800 mb-4">
               Healthcare Provider
             </Text>
 
             <View className="gap-4">
               {/* Doctor */}
-              <View className="flex-row items-start gap-3">
+              <View className="flex-row items-start gap-4">
                 <View className="w-12 h-12 bg-cyan-100 rounded-full items-center justify-center">
                   <Feather name="user" size={20} color="#0891b2" />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-semibold text-slate-800 text-base">
+                  <Text className="font-semibold text-gray-800 text-base">
                     {appointment.doctor_name || "Medical Consultation"}
                   </Text>
-                  <Text className="text-slate-600 text-sm mt-1">Doctor</Text>
+                  <Text className="text-gray-500 text-sm mt-1">Doctor</Text>
                 </View>
               </View>
 
               {/* Clinic */}
-              <View className="flex-row items-start gap-3">
-                <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center">
-                  <Feather name="home" size={20} color="#3b82f6" />
+              <View className="flex-row items-start gap-4">
+                <View className="w-12 h-12 bg-cyan-100 rounded-full items-center justify-center">
+                  <Feather name="home" size={20} color="#0891b2" />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-semibold text-slate-800 text-base">
+                  <Text className="font-semibold text-gray-800 text-base">
                     {appointment.clinic_name || "Main Clinic"}
                   </Text>
-                  <Text className="text-slate-600 text-sm mt-1">
+                  <Text className="text-gray-500 text-sm mt-1">
                     Medical Facility
                   </Text>
                 </View>
@@ -264,43 +268,43 @@ const AppointmentDetails = () => {
           </View>
 
           {/* Appointment Details */}
-          <View className="bg-white rounded-2xl p-5 border border-slate-200">
-            <Text className="text-lg font-bold text-slate-800 mb-4">
+          <View className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+            <Text className="text-lg font-bold text-gray-800 mb-4">
               Appointment Details
             </Text>
 
             <View className="gap-4">
               {/* Date & Time */}
-              <View className="flex-row items-start gap-3">
-                <View className="w-12 h-12 bg-purple-100 rounded-full items-center justify-center">
-                  <Feather name="calendar" size={20} color="#8b5cf6" />
+              <View className="flex-row items-start gap-4">
+                <View className="w-12 h-12 bg-cyan-100 rounded-full items-center justify-center">
+                  <Feather name="calendar" size={20} color="#0891b2" />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-semibold text-slate-800 text-base">
+                  <Text className="font-semibold text-gray-800 text-base">
                     {formatDate(appointment.appointment_date)}
                   </Text>
-                  <Text className="text-slate-600 text-sm mt-1">
+                  <Text className="text-gray-500 text-sm mt-1">
                     {formatTime(appointment.schedule)}
                   </Text>
-                  <Text className="text-slate-500 text-xs mt-1">
+                  <Text className="text-gray-400 text-xs mt-2">
                     Scheduled: {formatDateTime(appointment.schedule)}
                   </Text>
                 </View>
               </View>
 
               {/* Fees */}
-              <View className="flex-row items-start gap-3">
-                <View className="w-12 h-12 bg-green-100 rounded-full items-center justify-center">
-                  <Feather name="dollar-sign" size={20} color="#059669" />
+              <View className="flex-row items-start gap-4">
+                <View className="w-12 h-12 bg-cyan-100 rounded-full items-center justify-center">
+                  <Feather name="dollar-sign" size={20} color="#0891b2" />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-semibold text-slate-800 text-base">
+                  <Text className="font-semibold text-gray-800 text-base">
                     ₱{parseFloat(appointment.consultation_fees || 0).toFixed(2)}
                   </Text>
-                  <Text className="text-slate-600 text-sm mt-1">
+                  <Text className="text-gray-500 text-sm mt-1">
                     Consultation Fee
                     {appointment.discount > 0 && (
-                      <Text className="text-red-600">
+                      <Text className="text-red-500">
                         {" "}
                         (Discount: ₱
                         {parseFloat(appointment.discount).toFixed(2)})
@@ -312,15 +316,15 @@ const AppointmentDetails = () => {
 
               {/* Remarks */}
               {appointment.remarks && (
-                <View className="flex-row items-start gap-3">
-                  <View className="w-12 h-12 bg-amber-100 rounded-full items-center justify-center">
-                    <Feather name="file-text" size={20} color="#d97706" />
+                <View className="flex-row items-start gap-4">
+                  <View className="w-12 h-12 bg-cyan-100 rounded-full items-center justify-center">
+                    <Feather name="file-text" size={20} color="#0891b2" />
                   </View>
                   <View className="flex-1">
-                    <Text className="font-semibold text-slate-800 text-base">
+                    <Text className="font-semibold text-gray-800 text-base">
                       Additional Notes
                     </Text>
-                    <Text className="text-slate-600 text-sm mt-1 leading-5">
+                    <Text className="text-gray-500 text-sm mt-1 leading-5">
                       {appointment.remarks}
                     </Text>
                   </View>
@@ -329,15 +333,15 @@ const AppointmentDetails = () => {
 
               {/* Cancellation Reason */}
               {appointment.status === 3 && appointment.cancellation_reason && (
-                <View className="flex-row items-start gap-3">
-                  <View className="w-12 h-12 bg-red-100 rounded-full items-center justify-center">
-                    <Feather name="alert-triangle" size={20} color="#dc2626" />
+                <View className="flex-row items-start gap-4">
+                  <View className="w-12 h-12 bg-cyan-100 rounded-full items-center justify-center">
+                    <Feather name="alert-triangle" size={20} color="#0891b2" />
                   </View>
                   <View className="flex-1">
-                    <Text className="font-semibold text-slate-800 text-base">
+                    <Text className="font-semibold text-gray-800 text-base">
                       Cancellation Reason
                     </Text>
-                    <Text className="text-slate-600 text-sm mt-1 leading-5">
+                    <Text className="text-gray-500 text-sm mt-1 leading-5">
                       {appointment.cancellation_reason}
                     </Text>
                   </View>
@@ -347,10 +351,10 @@ const AppointmentDetails = () => {
           </View>
 
           {/* Created Date */}
-          <View className="bg-slate-50 rounded-2xl p-4">
+          <View className="bg-gray-100 rounded-2xl p-4">
             <View className="flex-row items-center justify-center gap-2">
-              <Feather name="clock" size={16} color="#64748b" />
-              <Text className="text-slate-600 text-sm">
+              <Feather name="clock" size={16} color="#6b7280" />
+              <Text className="text-gray-600 text-sm">
                 Created on {formatDateTime(appointment.created_at)}
               </Text>
             </View>
@@ -371,10 +375,10 @@ const AppointmentDetails = () => {
 
               <TouchableOpacity
                 onPress={handleCancelAppointment}
-                className="border border-red-500 rounded-xl py-4 items-center flex-row justify-center"
+                className="border border-gray-300 rounded-xl py-4 items-center flex-row justify-center"
               >
-                <Feather name="x" size={20} color="#dc2626" />
-                <Text className="text-red-600 font-semibold text-base ml-2">
+                <Feather name="x" size={20} color="#6b7280" />
+                <Text className="text-gray-600 font-semibold text-base ml-2">
                   Cancel Appointment
                 </Text>
               </TouchableOpacity>
@@ -383,26 +387,35 @@ const AppointmentDetails = () => {
 
           {/* Completed/Cancelled Message */}
           {(appointment.status === 2 || appointment.status === 3) && (
-            <View
-              className={`rounded-2xl p-5 ${appointment.status === 2 ? "bg-blue-50 border border-blue-200" : "bg-red-50 border border-red-200"}`}
-            >
+            <View className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
               <View className="flex-row items-center">
-                <Feather
-                  name={appointment.status === 2 ? "check-circle" : "x-circle"}
-                  size={24}
-                  color={appointment.status === 2 ? "#3b82f6" : "#dc2626"}
-                />
-                <Text
-                  className={`font-semibold text-lg ml-3 ${appointment.status === 2 ? "text-blue-800" : "text-red-800"}`}
+                <View
+                  className="w-12 h-12 rounded-full items-center justify-center mr-3"
+                  style={{
+                    backgroundColor:
+                      appointment.status === 2 ? "#3b82f620" : "#ef444420",
+                  }}
                 >
-                  {appointment.status === 2
-                    ? "Appointment Completed"
-                    : "Appointment Cancelled"}
-                </Text>
+                  <Feather
+                    name={
+                      appointment.status === 2 ? "check-circle" : "x-circle"
+                    }
+                    size={24}
+                    color={appointment.status === 2 ? "#3b82f6" : "#ef4444"}
+                  />
+                </View>
+                <View>
+                  <Text className="text-gray-500 text-sm font-medium">
+                    {appointment.status === 2 ? "Completed" : "Cancelled"}
+                  </Text>
+                  <Text className="font-bold text-xl text-gray-800">
+                    {appointment.status === 2
+                      ? "Appointment Completed"
+                      : "Appointment Cancelled"}
+                  </Text>
+                </View>
               </View>
-              <Text
-                className={`mt-2 leading-6 ${appointment.status === 2 ? "text-blue-700" : "text-red-700"}`}
-              >
+              <Text className="text-gray-600 mt-3 leading-6">
                 {appointment.status === 2
                   ? "This appointment has been marked as completed. Thank you for choosing our services."
                   : "This appointment has been cancelled. You can book a new appointment anytime."}

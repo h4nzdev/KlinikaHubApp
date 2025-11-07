@@ -118,7 +118,10 @@ const Settings = () => {
             </View>
 
             <View className="gap-3">
-              <TouchableOpacity className="p-4 bg-gray-50 rounded-xl">
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Profile")}
+                className="p-4 bg-gray-50 rounded-xl"
+              >
                 <View className="flex-row items-center justify-between">
                   <Text className="font-medium text-gray-800">
                     Edit Profile

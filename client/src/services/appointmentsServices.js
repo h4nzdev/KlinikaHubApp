@@ -358,6 +358,31 @@ export const appointmentServices = {
       throw error;
     }
   },
+  // Add this to your appointmentServices
+  checkExistingPendingAppointment: async (patientId, clinicId) => {
+    try {
+      console.log("🔄 Checking for existing pending appointment...");
+
+      // Get all appointments for this patient
+      const appointments =
+        await appointmentServices.getAppointmentsByPatientId(patientId);
+
+      // Check if there's any pending appointment for this clinic
+      const hasPendingAppointment = appointments.some(
+        (appointment) =>
+          appointment.clinic_id === clinicId && appointment.status === 0 // 0 = pending
+      );
+
+      console.log(
+        "✅ Pending appointment check result:",
+        hasPendingAppointment
+      );
+      return hasPendingAppointment;
+    } catch (error) {
+      console.error("❌ Error checking pending appointment:", error);
+      return false; // If there's an error, allow booking to be safe
+    }
+  },
 };
 
 // Export all services together

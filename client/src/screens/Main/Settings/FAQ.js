@@ -150,7 +150,7 @@ const FAQ = ({ navigation }) => {
             </View>
             <Text className="text-slate-600 leading-6">
               Find quick answers to the most common questions about using
-              Medora. If you don't find what you're looking for, our support
+              Klinikahub. If you don't find what you're looking for, our support
               team is ready to help.
             </Text>
           </View>

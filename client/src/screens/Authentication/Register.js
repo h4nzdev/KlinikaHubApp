@@ -20,6 +20,7 @@ import { Picker } from "@react-native-picker/picker";
 import { patientAuthServices } from "../../services/patientAuthServices";
 import * as ImagePicker from "expo-image-picker";
 import { cloudinaryService } from "../../services/cloudinaryService";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Register = () => {
   const navigation = useNavigation();
@@ -32,6 +33,7 @@ const Register = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [localImage, setLocalImage] = useState(null);
+  const insets = useSafeAreaInsets();
 
   //DropDowns
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
@@ -762,7 +764,10 @@ const Register = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 pt-4">
+    <SafeAreaView
+      className="flex-1 bg-slate-50 pt-4"
+      style={{ paddingBottom: insets.bottom }}
+    >
       <StatusBar barStyle="dark-content" />
       <ScrollView
         className="flex-1"

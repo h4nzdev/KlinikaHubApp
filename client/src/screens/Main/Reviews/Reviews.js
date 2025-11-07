@@ -108,7 +108,6 @@ const Reviews = () => {
   }, [clinicId]);
 
   // Load reviews and stats
-  // Load reviews and stats
   const loadReviewsData = async () => {
     try {
       setLoading(true);
@@ -324,8 +323,8 @@ const Reviews = () => {
             key={star}
             name="star"
             size={16}
-            color={star <= rating ? "#fbbf24" : "#e5e7eb"}
-            fill={star <= rating ? "#fbbf24" : "none"}
+            color={star <= rating ? "#f59e0b" : "#e5e7eb"}
+            fill={star <= rating ? "#f59e0b" : "none"}
           />
         ))}
       </View>
@@ -350,16 +349,16 @@ const Reviews = () => {
   // Loading state
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 justify-center items-center">
+      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
         <ActivityIndicator size="large" color="#0891b2" />
-        <Text className="text-slate-600 mt-4">Loading reviews...</Text>
+        <Text className="text-gray-600 mt-4">Loading reviews...</Text>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView
-      className="flex-1 bg-slate-50"
+      className="flex-1 bg-gray-50"
       style={{ paddingTop: insets.top }}
     >
       <StatusBar barStyle="dark-content" />
@@ -371,7 +370,7 @@ const Reviews = () => {
       >
         <TouchableOpacity
           onPress={openModal}
-          className="bg-cyan-600 rounded-2xl py-4 flex-row items-center justify-center gap-3 shadow-lg shadow-cyan-600/30"
+          className="bg-cyan-600 rounded-2xl py-4 flex-row items-center justify-center gap-3 shadow-lg"
         >
           <Feather name="edit-3" size={20} color="white" />
           <Text className="text-white font-bold text-lg">Write a Review</Text>
@@ -381,43 +380,44 @@ const Reviews = () => {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }} // Extra space for fixed button
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
         {/* Header with Back Button */}
-        <View className="flex-row items-center px-6 pt-4 pb-2">
+        <View className="flex-row items-center px-6 pt-6 pb-4">
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             className="p-2 -ml-2"
           >
-            <Feather name="arrow-left" size={24} color="#64748b" />
+            <Feather name="arrow-left" size={24} color="#374151" />
           </TouchableOpacity>
-          <Text className="text-slate-800 font-bold text-xl ml-2">
+          <Text className="text-gray-800 font-bold text-xl ml-3">
             Patient Reviews
           </Text>
         </View>
 
-        {/* Header Section */}
-        <View className="bg-cyan-500 mx-6 mt-2 rounded-2xl p-6 mb-4 shadow-lg shadow-cyan-500/20">
+        {/* Rating Overview Card */}
+        <View className="bg-white mx-6 mt-2 rounded-2xl p-6 mb-6 border border-gray-200">
           <View className="flex-row items-center gap-4 mb-6">
-            <View className="w-14 h-14 rounded-xl bg-cyan-400 items-center justify-center">
-              <Feather name="star" size={26} color="white" />
+            <View className="w-14 h-14 rounded-xl bg-cyan-100 items-center justify-center">
+              <Feather name="star" size={26} color="#0891b2" />
             </View>
             <View className="flex-1">
-              <Text className="text-2xl font-bold text-white">
+              <Text className="text-lg font-bold text-gray-800">
                 Patient Reviews
               </Text>
-              <Text className="text-cyan-100 text-base">
+              <Text className="text-gray-500 text-sm">
                 {ratingStats.totalReviews}+ verified reviews
               </Text>
             </View>
           </View>
 
           <View className="flex-row items-center gap-6">
-            <View className="items-start">
-              <Text className="text-5xl font-bold text-white mb-2">
+            {/* Average Rating */}
+            <View className="items-center">
+              <Text className="text-4xl font-bold text-gray-800 mb-2">
                 {ratingStats.average}
               </Text>
               <View className="flex-row gap-1">
@@ -425,9 +425,9 @@ const Reviews = () => {
                   <Feather
                     key={star}
                     name="star"
-                    size={18}
-                    color="#fbbf24"
-                    fill="#fbbf24"
+                    size={16}
+                    color="#f59e0b"
+                    fill="#f59e0b"
                   />
                 ))}
               </View>
@@ -437,18 +437,18 @@ const Reviews = () => {
             <View className="flex-1 gap-2">
               {[5, 4, 3, 2, 1].map((stars, index) => (
                 <View key={stars} className="flex-row items-center gap-3">
-                  <Text className="text-white text-sm font-semibold w-4 text-center">
+                  <Text className="text-gray-600 text-sm font-medium w-4 text-center">
                     {stars}
                   </Text>
-                  <View className="flex-1 h-2 bg-cyan-400 rounded-full overflow-hidden">
+                  <View className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <View
-                      className="h-full bg-white rounded-full"
+                      className="h-full bg-cyan-500 rounded-full"
                       style={{
                         width: `${ratingStats.stars[index].percentage}%`,
                       }}
                     />
                   </View>
-                  <Text className="text-white text-xs w-8">
+                  <Text className="text-gray-500 text-xs w-8">
                     {ratingStats.stars[index].count}
                   </Text>
                 </View>
@@ -460,12 +460,12 @@ const Reviews = () => {
         {/* Reviews List */}
         <View className="px-6 gap-4 mb-6">
           {reviews.length === 0 ? (
-            <View className="bg-white rounded-2xl p-8 items-center justify-center">
-              <Feather name="message-circle" size={48} color="#cbd5e1" />
-              <Text className="text-slate-500 text-lg font-medium mt-4">
+            <View className="bg-white rounded-2xl p-8 items-center justify-center border border-gray-200">
+              <Feather name="message-circle" size={48} color="#d1d5db" />
+              <Text className="text-gray-600 text-lg font-medium mt-4">
                 No Reviews Yet
               </Text>
-              <Text className="text-slate-400 text-center mt-2">
+              <Text className="text-gray-500 text-center mt-2">
                 Be the first to share your experience with this clinic!
               </Text>
             </View>
@@ -473,10 +473,10 @@ const Reviews = () => {
             reviews.map((review) => (
               <View
                 key={review.id}
-                className="bg-white rounded-2xl p-5 shadow-sm shadow-black/5 border border-slate-100"
+                className="bg-white rounded-2xl p-5 border border-gray-200"
               >
-                {/* Review Header with Profile Picture */}
-                <View className="flex-row items-start gap-3 mb-3">
+                {/* Review Header */}
+                <View className="flex-row items-start gap-4 mb-4">
                   {/* Profile Picture */}
                   <View>
                     {review.patient_photo ? (
@@ -486,15 +486,15 @@ const Reviews = () => {
                         resizeMode="cover"
                       />
                     ) : (
-                      <View className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 items-center justify-center border border-cyan-200">
-                        <Feather name="user" size={20} color="#0891b2" />
+                      <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center border border-gray-300">
+                        <Feather name="user" size={20} color="#6b7280" />
                       </View>
                     )}
                   </View>
 
                   <View className="flex-1">
-                    <View className="flex-row items-center gap-2 mb-1">
-                      <Text className="text-slate-800 font-semibold text-base flex-1">
+                    <View className="flex-row items-center gap-2 mb-2">
+                      <Text className="text-gray-800 font-semibold text-base flex-1">
                         {review.patient_name || "Anonymous Patient"}
                       </Text>
                       {review.is_verified && (
@@ -511,12 +511,12 @@ const Reviews = () => {
                       )}
                     </View>
 
-                    {/* Rating and Date in same row */}
+                    {/* Rating and Date */}
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center gap-2">
                         {renderStars(review.rating)}
                       </View>
-                      <Text className="text-slate-500 text-xs">
+                      <Text className="text-gray-500 text-xs">
                         {formatDate(review.created_at)}
                       </Text>
                     </View>
@@ -524,18 +524,18 @@ const Reviews = () => {
                 </View>
 
                 {/* Review Text */}
-                <Text className="text-slate-700 leading-6 text-sm mb-3">
+                <Text className="text-gray-700 leading-6 text-sm mb-4">
                   {review.comment}
                 </Text>
 
                 {/* Helpful Actions */}
-                <View className="flex-row gap-4 pt-3 border-t border-slate-100">
+                <View className="flex-row gap-4 pt-3 border-t border-gray-100">
                   <TouchableOpacity
                     className="flex-row items-center gap-2"
                     onPress={() => handleMarkHelpful(review.id)}
                   >
-                    <Feather name="thumbs-up" size={16} color="#64748b" />
-                    <Text className="text-slate-600 text-xs">
+                    <Feather name="thumbs-up" size={16} color="#6b7280" />
+                    <Text className="text-gray-600 text-xs">
                       Helpful{" "}
                       {review.helpful_count ? `(${review.helpful_count})` : ""}
                     </Text>
@@ -553,7 +553,6 @@ const Reviews = () => {
         transparent={true}
         animationType="none"
         statusBarTranslucent={true}
-        style={{ paddingBottom: insets.bottom }}
       >
         <View className="flex-1 bg-black/50">
           {/* Backdrop */}
@@ -568,20 +567,21 @@ const Reviews = () => {
             className="bg-white rounded-t-3xl pt-5 px-6 pb-8"
             style={{
               transform: [{ translateY: slideAnim }],
+              paddingBottom: insets.bottom || 20,
             }}
           >
             {/* Drag Handle */}
-            <View className="items-center mb-2">
-              <View className="w-12 h-1 bg-slate-300 rounded-full" />
+            <View className="items-center mb-4">
+              <View className="w-12 h-1 bg-gray-300 rounded-full" />
             </View>
 
             {/* Header */}
             <View className="flex-row items-center justify-between mb-6">
-              <Text className="text-xl font-bold text-slate-800">
+              <Text className="text-xl font-bold text-gray-800">
                 Write a Review
               </Text>
               <TouchableOpacity onPress={closeModal} className="p-2">
-                <Feather name="x" size={24} color="#64748b" />
+                <Feather name="x" size={24} color="#6b7280" />
               </TouchableOpacity>
             </View>
 
@@ -590,10 +590,10 @@ const Reviews = () => {
             >
               {/* Star Rating Input */}
               <View className="mb-6">
-                <Text className="text-base font-semibold text-slate-700 mb-4">
+                <Text className="text-base font-semibold text-gray-700 mb-4">
                   How was your experience?
                 </Text>
-                <View className="flex-row gap-3 justify-center bg-cyan-50 rounded-2xl py-5">
+                <View className="flex-row gap-3 justify-center bg-gray-50 rounded-2xl py-5">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <TouchableOpacity
                       key={star}
@@ -604,7 +604,7 @@ const Reviews = () => {
                       <Feather
                         name="star"
                         size={36}
-                        color={star <= selectedRating ? "#0891b2" : "#cbd5e1"}
+                        color={star <= selectedRating ? "#0891b2" : "#d1d5db"}
                         fill={star <= selectedRating ? "#0891b2" : "none"}
                       />
                     </TouchableOpacity>
@@ -614,13 +614,13 @@ const Reviews = () => {
 
               {/* Review Text Input */}
               <View className="mb-6">
-                <Text className="text-base font-semibold text-slate-700 mb-3">
+                <Text className="text-base font-semibold text-gray-700 mb-3">
                   Share your experience
                 </Text>
                 <TextInput
-                  className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-800 min-h-32 text-base leading-6"
+                  className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-800 min-h-32 text-base leading-6"
                   placeholder="Tell others about your experience with this clinic... What did you like? What could be improved?"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor="#9ca3af"
                   multiline
                   textAlignVertical="top"
                   value={reviewText}
@@ -633,8 +633,8 @@ const Reviews = () => {
               <TouchableOpacity
                 onPress={handleSendReviews}
                 disabled={submitting}
-                className={`rounded-2xl py-4 flex-row items-center justify-center gap-3 shadow-sm ${
-                  submitting ? "bg-cyan-400" : "bg-cyan-600 shadow-cyan-600/30"
+                className={`rounded-2xl py-4 flex-row items-center justify-center gap-3 ${
+                  submitting ? "bg-cyan-400" : "bg-cyan-600"
                 }`}
               >
                 {submitting ? (

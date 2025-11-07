@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import passwordServices from "../services/passwordServices";

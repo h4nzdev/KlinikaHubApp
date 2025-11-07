@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -16,12 +16,18 @@ import clinicServices from "../../../services/clinicServices";
 import reviewServices from "../../../services/reviewServices"; // 👈 ADD THIS IMPORT
 import { getSpecialties } from "../../../utils/getSpecialty";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AuthenticationContext } from "../../../context/AuthenticationContext";
+import appointmentServices from "../../../services/appointmentsServices";
 
 const ClinicProfile = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { clinicId } = route.params;
+  const { user } = useContext(AuthenticationContext);
   const insets = useSafeAreaInsets();
+
+  const [hasPendingAppointment, setHasPendingAppointment] = useState(false);
+  const [checkingAppointment, setCheckingAppointment] = useState(false);
 
   const [clinic, setClinic] = useState(null);
   const [ratingStats, setRatingStats] = useState({
@@ -91,6 +97,31 @@ const ClinicProfile = () => {
     return result;
   };
 
+  useEffect(() => {
+    const checkPendingAppointment = async () => {
+      if (user?.id && clinicId) {
+        try {
+          setCheckingAppointment(true);
+          const hasPending =
+            await appointmentServices.checkExistingPendingAppointment(
+              user.id,
+              parseInt(clinicId)
+            );
+          setHasPendingAppointment(hasPending);
+        } catch (error) {
+          console.error("Error checking appointment:", error);
+          setHasPendingAppointment(false); // Default to false on error
+        } finally {
+          setCheckingAppointment(false);
+        }
+      }
+    };
+
+    if (clinic && user) {
+      checkPendingAppointment();
+    }
+  }, [clinic, user, clinicId]);
+
   // Fetch clinic data AND review stats
   useEffect(() => {
     const fetchClinicData = async () => {
@@ -98,7 +129,14 @@ const ClinicProfile = () => {
         setLoading(true);
         setReviewsLoading(true);
 
-        console.log("🔄 Fetching clinic and review data...");
+        if (user?.id) {
+          const patientAppointments =
+            await appointmentServices.getAppointmentsByPatientId(user.id);
+          const pendingForThisClinic = patientAppointments.some(
+            (apt) => apt.clinic_id === parseInt(clinicId) && apt.status === 0
+          );
+          setHasPendingAppointment(pendingForThisClinic);
+        }
 
         // Fetch clinic data
         const clinicData = await clinicServices.getClinicById(clinicId);
@@ -166,6 +204,15 @@ const ClinicProfile = () => {
   };
 
   const handleBookAppointment = () => {
+    if (hasPendingAppointment) {
+      Alert.alert(
+        "Pending Appointment",
+        "You already have a pending appointment with this clinic. Please wait for it to be confirmed or cancelled before booking another one.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     navigation.navigate("AppointmentBookingPage", {
       clinicId,
       clinicName: clinic?.data?.institute_name,
@@ -568,12 +615,25 @@ const ClinicProfile = () => {
           {/* Book Appointment CTA */}
           <TouchableOpacity
             onPress={handleBookAppointment}
-            className="flex-row items-center justify-center gap-3 py-4 rounded-2xl shadow-lg bg-cyan-500"
+            disabled={hasPendingAppointment || checkingAppointment}
+            className={`flex-row items-center justify-center gap-3 py-4 rounded-2xl shadow-lg ${
+              hasPendingAppointment || checkingAppointment
+                ? "bg-gray-400"
+                : "bg-cyan-500"
+            }`}
             activeOpacity={0.8}
           >
-            <Feather name="calendar" size={24} color="#ffffff" />
+            {checkingAppointment ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Feather name="calendar" size={24} color="#ffffff" />
+            )}
             <Text className="text-white font-semibold text-lg">
-              Book Appointment
+              {checkingAppointment
+                ? "Checking..."
+                : hasPendingAppointment
+                  ? "Appointment Pending"
+                  : "Book Appointment"}
             </Text>
           </TouchableOpacity>
         </View>

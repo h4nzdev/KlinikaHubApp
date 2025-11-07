@@ -15,10 +15,12 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import patientAuthServices from "../../services/patientAuthServices";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const VerificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
 
   // Get registration data from previous screen
   const { formData } = route.params;
@@ -86,7 +88,10 @@ const VerificationScreen = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView
+      className="flex-1 bg-white"
+      style={{ paddingBottom: insets.bottom }}
+    >
       <StatusBar barStyle="dark-content" />
 
       <KeyboardAvoidingView
