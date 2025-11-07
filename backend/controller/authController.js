@@ -337,7 +337,20 @@ class AuthController {
       }
     } catch (err) {
       console.log("❌ Login error:", err);
-      throw new Error("Database error occurred");
+
+      // If it's already a specific error (like "Incorrect password"), just re-throw it
+      if (
+        err.message.includes("Incorrect password") ||
+        err.message.includes("No account found") ||
+        err.message.includes("Email is required") ||
+        err.message.includes("Password is required") ||
+        err.message.includes("valid email address")
+      ) {
+        throw err; // Just re-throw the original error
+      } else {
+        // Only throw "Database error" for actual database issues
+        throw new Error("Database error occurred");
+      }
     }
   }
 
