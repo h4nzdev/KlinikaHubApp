@@ -10,8 +10,6 @@ import {
   cancelHealthTipNotifications,
   scheduleHealthTipNotification,
 } from "../utils/healthTipsGenerator";
-import { reminderData } from "../../data/reminderData";
-
 const ReminderContext = createContext();
 
 export const useReminder = () => useContext(ReminderContext);
