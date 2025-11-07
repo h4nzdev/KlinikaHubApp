@@ -16,9 +16,11 @@ class Database {
         user: process.env.DB_USER || "root",
         password: process.env.DB_PASSWORD || "",
         database: process.env.DB_NAME || "klinikahub",
+        port: process.env.DB_PORT || 27677,
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,
+        ssl: { rejectUnauthorized: true },
       });
 
       console.log("✅ MySQL Database Connected");
