@@ -199,6 +199,7 @@ class AppointmentController {
   }
 
   // Create new appointment with validation
+  // Create new appointment with validation
   async createAppointment(appointmentData) {
     try {
       const db = await this.initDB();
@@ -212,26 +213,17 @@ class AppointmentController {
         throw new Error("Cannot create appointment for past dates");
       }
 
-      // If same day, validate time is not in the past
-      if (
-        appointmentData.schedule &&
-        appointmentDate.getTime() === today.getTime()
-      ) {
-        const appointmentTime = new Date(appointmentData.schedule);
-        const now = new Date();
-
-        if (appointmentTime < now) {
-          throw new Error(
-            "Cannot create appointment for past time on today's date"
-          );
-        }
-      }
-
       // Generate unique appointment_id if not provided
       const processedData = { ...appointmentData };
       if (!processedData.appointment_id) {
         processedData.appointment_id = this.generateAppointmentId();
       }
+
+      // ✅ FIX: Format created_at for MySQL
+      processedData.created_at = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
 
       // Build dynamic SQL
       const columns = Object.keys(Appointment.columns).join(", ");
