@@ -1,7 +1,7 @@
 // Simple configuration that just works
 const Config = {
   // For development - adjust these as needed
-  API_BASE_URL: "https://klinikahubapp.onrender.com/api", // or your actual backend URL
+  API_BASE_URL: "https://expositorially-hamulate-carola.ngrok-free.dev/api", // or your actual backend URL
 
   // Common development URLs to try:
   // - "http://localhost:5000/api" (most common)

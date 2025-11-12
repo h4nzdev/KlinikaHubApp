@@ -593,14 +593,35 @@ const Profile = () => {
         return (
           <View className="mt-4">
             {appointmentsLoading ? (
-              <View className="bg-white rounded-2xl p-6 items-center">
-                <ActivityIndicator size="small" color="#0891b2" />
-                <Text className="text-slate-600 mt-3 text-sm">
+              <View className="bg-white rounded-xl p-6 items-center">
+                <ActivityIndicator size="small" color="#3b82f6" />
+                <Text className="text-gray-600 mt-3 text-sm">
                   Loading appointments...
                 </Text>
               </View>
             ) : (
               <View className="gap-3">
+                {/* No Appointments State */}
+                {appointments.length === 0 && (
+                  <View className="bg-white rounded-xl p-6 items-center border border-gray-200">
+                    <View className="bg-gray-100 p-4 rounded-full mb-3">
+                      <Feather name="calendar" size={24} color="#6b7280" />
+                    </View>
+                    <Text className="text-gray-700 font-medium text-base mb-1 text-center">
+                      No appointments yet
+                    </Text>
+                    <Text className="text-gray-500 text-sm text-center px-4">
+                      Schedule your first appointment to get started
+                    </Text>
+                    <TouchableOpacity className="bg-blue-500 px-4 py-2 rounded-lg mt-3">
+                      <Text className="text-white font-medium text-sm">
+                        Book Appointment
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Appointments List */}
                 {appointments.slice(0, 5).map((appointment) => {
                   const appointmentDate = formatDate(
                     appointment.appointment_date
@@ -615,17 +636,24 @@ const Profile = () => {
                   const statusConfig = {
                     0: {
                       label: "Pending",
-                      color: "bg-yellow-100 text-yellow-700",
+                      color: "bg-amber-100 text-amber-700",
+                      icon: "clock",
                     },
                     1: {
                       label: "Scheduled",
-                      color: "bg-cyan-100 text-cyan-700",
+                      color: "bg-blue-100 text-blue-700",
+                      icon: "calendar",
                     },
                     2: {
                       label: "Completed",
-                      color: "bg-emerald-100 text-emerald-700",
+                      color: "bg-green-100 text-green-700",
+                      icon: "check-circle",
                     },
-                    3: { label: "Cancelled", color: "bg-red-100 text-red-700" },
+                    3: {
+                      label: "Cancelled",
+                      color: "bg-red-100 text-red-700",
+                      icon: "x-circle",
+                    },
                   };
 
                   const status =
@@ -634,63 +662,174 @@ const Profile = () => {
                   return (
                     <View
                       key={appointment.id}
-                      className="bg-white rounded-2xl p-4 border border-slate-100"
+                      className="bg-white rounded-xl p-4 border border-gray-200"
                     >
-                      <View className="flex-row justify-between items-start mb-3">
-                        <View className="flex-1">
-                          <Text className="font-bold text-slate-800 text-base mb-1">
-                            {appointment.doctor_name || "Medical Consultation"}
+                      {/* Header Section */}
+                      <View className="flex-row items-start gap-3 mb-3">
+                        {/* Doctor Avatar/Icon */}
+                        <View className="bg-blue-100 p-2 rounded-lg flex-shrink-0">
+                          <Feather name="user" size={16} color="#3b82f6" />
+                        </View>
+
+                        {/* Doctor Info - Flexible width */}
+                        <View className="flex-1 flex-shrink min-w-0">
+                          <Text
+                            className="font-semibold text-gray-900 text-base mb-1"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {appointment.doctor_name ||
+                              "Medical Consultation with General Practitioner"}
                           </Text>
-                          <Text className="text-cyan-600 text-sm font-medium">
+                          <Text
+                            className="text-blue-600 text-sm font-medium"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
                             {appointment.doctor_specialization ||
-                              "General Medicine"}
+                              "General Medicine & Primary Care Specialist"}
                           </Text>
                         </View>
+
+                        {/* Status Badge - Fixed width */}
                         <View
-                          className={`px-3 py-1 rounded-full ${status.color}`}
+                          className={`px-2 py-1 rounded-full ${status.color} flex-shrink-0`}
                         >
-                          <Text className="text-xs font-semibold">
-                            {status.label}
-                          </Text>
+                          <View className="flex-row items-center gap-1">
+                            <Feather
+                              name={status.icon}
+                              size={10}
+                              color="currentColor"
+                            />
+                            <Text
+                              className="text-xs font-medium"
+                              numberOfLines={1}
+                            >
+                              {status.label}
+                            </Text>
+                          </View>
                         </View>
                       </View>
 
-                      <View className="flex-row items-center justify-between mb-2">
-                        <View className="flex-row items-center">
-                          <Feather name="calendar" size={14} color="#64748b" />
-                          <Text className="text-slate-600 text-sm ml-2 font-medium">
+                      {/* Date and Time Section */}
+                      <View className="flex-row items-center flex-wrap gap-2 mb-3">
+                        <View className="flex-row items-center flex-shrink-0">
+                          <Feather name="calendar" size={14} color="#6b7280" />
+                          <Text
+                            className="text-gray-600 text-sm ml-1.5 font-medium"
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
                             {appointmentDate}
                           </Text>
                         </View>
-                        <View className="flex-row items-center">
-                          <Feather name="clock" size={14} color="#64748b" />
-                          <Text className="text-slate-600 text-sm ml-2 font-medium">
+                        <View className="w-px h-3 bg-gray-300 flex-shrink-0" />
+                        <View className="flex-row items-center flex-shrink-0">
+                          <Feather name="clock" size={14} color="#6b7280" />
+                          <Text
+                            className="text-gray-600 text-sm ml-1.5 font-medium"
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
                             {appointmentTime}
                           </Text>
                         </View>
                       </View>
 
-                      <View className="flex-row items-center justify-between pt-3 border-t border-slate-100">
-                        <View className="flex-row items-center">
-                          <Feather name="map-pin" size={14} color="#64748b" />
-                          <Text className="text-slate-600 text-sm ml-2">
-                            {appointment.clinic_name || "Main Clinic"}
+                      {/* Clinic and Price Section */}
+                      <View className="flex-row items-center justify-between pt-3 border-t border-gray-100">
+                        <View className="flex-row items-center flex-1 min-w-0 mr-3">
+                          <Feather
+                            name="map-pin"
+                            size={14}
+                            color="#6b7280"
+                            className="flex-shrink-0"
+                          />
+                          <Text
+                            className="text-gray-600 text-sm ml-1.5 flex-1"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {appointment.clinic_name ||
+                              "Main Medical Center & Specialty Clinic Building Complex"}
                           </Text>
                         </View>
-                        <Text className="text-slate-700 font-semibold">
+                        <Text
+                          className="text-gray-900 font-semibold text-sm flex-shrink-0"
+                          numberOfLines={1}
+                        >
                           ₱{appointment.consultation_fees || "0.00"}
                         </Text>
                       </View>
+
+                      {/* Additional Info Section - Conditionally rendered */}
+                      {(appointment.additional_notes || appointment.reason) && (
+                        <View className="mt-3 pt-3 border-t border-gray-100">
+                          <Text
+                            className="text-gray-500 text-xs italic"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {appointment.additional_notes || appointment.reason}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   );
                 })}
 
+                {/* View All Button - Only show if there are more than 5 appointments */}
                 {appointments.length > 5 && (
-                  <TouchableOpacity className="bg-slate-50 rounded-2xl p-4 border border-slate-200 items-center">
-                    <Text className="text-cyan-600 font-semibold">
-                      View All Appointments ({appointments.length})
+                  <TouchableOpacity className="bg-gray-50 rounded-xl p-4 border border-gray-200 items-center active:bg-gray-100">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-blue-600 font-semibold text-base">
+                        View All Appointments
+                      </Text>
+                      <Feather name="arrow-right" size={16} color="#3b82f6" />
+                    </View>
+                    <Text className="text-gray-500 text-xs mt-1 text-center">
+                      {appointments.length} total appointments •{" "}
+                      {appointments.filter((a) => a.status === 1).length}{" "}
+                      upcoming
                     </Text>
                   </TouchableOpacity>
+                )}
+
+                {/* Show message when showing limited results */}
+                {appointments.length > 0 && appointments.length <= 5 && (
+                  <View className="bg-blue-50 rounded-xl p-3 border border-blue-200">
+                    <Text className="text-blue-700 text-xs text-center">
+                      {appointments.length === 1
+                        ? "Showing your only appointment"
+                        : `Showing all ${appointments.length} appointments`}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Quick Stats */}
+                {appointments.length > 0 && (
+                  <View className="flex-row justify-between bg-gray-50 rounded-xl p-3 border border-gray-200">
+                    <View className="items-center flex-1">
+                      <Text className="text-blue-600 font-bold text-sm">
+                        {appointments.filter((a) => a.status === 1).length}
+                      </Text>
+                      <Text className="text-gray-600 text-xs">Upcoming</Text>
+                    </View>
+                    <View className="w-px h-6 bg-gray-300" />
+                    <View className="items-center flex-1">
+                      <Text className="text-green-600 font-bold text-sm">
+                        {appointments.filter((a) => a.status === 2).length}
+                      </Text>
+                      <Text className="text-gray-600 text-xs">Completed</Text>
+                    </View>
+                    <View className="w-px h-6 bg-gray-300" />
+                    <View className="items-center flex-1">
+                      <Text className="text-amber-600 font-bold text-sm">
+                        {appointments.filter((a) => a.status === 0).length}
+                      </Text>
+                      <Text className="text-gray-600 text-xs">Pending</Text>
+                    </View>
+                  </View>
                 )}
               </View>
             )}

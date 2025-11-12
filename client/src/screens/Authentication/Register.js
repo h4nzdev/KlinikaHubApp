@@ -339,10 +339,10 @@ const Register = () => {
       <Text className="text-sm font-medium text-slate-700">
         Profile Photo (Optional)
       </Text>
-      {localImage ? ( // 👈 Use localImage instead of formData.photo
+      {localImage ? (
         <View className="items-center gap-3">
           <Image
-            source={{ uri: localImage }} // 👈 Preview from local URI
+            source={{ uri: localImage }}
             className="w-32 h-32 rounded-full border-4 border-cyan-500"
             resizeMode="cover"
           />
@@ -361,14 +361,14 @@ const Register = () => {
           </View>
           <View className="flex-row gap-3">
             <TouchableOpacity
-              onPress={handleImagePick} // 👈 Updated function name
+              onPress={handleImagePick}
               className="flex-row items-center gap-2 px-4 py-2 bg-cyan-500 rounded-xl"
             >
               <Feather name="upload" size={16} color="white" />
               <Text className="text-white font-medium">Choose Photo</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={handleTakePhoto} // 👈 Updated function name
+              onPress={handleTakePhoto}
               className="flex-row items-center gap-2 px-4 py-2 bg-slate-600 rounded-xl"
             >
               <Feather name="camera" size={16} color="white" />

@@ -13,7 +13,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import clinicServices from "../../../services/clinicServices";
-import reviewServices from "../../../services/reviewServices"; // 👈 ADD THIS IMPORT
+import reviewServices from "../../../services/reviewServices";
 import { getSpecialties } from "../../../utils/getSpecialty";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
@@ -28,10 +28,8 @@ const ClinicProfile = () => {
 
   const [hasPendingAppointment, setHasPendingAppointment] = useState(false);
   const [checkingAppointment, setCheckingAppointment] = useState(false);
-
   const [clinic, setClinic] = useState(null);
   const [ratingStats, setRatingStats] = useState({
-    // 👈 ADD REAL RATING STATE
     average: 0,
     totalReviews: 0,
     stars: [
@@ -43,9 +41,62 @@ const ClinicProfile = () => {
     ],
   });
   const [loading, setLoading] = useState(true);
-  const [reviewsLoading, setReviewsLoading] = useState(true); // 👈 ADD SEPARATE LOADING FOR REVIEWS
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
-  // Add this function to calculate stats from reviews array
+  // Helper function to get field with fallback
+  const getField = (field, fallback = "") => {
+    return clinic?.[field] || clinic?.data?.[field] || fallback;
+  };
+
+  // Get clinic name with fallback
+  const getClinicName = () => {
+    return getField(
+      "clinic_name",
+      getField("institute_name", "Healthcare Center")
+    );
+  };
+
+  // Get contact number with fallback
+  const getContactNumber = () => {
+    return getField("contact_number", getField("mobileno", "Not available"));
+  };
+
+  // Get email with fallback
+  const getEmail = () => {
+    return getField("email", getField("institute_email", "Not available"));
+  };
+
+  // Get clinic type/specialty
+  const getClinicType = () => {
+    const clinicType = getField("clinic_type");
+    if (clinicType && clinicType !== "general") {
+      return clinicType.charAt(0).toUpperCase() + clinicType.slice(1);
+    }
+    return getField("primary_category", "Healthcare Center");
+  };
+
+  // Get staff count display
+  const getStaffDisplay = () => {
+    const staffCount = getField("staff_count");
+    if (staffCount) {
+      return `${staffCount} staff`;
+    }
+    return null;
+  };
+
+  // Get status display
+  const getStatusDisplay = () => {
+    const status = getField("status", "active");
+    const statusConfig = {
+      active: { color: "green", text: "Open Now" },
+      pending: { color: "yellow", text: "Pending" },
+      suspended: { color: "red", text: "Suspended" },
+      cancelled: { color: "gray", text: "Closed" },
+    };
+    return statusConfig[status] || statusConfig.active;
+  };
+
+  // Calculate stats from reviews array
   const calculateStatsFromReviews = (reviews) => {
     console.log("🔄 Calculating stats from reviews array...");
 
@@ -64,7 +115,6 @@ const ClinicProfile = () => {
       };
     }
 
-    // Calculate total and average
     const total = reviews.length;
     const totalRating = reviews.reduce((sum, review) => {
       return sum + (review.rating || 0);
@@ -72,13 +122,11 @@ const ClinicProfile = () => {
 
     const average = (totalRating / total).toFixed(1);
 
-    // Count stars (5,4,3,2,1)
-    const starCounts = [0, 0, 0, 0, 0]; // [5-star, 4-star, 3-star, 2-star, 1-star]
-
+    const starCounts = [0, 0, 0, 0, 0];
     reviews.forEach((review) => {
       const rating = review.rating;
       if (rating >= 1 && rating <= 5) {
-        starCounts[5 - rating]++; // 5-star goes to index 0, 1-star goes to index 4
+        starCounts[5 - rating]++;
       }
     });
 
@@ -110,7 +158,7 @@ const ClinicProfile = () => {
           setHasPendingAppointment(hasPending);
         } catch (error) {
           console.error("Error checking appointment:", error);
-          setHasPendingAppointment(false); // Default to false on error
+          setHasPendingAppointment(false);
         } finally {
           setCheckingAppointment(false);
         }
@@ -142,7 +190,7 @@ const ClinicProfile = () => {
         const clinicData = await clinicServices.getClinicById(clinicId);
         setClinic(clinicData);
 
-        // Instead of calling the broken stats API, get reviews and calculate stats
+        // Get reviews and calculate stats
         const reviewsData =
           await reviewServices.getReviewsByClinicIdWithDetails(clinicId);
         console.log("✅ Reviews loaded for stats:", reviewsData?.length || 0);
@@ -165,44 +213,6 @@ const ClinicProfile = () => {
     }
   }, [clinicId]);
 
-  // Transform backend stats to frontend format
-  const transformRatingStats = (stats) => {
-    console.log("🔍 Transforming stats:", stats);
-
-    const total = stats.total_reviews || 0;
-    const average = parseFloat(stats.average_rating || 0).toFixed(1);
-
-    const stars = [
-      {
-        count: stats.five_star || 0,
-        percentage: total > 0 ? Math.round((stats.five_star / total) * 100) : 0,
-      },
-      {
-        count: stats.four_star || 0,
-        percentage: total > 0 ? Math.round((stats.four_star / total) * 100) : 0,
-      },
-      {
-        count: stats.three_star || 0,
-        percentage:
-          total > 0 ? Math.round((stats.three_star / total) * 100) : 0,
-      },
-      {
-        count: stats.two_star || 0,
-        percentage: total > 0 ? Math.round((stats.two_star / total) * 100) : 0,
-      },
-      {
-        count: stats.one_star || 0,
-        percentage: total > 0 ? Math.round((stats.one_star / total) * 100) : 0,
-      },
-    ];
-
-    return {
-      average: parseFloat(average) || 0,
-      totalReviews: total,
-      stars: stars,
-    };
-  };
-
   const handleBookAppointment = () => {
     if (hasPendingAppointment) {
       Alert.alert(
@@ -215,19 +225,31 @@ const ClinicProfile = () => {
 
     navigation.navigate("AppointmentBookingPage", {
       clinicId,
-      clinicName: clinic?.data?.institute_name,
+      clinicName: getClinicName(),
     });
   };
 
   const handleCallClinic = () => {
-    if (clinic?.mobileno) {
-      Linking.openURL(`tel:${clinic.mobileno}`);
+    const phoneNumber = getContactNumber();
+    if (phoneNumber && phoneNumber !== "Not available") {
+      Linking.openURL(`tel:${phoneNumber}`);
+    } else {
+      Alert.alert(
+        "No Phone Number",
+        "Phone number is not available for this clinic."
+      );
     }
   };
 
   const handleEmailClinic = () => {
-    if (clinic?.institute_email) {
-      Linking.openURL(`mailto:${clinic.institute_email}`);
+    const email = getEmail();
+    if (email && email !== "Not available") {
+      Linking.openURL(`mailto:${email}`);
+    } else {
+      Alert.alert(
+        "No Email",
+        "Email address is not available for this clinic."
+      );
     }
   };
 
@@ -266,6 +288,9 @@ const ClinicProfile = () => {
     );
   }
 
+  const statusConfig = getStatusDisplay();
+  const staffDisplay = getStaffDisplay();
+
   return (
     <SafeAreaView
       className="flex-1 bg-white"
@@ -286,47 +311,64 @@ const ClinicProfile = () => {
           </TouchableOpacity>
           <View className="items-center">
             {/* Clinic Logo/Image */}
-            <View className=" rounded-2xl bg-white/20 items-center justify-center mb-4 border-2 border-white/30">
+            <View className="rounded-2xl bg-white/20 items-center justify-center mb-4 border-2 border-white/30">
               <Feather name="home" size={40} color="cyan" />
             </View>
 
             {/* Clinic Name */}
             <Text className="text-3xl font-bold text-cyan-900 text-center mb-2">
-              {clinic.data.institute_name}
+              {getClinicName()}
             </Text>
 
-            {/* Specialty */}
+            {/* Clinic Type and Staff Count */}
             <View className="flex-row items-center bg-white/20 px-4 py-2 rounded-full mb-4">
               <Feather name="activity" size={16} color="#ffffff" />
               <Text className="text-cyan-700 font-semibold ml-2 text-sm">
-                Specialty:{" "}
-                {getSpecialties(clinic.data.specialties) || "General Practice"}
+                {getClinicType()}
+                {staffDisplay && ` • ${staffDisplay}`}
               </Text>
             </View>
 
-            {/* Rating - NOW WITH REAL DATA */}
-            <View className="flex-row items-center gap-2">
-              <View className="flex-row items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Feather
-                    key={star}
-                    name="star"
-                    size={16}
-                    color="#fbbf24"
-                    fill={
-                      star <= Math.floor(ratingStats.average)
-                        ? "#fbbf24"
-                        : "none"
-                    }
-                  />
-                ))}
+            {/* Status and Rating */}
+            <View className="flex-row items-center gap-4">
+              {/* Status Badge */}
+              <View
+                className={`flex-row items-center bg-${statusConfig.color}-100 px-3 py-1 rounded-full border border-${statusConfig.color}-200`}
+              >
+                <View
+                  className={`w-2 h-2 bg-${statusConfig.color}-500 rounded-full mr-2`}
+                />
+                <Text
+                  className={`font-semibold text-${statusConfig.color}-800 text-xs`}
+                >
+                  {statusConfig.text}
+                </Text>
               </View>
-              <Text className="text-white font-semibold">
-                {ratingStats.average > 0 ? ratingStats.average : "No"}
-                {ratingStats.average > 0 ? " Stars" : " Reviews Yet"}
-                {ratingStats.totalReviews > 0 &&
-                  ` (${ratingStats.totalReviews}+ reviews)`}
-              </Text>
+
+              {/* Rating */}
+              <View className="flex-row items-center gap-2">
+                <View className="flex-row items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Feather
+                      key={star}
+                      name="star"
+                      size={16}
+                      color="#fbbf24"
+                      fill={
+                        star <= Math.floor(ratingStats.average)
+                          ? "#fbbf24"
+                          : "none"
+                      }
+                    />
+                  ))}
+                </View>
+                <Text className="text-white font-semibold">
+                  {ratingStats.average > 0 ? ratingStats.average : "No"}
+                  {ratingStats.average > 0 ? " Stars" : " Reviews Yet"}
+                  {ratingStats.totalReviews > 0 &&
+                    ` (${ratingStats.totalReviews}+ reviews)`}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -403,9 +445,9 @@ const ClinicProfile = () => {
             </View>
 
             <View className="gap-3">
-              {clinic.data.working_hours ? (
+              {getField("working_hours") ? (
                 <Text className="text-slate-600">
-                  {clinic.data.working_hours}
+                  {getField("working_hours")}
                 </Text>
               ) : (
                 <>
@@ -440,12 +482,11 @@ const ClinicProfile = () => {
             </View>
 
             <Text className="text-slate-700 leading-6 text-base">
-              {clinic.data.address ||
-                "123 Health Ave, Suite 456, Anytown, CA 91234"}
+              {getField("address", "Address not specified")}
             </Text>
           </View>
 
-          {/* Contact & Social Media - Grouped */}
+          {/* Contact Information */}
           <View className="bg-white rounded-2xl p-6 shadow-lg shadow-black/5 border border-slate-100">
             <View className="flex-row items-center gap-3 mb-4">
               <View className="w-10 h-10 rounded-xl bg-blue-50 items-center justify-center">
@@ -459,56 +500,54 @@ const ClinicProfile = () => {
               <View className="flex-row items-center gap-3">
                 <Feather name="phone" size={18} color="#64748b" />
                 <Text className="text-slate-700 text-base">
-                  {clinic.data.mobileno || "(555) 123-4567"}
+                  {getContactNumber()}
                 </Text>
               </View>
               <View className="flex-row items-center gap-3">
                 <Feather name="mail" size={18} color="#64748b" />
-                <Text className="text-slate-700 text-base">
-                  {clinic.data.institute_email || "info@medicare.com"}
-                </Text>
+                <Text className="text-slate-700 text-base">{getEmail()}</Text>
               </View>
             </View>
 
-            {/* Social Media Links */}
-            {(clinic.data.facebook_url ||
-              clinic.data.twitter_url ||
-              clinic.data.linkedin_url ||
-              clinic.data.youtube_url) && (
+            {/* Social Media Links - Note: These fields might not exist in new schema */}
+            {(getField("facebook_url") ||
+              getField("twitter_url") ||
+              getField("linkedin_url") ||
+              getField("youtube_url")) && (
               <View className="border-t border-slate-100 pt-4">
                 <View className="flex-row items-center gap-2 mb-3">
                   <Feather name="share-2" size={16} color="#64748b" />
                   <Text className="text-slate-700 font-medium">Follow Us</Text>
                 </View>
                 <View className="flex-row gap-3">
-                  {clinic.data.facebook_url && (
+                  {getField("facebook_url") && (
                     <TouchableOpacity
                       className="w-10 h-10 rounded-lg bg-slate-50 items-center justify-center"
-                      onPress={() => Linking.openURL(clinic.data.facebook_url)}
+                      onPress={() => Linking.openURL(getField("facebook_url"))}
                     >
                       <Feather name="facebook" size={18} color="#64748b" />
                     </TouchableOpacity>
                   )}
-                  {clinic.data.twitter_url && (
+                  {getField("twitter_url") && (
                     <TouchableOpacity
                       className="w-10 h-10 rounded-lg bg-slate-50 items-center justify-center"
-                      onPress={() => Linking.openURL(clinic.data.twitter_url)}
+                      onPress={() => Linking.openURL(getField("twitter_url"))}
                     >
                       <Feather name="twitter" size={18} color="#64748b" />
                     </TouchableOpacity>
                   )}
-                  {clinic.data.linkedin_url && (
+                  {getField("linkedin_url") && (
                     <TouchableOpacity
                       className="w-10 h-10 rounded-lg bg-slate-50 items-center justify-center"
-                      onPress={() => Linking.openURL(clinic.data.linkedin_url)}
+                      onPress={() => Linking.openURL(getField("linkedin_url"))}
                     >
                       <Feather name="linkedin" size={18} color="#64748b" />
                     </TouchableOpacity>
                   )}
-                  {clinic.data.youtube_url && (
+                  {getField("youtube_url") && (
                     <TouchableOpacity
                       className="w-10 h-10 rounded-lg bg-slate-50 items-center justify-center"
-                      onPress={() => Linking.openURL(clinic.data.youtube_url)}
+                      onPress={() => Linking.openURL(getField("youtube_url"))}
                     >
                       <Feather name="youtube" size={18} color="#64748b" />
                     </TouchableOpacity>
@@ -518,7 +557,7 @@ const ClinicProfile = () => {
             )}
           </View>
 
-          {/* Patient Reviews Summary - NOW WITH REAL DATA */}
+          {/* Patient Reviews Summary */}
           <View className="bg-white rounded-2xl p-6 shadow-lg shadow-black/5 border border-slate-100">
             <View className="flex-row items-center gap-3 mb-6">
               <View className="w-10 h-10 rounded-xl bg-amber-50 items-center justify-center">

@@ -1,7 +1,7 @@
 import database from "../config/database.js";
 import Clinic from "../model/Clinic.js";
 
-// Clinic Controller for Node.js/Express
+// Clinic Controller for Node.js/Express - Updated for tenants table
 class ClinicController {
   constructor() {
     this.db = null;
@@ -20,40 +20,27 @@ class ClinicController {
     try {
       const db = await this.initDB();
       await db.execute(Clinic.getCreateTableSQL());
-      console.log("✅ Clinic table initialized");
+      console.log("✅ Tenants table initialized");
     } catch (err) {
       console.log("❌ Table init error:", err);
       throw err;
     }
   }
 
-  // Create a new clinic
+  // Create a new clinic (tenant)
   async createClinic(clinicData) {
     try {
       const db = await this.initDB();
-      // Handle categories field - convert array to JSON string if needed
-      const processedData = { ...clinicData };
-
-      if (processedData.categories && Array.isArray(processedData.categories)) {
-        processedData.categories = JSON.stringify(processedData.categories);
-      }
-
-      if (
-        processedData.specialties &&
-        Array.isArray(processedData.specialties)
-      ) {
-        processedData.specialties = JSON.stringify(processedData.specialties);
-      }
 
       const columns = Object.keys(Clinic.columns).join(", ");
       const placeholders = Object.keys(Clinic.columns)
         .map(() => "?")
         .join(", ");
       const values = Object.keys(Clinic.columns).map(
-        (key) => processedData[key] || null
+        (key) => clinicData[key] || null
       );
 
-      const sql = `INSERT INTO clinics (${columns}) VALUES (${placeholders})`;
+      const sql = `INSERT INTO ${Clinic.tableName} (${columns}) VALUES (${placeholders})`;
       const [result] = await db.execute(sql, values);
 
       console.log("✅ Clinic created with ID:", result.insertId);
@@ -69,12 +56,10 @@ class ClinicController {
     try {
       const db = await this.initDB();
       const [rows] = await db.execute(
-        "SELECT * FROM clinics ORDER BY created_at DESC"
+        `SELECT * FROM ${Clinic.tableName} ORDER BY created_at DESC`
       );
-      // Parse JSON fields for categories and specialties
-      const clinics = rows.map((clinic) => this.parseClinicData(clinic));
-      console.log("✅ Clinics found:", clinics.length);
-      return clinics;
+      console.log("✅ Clinics found:", rows.length);
+      return rows;
     } catch (err) {
       console.log("❌ Clinics fetch error:", err);
       throw err;
@@ -86,10 +71,10 @@ class ClinicController {
     try {
       const db = await this.initDB();
       const [rows] = await db.execute(
-        "SELECT * FROM clinics WHERE id = ?",
+        `SELECT * FROM ${Clinic.tableName} WHERE id = ?`,
         [id]
       );
-      const clinic = rows[0] ? this.parseClinicData(rows[0]) : null;
+      const clinic = rows[0] || null;
       return clinic;
     } catch (err) {
       console.log("❌ Clinic find error:", err);
@@ -102,10 +87,10 @@ class ClinicController {
     try {
       const db = await this.initDB();
       const [rows] = await db.execute(
-        "SELECT * FROM clinics WHERE institute_name = ?",
+        `SELECT * FROM ${Clinic.tableName} WHERE clinic_name = ?`,
         [name]
       );
-      const clinic = rows[0] ? this.parseClinicData(rows[0]) : null;
+      const clinic = rows[0] || null;
       return clinic;
     } catch (err) {
       console.log("❌ Clinic name search error:", err);
@@ -113,63 +98,48 @@ class ClinicController {
     }
   }
 
-  // GET CLINICS BY CATEGORY
-  async getClinicsByCategory(category) {
+  // Get clinic by email
+  async getClinicByEmail(email) {
     try {
       const db = await this.initDB();
-
-      if (category === "All") {
-        // If 'All', return all clinics
-        return await this.getAllClinics();
-      }
-
-      // Search in primary_category or categories JSON array
-      const sql = `
-        SELECT * FROM clinics 
-        WHERE primary_category = ? 
-        OR JSON_CONTAINS(categories, ?)
-        ORDER BY created_at DESC
-      `;
-
-      const [rows] = await db.execute(sql, [category, `"${category}"`]);
-      // Parse JSON fields
-      const clinics = rows.map((clinic) => this.parseClinicData(clinic));
-      console.log(
-        `✅ Found ${clinics.length} clinics in category: ${category}`
+      const [rows] = await db.execute(
+        `SELECT * FROM ${Clinic.tableName} WHERE email = ?`,
+        [email]
       );
-      return clinics;
+      const clinic = rows[0] || null;
+      return clinic;
     } catch (err) {
-      console.log("❌ Clinics by category error:", err);
+      console.log("❌ Clinic email search error:", err);
       throw err;
     }
   }
 
-  // GET ALL UNIQUE CATEGORIES
-  async getAllCategories() {
+  // Get clinics by status
+  async getClinicsByStatus(status) {
     try {
       const db = await this.initDB();
-      const sql = `
-        SELECT DISTINCT primary_category 
-        FROM clinics 
-        WHERE primary_category IS NOT NULL AND primary_category != ''
-        UNION
-        SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(categories, CONCAT('$[', idx.idx, ']'))) as primary_category
-        FROM clinics
-        CROSS JOIN (
-          SELECT 0 as idx UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4
-        ) idx
-        WHERE categories IS NOT NULL AND categories != '[]'
-        AND JSON_EXTRACT(categories, CONCAT('$[', idx.idx, ']')) IS NOT NULL
-      `;
-
-      const [rows] = await db.execute(sql);
-      const categories = rows
-        .map((row) => row.primary_category)
-        .filter(Boolean);
-      console.log("✅ Found categories:", categories);
-      return categories;
+      const [rows] = await db.execute(
+        `SELECT * FROM ${Clinic.tableName} WHERE status = ? ORDER BY created_at DESC`,
+        [status]
+      );
+      return rows;
     } catch (err) {
-      console.log("❌ Categories fetch error:", err);
+      console.log("❌ Clinics by status error:", err);
+      throw err;
+    }
+  }
+
+  // Get clinics by clinic type
+  async getClinicsByType(clinicType) {
+    try {
+      const db = await this.initDB();
+      const [rows] = await db.execute(
+        `SELECT * FROM ${Clinic.tableName} WHERE clinic_type = ? ORDER BY created_at DESC`,
+        [clinicType]
+      );
+      return rows;
+    } catch (err) {
+      console.log("❌ Clinics by type error:", err);
       throw err;
     }
   }
@@ -178,31 +148,18 @@ class ClinicController {
   async updateClinic(id, clinicData) {
     try {
       const db = await this.initDB();
-      // Handle categories field - convert array to JSON string if needed
-      const processedData = { ...clinicData };
 
-      if (processedData.categories && Array.isArray(processedData.categories)) {
-        processedData.categories = JSON.stringify(processedData.categories);
-      }
-
-      if (
-        processedData.specialties &&
-        Array.isArray(processedData.specialties)
-      ) {
-        processedData.specialties = JSON.stringify(processedData.specialties);
-      }
-
-      const updates = Object.keys(processedData)
+      const updates = Object.keys(clinicData)
         .filter((key) => key !== "id")
         .map((key) => `${key} = ?`)
         .join(", ");
 
-      const values = Object.keys(processedData)
+      const values = Object.keys(clinicData)
         .filter((key) => key !== "id")
-        .map((key) => processedData[key])
+        .map((key) => clinicData[key])
         .concat(id);
 
-      const sql = `UPDATE clinics SET ${updates}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+      const sql = `UPDATE ${Clinic.tableName} SET ${updates}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
       await db.execute(sql, values);
 
       console.log("✅ Clinic updated:", id);
@@ -217,7 +174,7 @@ class ClinicController {
   async deleteClinic(id) {
     try {
       const db = await this.initDB();
-      await db.execute("DELETE FROM clinics WHERE id = ?", [id]);
+      await db.execute(`DELETE FROM ${Clinic.tableName} WHERE id = ?`, [id]);
       console.log("✅ Clinic deleted:", id);
       return { deletedId: id };
     } catch (err) {
@@ -226,59 +183,76 @@ class ClinicController {
     }
   }
 
-  // HELPER METHOD: Parse clinic data (JSON fields) - keep your existing method unchanged
-  parseClinicData(clinic) {
-    const parsedClinic = { ...clinic };
-
-    // Parse categories JSON string to array
-    if (parsedClinic.categories) {
-      try {
-        // Check if it's already an array
-        if (Array.isArray(parsedClinic.categories)) {
-          // It's already an array, keep it as is
-        } else if (typeof parsedClinic.categories === "string") {
-          // Try to parse if it's a string
-          parsedClinic.categories = JSON.parse(parsedClinic.categories);
-        }
-      } catch (e) {
-        console.log("❌ Error parsing categories:", e);
-        parsedClinic.categories = [];
-      }
-    } else {
-      parsedClinic.categories = [];
+  // Activate clinic (set status to active)
+  async activateClinic(id) {
+    try {
+      const db = await this.initDB();
+      await db.execute(
+        `UPDATE ${Clinic.tableName} SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [id]
+      );
+      console.log("✅ Clinic activated:", id);
+      return { id, status: "active" };
+    } catch (err) {
+      console.log("❌ Clinic activation error:", err);
+      throw err;
     }
+  }
 
-    // Parse specialties JSON string to array
-    if (parsedClinic.specialties) {
-      try {
-        // Check if it's already an array
-        if (Array.isArray(parsedClinic.specialties)) {
-          // It's already an array, keep it as is
-        } else if (typeof parsedClinic.specialties === "string") {
-          // If it's a comma-separated string, split it
-          if (parsedClinic.specialties.includes(",")) {
-            parsedClinic.specialties = parsedClinic.specialties
-              .split(",")
-              .map((s) => s.trim());
-          } else {
-            // Try to parse as JSON, if fails, make it a single-item array
-            try {
-              parsedClinic.specialties = JSON.parse(parsedClinic.specialties);
-            } catch (e) {
-              parsedClinic.specialties = [parsedClinic.specialties];
-            }
-          }
-        }
-      } catch (e) {
-        console.log("❌ Error parsing specialties:", e);
-        // If there's an error, treat it as a single specialty
-        parsedClinic.specialties = [parsedClinic.specialties];
-      }
-    } else {
-      parsedClinic.specialties = [];
+  // Suspend clinic (set status to suspended)
+  async suspendClinic(id) {
+    try {
+      const db = await this.initDB();
+      await db.execute(
+        `UPDATE ${Clinic.tableName} SET status = 'suspended', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [id]
+      );
+      console.log("✅ Clinic suspended:", id);
+      return { id, status: "suspended" };
+    } catch (err) {
+      console.log("❌ Clinic suspension error:", err);
+      throw err;
     }
+  }
 
-    return parsedClinic;
+  // Update subscription status
+  async updateSubscriptionStatus(id, subscriptionData) {
+    try {
+      const db = await this.initDB();
+      const {
+        subscription_status,
+        current_period_start,
+        current_period_end,
+        next_billing_date,
+        payment_method_id,
+      } = subscriptionData;
+
+      const sql = `
+        UPDATE ${Clinic.tableName} 
+        SET subscription_status = ?, 
+            current_period_start = ?, 
+            current_period_end = ?, 
+            next_billing_date = ?,
+            payment_method_id = ?,
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `;
+
+      await db.execute(sql, [
+        subscription_status,
+        current_period_start,
+        current_period_end,
+        next_billing_date,
+        payment_method_id,
+        id,
+      ]);
+
+      console.log("✅ Subscription updated for clinic:", id);
+      return { id, ...subscriptionData };
+    } catch (err) {
+      console.log("❌ Subscription update error:", err);
+      throw err;
+    }
   }
 }
 

@@ -11,6 +11,7 @@ import doctorRouter from "./routes/doctorRoutes.js";
 import smsRouter from "./routes/smsRoutes.js";
 import reviewRouter from "./routes/reviewRoutes.js";
 import notificationRouter from "./routes/notificationRoutes.js";
+import tenantsRouter from "./routes/tenantsRoutes.js";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api/doctors", doctorRouter);
 app.use("/api", smsRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/notifications", notificationRouter);
+app.use("/api/tenants", tenantsRouter);
 
 app.get("/", (req, res) => {
   res.json({

@@ -170,21 +170,21 @@ const Reschedule = () => {
       case 0:
         return {
           text: "Pending",
-          color: "text-yellow-600",
-          bg: "bg-yellow-100",
+          color: "text-amber-600",
+          bg: "bg-amber-100",
         };
       case 1:
-        return { text: "Scheduled", color: "text-cyan-600", bg: "bg-cyan-100" };
+        return { text: "Scheduled", color: "text-blue-600", bg: "bg-blue-100" };
       case 2:
         return {
           text: "Completed",
-          color: "text-emerald-600",
-          bg: "bg-emerald-100",
+          color: "text-green-600",
+          bg: "bg-green-100",
         };
       case 3:
         return { text: "Cancelled", color: "text-red-600", bg: "bg-red-100" };
       default:
-        return { text: "Unknown", color: "text-slate-600", bg: "bg-slate-100" };
+        return { text: "Unknown", color: "text-gray-600", bg: "bg-gray-100" };
     }
   };
 
@@ -192,27 +192,38 @@ const Reschedule = () => {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-slate-50"
+      className="flex-1 bg-white"
       style={{ paddingBottom: insets.bottom, paddingTop: insets.top }}
     >
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-slate-200">
-        <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="p-2 mr-3"
-          >
-            <Feather name="arrow-left" size={24} color="#64748b" />
+      <View className="bg-white px-5 py-4 border-b border-gray-200">
+        <View className="flex-row items-center gap-3">
+          <TouchableOpacity onPress={() => navigation.goBack()} className="p-2">
+            <Feather name="arrow-left" size={20} color="#374151" />
           </TouchableOpacity>
           <View className="flex-1">
-            <Text className="text-xl font-bold text-slate-800">
+            <Text className="text-lg font-semibold text-gray-900">
               Reschedule Appointment
             </Text>
-            <Text className="text-slate-500 text-sm mt-1">
-              {appointment.doctor_name} • {appointment.clinic_name}
-            </Text>
+            <View className="flex-row flex-wrap items-center gap-1 mt-1">
+              <Text
+                className="text-gray-600 text-sm flex-shrink"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {appointment.doctor_name}
+              </Text>
+              <Text className="text-gray-400 text-sm">•</Text>
+              <Text
+                className="text-gray-600 text-sm flex-1"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {appointment.clinic_name}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -222,52 +233,66 @@ const Reschedule = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
       >
-        <View className="p-6 gap-6">
+        <View className="p-5 gap-5">
           {/* Current Appointment Card */}
-          <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-            <View className="flex-row items-center mb-4">
-              <View className="bg-amber-500 p-3 rounded-xl mr-4">
-                <Feather name="calendar" size={24} color="#ffffff" />
+          <View className="bg-white rounded-xl border border-gray-200 p-5">
+            <View className="flex-row items-center gap-4 mb-4">
+              <View className="bg-amber-500 p-2 rounded-lg">
+                <Feather name="calendar" size={18} color="#ffffff" />
               </View>
-              <Text className="text-lg font-bold text-slate-800">
+              <Text className="text-base font-semibold text-gray-900">
                 Current Appointment
               </Text>
             </View>
 
-            <View className="space-y-3">
-              <View className="flex-row justify-between items-center py-2 border-b border-slate-100">
-                <Text className="text-slate-600 font-medium">Doctor:</Text>
-                <Text className="text-slate-800 font-semibold text-right">
+            <View className="gap-3">
+              <View className="flex-row justify-between items-center py-2 border-b border-gray-100">
+                <Text className="text-gray-600 font-medium text-sm">
+                  Doctor:
+                </Text>
+                <Text
+                  className="text-gray-900 font-medium text-sm text-right max-w-[60%]"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {appointment.doctor_name}
                 </Text>
               </View>
 
-              <View className="flex-row justify-between items-center py-2 border-b border-slate-100">
-                <Text className="text-slate-600 font-medium">Clinic:</Text>
-                <Text className="text-slate-800 font-semibold text-right">
+              <View className="flex-row justify-between items-center py-2 border-b border-gray-100">
+                <Text className="text-gray-600 font-medium text-sm">
+                  Clinic:
+                </Text>
+                <Text
+                  className="text-gray-900 font-medium text-sm text-right max-w-[60%]"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {appointment.clinic_name}
                 </Text>
               </View>
 
-              <View className="flex-row justify-between items-center py-2 border-b border-slate-100">
-                <Text className="text-slate-600 font-medium">Date:</Text>
-                <Text className="text-slate-800 font-semibold">
+              <View className="flex-row justify-between items-center py-2 border-b border-gray-100">
+                <Text className="text-gray-600 font-medium text-sm">Date:</Text>
+                <Text className="text-gray-900 font-medium text-sm text-right">
                   {originalDateTime.date}
                 </Text>
               </View>
 
-              <View className="flex-row justify-between items-center py-2 border-b border-slate-100">
-                <Text className="text-slate-600 font-medium">Time:</Text>
-                <Text className="text-slate-800 font-semibold">
+              <View className="flex-row justify-between items-center py-2 border-b border-gray-100">
+                <Text className="text-gray-600 font-medium text-sm">Time:</Text>
+                <Text className="text-gray-900 font-medium text-sm">
                   {originalDateTime.time}
                 </Text>
               </View>
 
               <View className="flex-row justify-between items-center py-2">
-                <Text className="text-slate-600 font-medium">Status:</Text>
-                <View className={`px-3 py-1 rounded-full ${currentStatus.bg}`}>
+                <Text className="text-gray-600 font-medium text-sm">
+                  Status:
+                </Text>
+                <View className={`px-2 py-1 rounded-full ${currentStatus.bg}`}>
                   <Text
-                    className={`text-xs font-semibold ${currentStatus.color}`}
+                    className={`text-xs font-medium ${currentStatus.color}`}
                   >
                     {currentStatus.text}
                   </Text>
@@ -277,16 +302,16 @@ const Reschedule = () => {
           </View>
 
           {/* Calendar Section */}
-          <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-            <View className="flex-row items-center mb-4">
-              <View className="bg-blue-500 p-3 rounded-xl mr-4">
-                <Feather name="calendar" size={24} color="#ffffff" />
+          <View className="bg-white rounded-xl border border-gray-200 p-5">
+            <View className="flex-row items-center gap-4 mb-4">
+              <View className="bg-blue-500 p-2 rounded-lg">
+                <Feather name="calendar" size={18} color="#ffffff" />
               </View>
               <View className="flex-1">
-                <Text className="text-lg font-bold text-slate-800">
+                <Text className="text-base font-semibold text-gray-900">
                   Select New Date
                 </Text>
-                <Text className="text-slate-500 text-sm mt-1">
+                <Text className="text-gray-500 text-xs mt-0.5">
                   Choose from available dates
                 </Text>
               </View>
@@ -301,16 +326,16 @@ const Reschedule = () => {
 
           {/* Available Times Section */}
           {selectedDate && (
-            <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-              <View className="flex-row items-center mb-4">
-                <View className="bg-green-500 p-3 rounded-xl mr-4">
-                  <Feather name="clock" size={24} color="#ffffff" />
+            <View className="bg-white rounded-xl border border-gray-200 p-5">
+              <View className="flex-row items-center gap-4 mb-4">
+                <View className="bg-green-500 p-2 rounded-lg">
+                  <Feather name="clock" size={18} color="#ffffff" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-lg font-bold text-slate-800">
+                  <Text className="text-base font-semibold text-gray-900">
                     Select New Time
                   </Text>
-                  <Text className="text-slate-500 text-sm mt-1">
+                  <Text className="text-gray-500 text-xs mt-0.5">
                     Available time slots for{" "}
                     {new Date(selectedDate).toLocaleDateString("en-US", {
                       weekday: "long",
@@ -325,23 +350,23 @@ const Reschedule = () => {
               </View>
 
               {availableTimes.length > 0 ? (
-                <View className="flex-row flex-wrap gap-3">
+                <View className="flex-row flex-wrap gap-2">
                   {availableTimes.map((slot, index) => (
                     <TouchableOpacity
                       key={index}
                       onPress={() => setSelectedTime(slot.time)}
-                      className={`px-4 py-3 rounded-xl flex-1 min-w-[48%] items-center ${
+                      className={`px-3 py-2.5 rounded-lg flex-1 min-w-[48%] items-center ${
                         selectedTime === slot.time
-                          ? "bg-green-500 border-2 border-green-600"
-                          : "bg-slate-50 border border-slate-200"
+                          ? "bg-green-500 border border-green-600"
+                          : "bg-gray-50 border border-gray-200"
                       }`}
                     >
                       <Text
-                        className={
+                        className={`text-sm font-medium ${
                           selectedTime === slot.time
-                            ? "text-white font-bold text-sm"
-                            : "text-slate-700 font-medium text-sm"
-                        }
+                            ? "text-white"
+                            : "text-gray-700"
+                        }`}
                       >
                         {slot.formattedTime}
                       </Text>
@@ -349,9 +374,9 @@ const Reschedule = () => {
                   ))}
                 </View>
               ) : (
-                <View className="items-center py-4">
-                  <Feather name="clock" size={48} color="#cbd5e1" />
-                  <Text className="text-slate-500 mt-2 text-center">
+                <View className="items-center py-4 gap-2">
+                  <Feather name="clock" size={32} color="#d1d5db" />
+                  <Text className="text-gray-500 text-sm text-center">
                     No available times for this date
                   </Text>
                 </View>
@@ -361,20 +386,22 @@ const Reschedule = () => {
 
           {/* Selected Appointment Summary */}
           {selectedDate && selectedTime && (
-            <View className="bg-purple-50 rounded-2xl border border-purple-200 p-6">
-              <View className="flex-row items-center mb-4">
-                <View className="bg-purple-500 p-3 rounded-xl mr-4">
-                  <Feather name="check-circle" size={24} color="#ffffff" />
+            <View className="bg-blue-50 rounded-xl border border-blue-200 p-5">
+              <View className="flex-row items-center gap-4 mb-4">
+                <View className="bg-blue-500 p-2 rounded-lg">
+                  <Feather name="check-circle" size={18} color="#ffffff" />
                 </View>
-                <Text className="text-lg font-bold text-slate-800">
+                <Text className="text-base font-semibold text-gray-900">
                   New Appointment Summary
                 </Text>
               </View>
 
-              <View className="space-y-3">
-                <View className="flex-row justify-between items-center py-2 border-b border-purple-100">
-                  <Text className="text-slate-600 font-medium">Date:</Text>
-                  <Text className="text-slate-800 font-semibold">
+              <View className="gap-3">
+                <View className="flex-row justify-between items-center py-2 border-b border-blue-100">
+                  <Text className="text-gray-600 font-medium text-sm">
+                    Date:
+                  </Text>
+                  <Text className="text-gray-900 font-medium text-sm text-right">
                     {new Date(selectedDate).toLocaleDateString("en-US", {
                       weekday: "long",
                       year: "numeric",
@@ -384,19 +411,21 @@ const Reschedule = () => {
                   </Text>
                 </View>
 
-                <View className="flex-row justify-between items-center py-2 border-b border-purple-100">
-                  <Text className="text-slate-600 font-medium">Time:</Text>
-                  <Text className="text-slate-800 font-semibold">
+                <View className="flex-row justify-between items-center py-2 border-b border-blue-100">
+                  <Text className="text-gray-600 font-medium text-sm">
+                    Time:
+                  </Text>
+                  <Text className="text-gray-900 font-medium text-sm">
                     {selectedTime}
                   </Text>
                 </View>
 
                 <View className="flex-row justify-between items-center py-2">
-                  <Text className="text-slate-600 font-medium">
+                  <Text className="text-gray-600 font-medium text-sm">
                     New Status:
                   </Text>
-                  <View className="bg-yellow-100 px-3 py-1 rounded-full">
-                    <Text className="text-yellow-700 text-xs font-semibold">
+                  <View className="bg-amber-100 px-2 py-1 rounded-full">
+                    <Text className="text-amber-700 text-xs font-medium">
                       Pending Confirmation
                     </Text>
                   </View>
@@ -406,10 +435,10 @@ const Reschedule = () => {
           )}
 
           {/* Information Note */}
-          <View className="bg-amber-50 rounded-2xl border border-amber-200 p-4">
-            <View className="flex-row items-start">
-              <Feather name="info" size={20} color="#d97706" />
-              <Text className="text-amber-800 text-sm ml-3 flex-1">
+          <View className="bg-amber-50 rounded-xl border border-amber-200 p-4">
+            <View className="flex-row items-start gap-3">
+              <Feather name="info" size={16} color="#d97706" />
+              <Text className="text-amber-800 text-xs flex-1 leading-4">
                 After rescheduling, your appointment status will be set to
                 "Pending" and will require confirmation from the clinic.
               </Text>
@@ -419,26 +448,26 @@ const Reschedule = () => {
       </ScrollView>
 
       {/* Fixed Bottom Button */}
-      <View className="bg-white border-t border-slate-200 px-6 py-4">
+      <View className="bg-white border-t border-gray-200 px-5 py-4">
         <TouchableOpacity
           onPress={handleReschedule}
           disabled={!selectedDate || !selectedTime || loading}
-          className={`py-4 rounded-xl items-center justify-center ${
+          className={`py-3 rounded-lg items-center justify-center ${
             !selectedDate || !selectedTime || loading
-              ? "bg-slate-300"
-              : "bg-cyan-500 active:bg-cyan-600"
+              ? "bg-gray-300"
+              : "bg-blue-500"
           }`}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           {loading ? (
-            <View className="flex-row items-center">
+            <View className="flex-row items-center gap-2">
               <ActivityIndicator size="small" color="#ffffff" />
-              <Text className="text-white font-bold text-lg ml-2">
+              <Text className="text-white font-semibold text-base">
                 Rescheduling...
               </Text>
             </View>
           ) : (
-            <Text className="text-white font-bold text-lg">
+            <Text className="text-white font-semibold text-base">
               Confirm Reschedule
             </Text>
           )}
@@ -447,10 +476,10 @@ const Reschedule = () => {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           disabled={loading}
-          className="py-3 rounded-xl items-center mt-3"
+          className="py-3 rounded-lg items-center mt-2"
           activeOpacity={0.7}
         >
-          <Text className="text-slate-600 font-semibold">Cancel</Text>
+          <Text className="text-gray-600 font-medium text-base">Cancel</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

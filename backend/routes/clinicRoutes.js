@@ -81,20 +81,6 @@ router.post("/", async (req, res) => {
     const clinicData = req.body;
     console.log("🔄 Creating new clinic:", clinicData.institute_name);
 
-    // Validate required fields
-    if (
-      !clinicData.institute_name ||
-      !clinicData.institute_email ||
-      !clinicData.address ||
-      !clinicData.mobileno
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Missing required fields: institute_name, institute_email, address, mobileno",
-      });
-    }
-
     const newClinic = await clinicController.createClinic(clinicData);
     res.status(201).json({ success: true, data: newClinic });
   } catch (error) {
