@@ -10,6 +10,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import appointmentServices from "../../../services/appointmentsServices";
 import { getSpecialties } from "../../../utils/getSpecialty";
+import { useRefresh } from "../../../context/RefreshContext";
 
 const Confirm = ({
   formData,
@@ -22,6 +23,7 @@ const Confirm = ({
 }) => {
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
+  const { triggerRefresh } = useRefresh();
 
   const selectedTimeSlot = availableSlots.find(
     (slot) => slot.military === formData.time
@@ -66,6 +68,7 @@ const Confirm = ({
 
       console.log("📤 Sending appointment data:", appointmentData);
       await appointmentServices.createAppointment(appointmentData);
+      triggerRefresh();
 
       Alert.alert("Success", "Appointment booked successfully! 🎉", [
         {

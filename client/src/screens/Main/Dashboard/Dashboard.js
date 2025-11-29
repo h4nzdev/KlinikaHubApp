@@ -19,9 +19,12 @@ import { useReminder } from "../../../context/ReminderContext";
 import Toast from "react-native-toast-message";
 import { getRandomTip } from "../../../utils/healthTipsGenerator";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRefresh } from "../../../context/RefreshContext";
 
 const Dashboard = ({ navigation }) => {
   const { user } = useContext(AuthenticationContext);
+  const { refreshKey } = useRefresh();
+
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,7 +37,6 @@ const Dashboard = ({ navigation }) => {
 
   const insets = useSafeAreaInsets();
 
-  // ✅ Use ref to track if we need to refetch
   const shouldRefetch = useRef(false);
 
   const { addReminder, reminders } = useReminder();
@@ -59,10 +61,9 @@ const Dashboard = ({ navigation }) => {
     }
   };
 
-  // ✅ Initial load only
   useEffect(() => {
     fetchAppointments();
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     const tipInterval = setInterval(

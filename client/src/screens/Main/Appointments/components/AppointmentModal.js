@@ -12,6 +12,7 @@ import Toast from "react-native-toast-message";
 import { useNavigation } from "@react-navigation/native";
 import appointmentServices from "../../../../services/appointmentsServices";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRefresh } from "../../../../context/RefreshContext";
 
 const AppointmentModal = ({
   visible,
@@ -23,6 +24,7 @@ const AppointmentModal = ({
   const isCancel = appointment?.status === 3;
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { triggerRefresh } = useRefresh();
 
   // Updated function to use navigation
   const handleViewAppointment = () => {
@@ -40,6 +42,7 @@ const AppointmentModal = ({
       appointment: appointment,
       onRescheduleSuccess: () => {
         fetchAppointments();
+        triggerRefresh();
       },
     });
   };
@@ -70,6 +73,7 @@ const AppointmentModal = ({
               });
 
               fetchAppointments();
+              triggerRefresh();
             } catch (error) {
               console.error("Delete error:", error);
               Toast.show({

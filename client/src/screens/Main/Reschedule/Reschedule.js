@@ -17,6 +17,7 @@ import { appointmentServices } from "../../../services/appointmentsServices";
 import { generateSlot } from "../../../utils/generateSlot";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CalendarPicker from "../../../components/CalendarPicker";
+import { TimeFormat } from "../../../utils/TimeFormat";
 
 const Reschedule = () => {
   const navigation = useNavigation();
@@ -29,6 +30,7 @@ const Reschedule = () => {
   const [availableTimes, setAvailableTimes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchingSlots, setFetchingSlots] = useState(false);
+  console.log("SelectedTime value:", selectedTime);
 
   // Set max date (60 days from now)
   const maxDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
@@ -138,7 +140,7 @@ const Reschedule = () => {
       Toast.show({
         type: "success",
         text1: "Appointment Rescheduled!",
-        text2: `New time: ${selectedTime} on ${new Date(
+        text2: `New time: ${TimeFormat(selectedTime)} on ${new Date(
           selectedDate
         ).toLocaleDateString("en-US", {
           weekday: "long",
@@ -416,7 +418,7 @@ const Reschedule = () => {
                     Time:
                   </Text>
                   <Text className="text-gray-900 font-medium text-sm">
-                    {selectedTime}
+                    {TimeFormat(selectedTime)}
                   </Text>
                 </View>
 

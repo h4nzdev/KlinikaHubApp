@@ -23,10 +23,13 @@ import AppointmentModal from "./components/AppointmentModal";
 import AppointmentDetails from "./components/AppointmentDetails";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import { useRefresh } from "../../../context/RefreshContext";
 
 // ==================== MAIN APPOINTMENTS COMPONENT ====================
 const Appointments = ({ navigation }) => {
   const { user } = useContext(AuthenticationContext);
+  const { triggerRefresh } = useRefresh();
+
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -166,6 +169,8 @@ const Appointments = ({ navigation }) => {
           app.id === appointment.id ? { ...app, status: 3 } : app
         )
       );
+
+      triggerRefresh();
 
       Toast.show({
         type: "success",
