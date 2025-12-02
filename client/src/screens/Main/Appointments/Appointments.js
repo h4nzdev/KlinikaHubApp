@@ -700,39 +700,158 @@ const Appointments = ({ navigation }) => {
 
             {filteredAppointments.length > 0 ? (
               <View className="gap-3">
-                {displayAppointments.map((appointment) => (
-                  <TouchableOpacity
-                    key={appointment.id}
-                    className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5 active:bg-slate-50"
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      console.log("View appointment details", appointment.id);
-                    }}
-                  >
-                    {/* Appointment Card */}
-                    <View className="flex-row justify-between items-start mb-3">
-                      <View className="flex-1">
-                        <Text className="font-bold text-slate-800 text-base mb-1">
-                          {getDoctorName(appointment)}
-                        </Text>
-                        <Text className="text-slate-600 text-sm">
-                          {getClinicName(appointment)}
+                {displayAppointments.map((appointment) => {
+                  const appointmentDate = formatDate(
+                    appointment.appointment_date
+                  );
+                  const appointmentTime = formatTime(appointment.schedule);
+
+                  const statusConfig = {
+                    0: {
+                      label: "Pending",
+                      color: "bg-amber-100 text-amber-700",
+                      icon: "clock",
+                    },
+                    1: {
+                      label: "Scheduled",
+                      color: "bg-blue-100 text-blue-700",
+                      icon: "calendar",
+                    },
+                    2: {
+                      label: "Completed",
+                      color: "bg-green-100 text-green-700",
+                      icon: "check-circle",
+                    },
+                    3: {
+                      label: "Cancelled",
+                      color: "bg-red-100 text-red-700",
+                      icon: "x-circle",
+                    },
+                  };
+
+                  const status =
+                    statusConfig[appointment.status] || statusConfig[0];
+
+                  return (
+                    <TouchableOpacity
+                      key={appointment.id}
+                      className="bg-white rounded-xl p-4 border border-gray-200 active:bg-gray-50"
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        console.log("View appointment details", appointment.id);
+                      }}
+                    >
+                      {/* Header Section */}
+                      <View className="flex-row items-start gap-3 mb-3">
+                        {/* Doctor Avatar/Icon */}
+                        <View className="bg-blue-100 p-2 rounded-lg flex-shrink-0">
+                          <Feather name="user" size={16} color="#3b82f6" />
+                        </View>
+
+                        {/* Doctor Info - Flexible width */}
+                        <View className="flex-1 flex-shrink min-w-0">
+                          <Text
+                            className="font-semibold text-gray-900 text-base mb-1"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {getDoctorName(appointment)}
+                          </Text>
+                          <Text
+                            className="text-blue-600 text-sm font-medium"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {appointment.doctor_specialization ||
+                              "General Medicine"}
+                          </Text>
+                        </View>
+
+                        {/* Status Badge - Fixed width */}
+                        <View
+                          className={`px-2 py-1 rounded-full ${status.color} flex-shrink-0`}
+                        >
+                          <View className="flex-row items-center gap-1">
+                            <Feather
+                              name={status.icon}
+                              size={10}
+                              color="currentColor"
+                            />
+                            <Text
+                              className="text-xs font-medium"
+                              numberOfLines={1}
+                            >
+                              {status.label}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Date and Time Section */}
+                      <View className="flex-row items-center flex-wrap gap-2 mb-3">
+                        <View className="flex-row items-center flex-shrink-0">
+                          <Feather name="calendar" size={14} color="#6b7280" />
+                          <Text
+                            className="text-gray-600 text-sm ml-1.5 font-medium"
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {appointmentDate}
+                          </Text>
+                        </View>
+                        <View className="w-px h-3 bg-gray-300 flex-shrink-0" />
+                        <View className="flex-row items-center flex-shrink-0">
+                          <Feather name="clock" size={14} color="#6b7280" />
+                          <Text
+                            className="text-gray-600 text-sm ml-1.5 font-medium"
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {appointmentTime}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Clinic and Price Section */}
+                      <View className="flex-row items-center justify-between pt-3 border-t border-gray-100">
+                        <View className="flex-row items-center flex-1 min-w-0 mr-3">
+                          <Feather
+                            name="map-pin"
+                            size={14}
+                            color="#6b7280"
+                            className="flex-shrink-0"
+                          />
+                          <Text
+                            className="text-gray-600 text-sm ml-1.5 flex-1"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {getClinicName(appointment)}
+                          </Text>
+                        </View>
+                        <Text
+                          className="text-gray-900 font-semibold text-sm flex-shrink-0"
+                          numberOfLines={1}
+                        >
+                          ₱{appointment.consultation_fees || "0.00"}
                         </Text>
                       </View>
-                      {getStatusBadge(appointment.status)}
-                    </View>
 
-                    <View className="flex-row justify-between items-center">
-                      <View>
-                        <Text className="text-slate-700 font-medium text-sm">
-                          {formatDate(appointment.appointment_date)}
-                        </Text>
-                        <Text className="text-slate-500 text-xs">
-                          {formatTime(appointment.schedule)}
-                        </Text>
-                      </View>
+                      {/* Additional Info Section */}
+                      {(appointment.additional_notes || appointment.reason) && (
+                        <View className="mt-3 pt-3 border-t border-gray-100">
+                          <Text
+                            className="text-gray-500 text-xs italic"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {appointment.additional_notes || appointment.reason}
+                          </Text>
+                        </View>
+                      )}
 
-                      <View className="flex-row gap-3">
+                      {/* Action Buttons - Keep existing functionality */}
+                      <View className="flex-row justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
                         <TouchableOpacity
                           onPress={() => handleSaveReminder(appointment)}
                           disabled={
@@ -750,8 +869,8 @@ const Appointments = ({ navigation }) => {
                             color={
                               checkIfReminderExists(appointment) ||
                               remindedAppointments.has(appointment.id)
-                                ? "#059669" // Green for active reminder
-                                : "#8b5cf6" // Purple for new reminder
+                                ? "#059669"
+                                : "#8b5cf6"
                             }
                           />
                         </TouchableOpacity>
@@ -766,15 +885,14 @@ const Appointments = ({ navigation }) => {
                           />
                         </TouchableOpacity>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-
+                    </TouchableOpacity>
+                  );
+                })}
                 {/* SHOW ALL / SHOW LESS TOGGLE */}
                 {filteredAppointments.length > 5 && (
                   <TouchableOpacity
                     onPress={() => setShowAll(!showAll)}
-                    className="bg-cyan-50 rounded-2xl border border-cyan-200 p-4 items-center"
+                    className="bg-cyan-50 rounded-xl p-4 border border-cyan-200 items-center active:bg-cyan-100"
                     activeOpacity={0.7}
                   >
                     <Text className="text-cyan-600 font-semibold">
@@ -789,17 +907,18 @@ const Appointments = ({ navigation }) => {
                     </Text>
                   </TouchableOpacity>
                 )}
+                {/* Quick Stats */}
               </View>
             ) : (
               // No appointments state
-              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 items-center">
-                <View className="bg-slate-100 rounded-2xl p-6 mb-4">
-                  <Feather name="calendar" size={48} color="#9ca3af" />
+              <View className="bg-white rounded-xl p-12 items-center border border-gray-200">
+                <View className="bg-gray-100 p-4 rounded-full mb-4">
+                  <Feather name="calendar" size={48} color="#6b7280" />
                 </View>
-                <Text className="text-lg font-bold text-slate-700 mb-2 text-center">
+                <Text className="text-gray-700 font-bold text-lg mb-2 text-center">
                   No appointments found
                 </Text>
-                <Text className="text-slate-500 text-center mb-6">
+                <Text className="text-gray-500 text-center mb-6">
                   {searchQuery ||
                   dateFilter !== "all" ||
                   statusFilter !== "all" ||
@@ -813,7 +932,8 @@ const Appointments = ({ navigation }) => {
                 clinicFilter !== "all" ? (
                   <TouchableOpacity
                     onPress={resetFilters}
-                    className="flex-row items-center px-6 py-3 bg-cyan-500 rounded-xl"
+                    className="flex-row items-center px-6 py-3 bg-cyan-500 rounded-xl active:bg-cyan-600"
+                    activeOpacity={0.7}
                   >
                     <Feather name="refresh-cw" size={18} color="#ffffff" />
                     <Text className="text-white font-semibold ml-2">
@@ -824,9 +944,12 @@ const Appointments = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={handleNewAppointmentClick}
                     className={`flex-row items-center px-6 py-3 rounded-xl ${
-                      limitReached ? "bg-slate-300" : "bg-cyan-500"
+                      limitReached
+                        ? "bg-gray-300"
+                        : "bg-blue-500 active:bg-blue-600"
                     }`}
                     disabled={limitReached}
+                    activeOpacity={0.7}
                   >
                     <Feather name="plus" size={18} color="#ffffff" />
                     <Text className="text-white font-semibold ml-2">

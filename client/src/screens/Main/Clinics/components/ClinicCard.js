@@ -36,7 +36,7 @@ const ClinicCard = ({ clinic, onPress }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 shadow-black/5 mb-4"
+      className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 shadow-black/5"
       activeOpacity={0.7}
     >
       <View className="flex-row gap-4">

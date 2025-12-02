@@ -5,13 +5,9 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
-  TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Modal,
-  TouchableWithoutFeedback,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import Header from "../../../components/Header";
 import { AuthenticationContext } from "../../../context/AuthenticationContext";
 import appointmentServices from "../../../services/appointmentsServices";
@@ -20,10 +16,15 @@ import Toast from "react-native-toast-message";
 import { getRandomTip } from "../../../utils/healthTipsGenerator";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRefresh } from "../../../context/RefreshContext";
+import AppointmentDropdown from "./components/AppointmentDropdown";
+import WelcomeSection from "./components/WelcomeSection";
+import StatsCards from "./components/StatsCards";
+import AppointmentsList from "./components/AppointmentList";
 
 const Dashboard = ({ navigation }) => {
   const { user } = useContext(AuthenticationContext);
   const { refreshKey } = useRefresh();
+  const insets = useSafeAreaInsets();
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,22 +36,14 @@ const Dashboard = ({ navigation }) => {
   const [randomTip, setRandomTip] = useState(getRandomTip());
   const [showAllAppointments, setShowAllAppointments] = useState(false);
 
-  const insets = useSafeAreaInsets();
-
   const shouldRefetch = useRef(false);
-
   const { addReminder, reminders } = useReminder();
 
-  // Fetch appointments from API
   const fetchAppointments = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      console.log("🔄 Fetching appointments for dashboard...");
-
       const appointmentsData =
         await appointmentServices.getAppointmentsByPatientId(user.id);
-      console.log("✅ Dashboard appointments fetched:", appointmentsData);
-
       setAppointments(appointmentsData || []);
     } catch (error) {
       console.error("❌ Error fetching dashboard appointments:", error);
@@ -71,17 +64,15 @@ const Dashboard = ({ navigation }) => {
         setRandomTip(getRandomTip());
       },
       3 * 60 * 60 * 1000
-    ); // 3 hours
+    );
 
     return () => clearInterval(tipInterval);
   }, []);
 
-  // ✅ Listen for tab focus using navigation listener (safer than useFocusEffect)
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       if (shouldRefetch.current) {
-        console.log("🔄 Tab focused, refetching appointments...");
-        fetchAppointments(true); // Silent refetch
+        fetchAppointments(true);
         shouldRefetch.current = false;
       }
     });
@@ -94,7 +85,6 @@ const Dashboard = ({ navigation }) => {
     fetchAppointments(true);
   };
 
-  // Format date for display
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
@@ -108,44 +98,33 @@ const Dashboard = ({ navigation }) => {
     }
   };
 
-  // Format time for display
   const formatTime = (schedule) => {
     if (!schedule) return "No time set";
-
     if (schedule.includes("-")) {
       return schedule.split("-")[0].trim();
     }
-
     return schedule;
   };
 
-  // ✅ FINAL FIX: Update state in a way that doesn't trigger navigation errors
   const handleCancelAppointment = async (appointment) => {
     setDropdownVisible(false);
-
     try {
-      console.log(`🔄 Cancelling appointment: ${appointment.id}`);
       await appointmentServices.updateAppointmentStatus(appointment.id, 3);
-
-      // ✅ Update UI immediately using functional update
       setAppointments((prevAppointments) =>
         prevAppointments.map((app) =>
           app.id === appointment.id ? { ...app, status: 3 } : app
         )
       );
-
       Toast.show({
         type: "success",
         text1: "Appointment cancelled successfully",
       });
-      console.log("✅ Appointment cancelled successfully");
     } catch (error) {
       console.error("❌ Error cancelling appointment:", error);
     }
   };
 
   const handleSaveReminder = (appointment) => {
-    // ✅ Check if reminder already exists FIRST
     if (checkIfReminderExists(appointment)) {
       Toast.show({
         type: "info",
@@ -162,14 +141,12 @@ const Dashboard = ({ navigation }) => {
       name: `Appointment with ${getDoctorName(appointment)} on ${formatDate(appointment.appointment_date)}`,
       time: formatTime(appointment.schedule),
       time24: `${new Date(appointment.schedule).getHours().toString().padStart(2, "0")}:${new Date(appointment.schedule).getMinutes().toString().padStart(2, "0")}`,
-      date: appointment.appointment_date, // NEW: Use appointment date
-      appointmentId: appointment.id, // NEW: Link to appointment
+      date: appointment.appointment_date,
+      appointmentId: appointment.id,
       isActive: true,
     };
 
     addReminder(reminderFormData);
-
-    // Add to reminded appointments set
     setRemindedAppointments((prev) => new Set(prev).add(appointment.id));
 
     Toast.show({
@@ -179,19 +156,13 @@ const Dashboard = ({ navigation }) => {
   };
 
   const checkIfReminderExists = (appointment) => {
-    // ✅ SAFETY CHECK: If no appointment, return false
-    if (!appointment) {
-      return false;
-    }
-
-    // Check if there's already a reminder linked to this appointment
+    if (!appointment) return false;
     return reminders.some(
       (reminder) =>
         reminder.appointmentId === appointment.id && reminder.isActive
     );
   };
 
-  // Show dropdown menu
   const showDropdown = (appointment, event) => {
     const { pageX, pageY } = event.nativeEvent;
     setSelectedAppointment(appointment);
@@ -199,81 +170,25 @@ const Dashboard = ({ navigation }) => {
     setDropdownVisible(true);
   };
 
-  // Get status badge
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      0: "pending",
-      1: "scheduled",
-      2: "completed",
-      3: "cancelled",
-    };
-
-    const uiStatus = statusMap[status] || "pending";
-
-    const statusConfig = {
-      scheduled: {
-        bg: "bg-cyan-100",
-        text: "text-cyan-700",
-        label: "Scheduled",
-      },
-      pending: {
-        bg: "bg-yellow-100",
-        text: "text-yellow-700",
-        label: "Pending",
-      },
-      completed: {
-        bg: "bg-emerald-100",
-        text: "text-emerald-700",
-        label: "Completed",
-      },
-      cancelled: {
-        bg: "bg-red-100",
-        text: "text-red-700",
-        label: "Cancelled",
-      },
-    };
-
-    const config = statusConfig[uiStatus] || statusConfig.pending;
-
-    return (
-      <View className={`px-3 py-1 rounded-full ${config.bg}`}>
-        <Text className={`${config.text} text-xs font-semibold`}>
-          {config.label}
-        </Text>
-      </View>
-    );
-  };
-
-  // Get doctor name from appointment data
   const getDoctorName = (appointment) => {
     return appointment.remarks
       ? `Dr. ${appointment.remarks.split(" ")[0]}`
       : "Medical Consultation";
   };
 
-  // Get specialty from appointment data
   const getSpecialty = (appointment) => {
     return "General Medicine";
   };
 
-  // Get next upcoming appointment
   const getNextAppointment = () => {
     const upcoming = appointments
       .filter((app) => [0, 1].includes(app.status))
       .sort(
         (a, b) => new Date(a.appointment_date) - new Date(b.appointment_date)
       );
-
     return upcoming.length > 0 ? upcoming[0] : null;
   };
 
-  const nextAppointment = getNextAppointment();
-  const upcomingAppointments = appointments.filter((app) =>
-    [0, 1].includes(app.status)
-  );
-  const completedAppointments = appointments.filter((app) => app.status === 2);
-
-  // Loading state
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50">
@@ -289,136 +204,28 @@ const Dashboard = ({ navigation }) => {
     );
   }
 
+  const nextAppointment = getNextAppointment();
+  const upcomingAppointments = appointments.filter((app) =>
+    [0, 1].includes(app.status)
+  );
+  const completedAppointments = appointments.filter((app) => app.status === 2);
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
       <Header navigation={navigation} />
-      {/* Dropdown Modal */}
-      <Modal
+
+      <AppointmentDropdown
         visible={dropdownVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setDropdownVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
-          <View
-            className="flex-1 justify-end bg-black/50"
-            style={{ paddingBottom: insets.bottom }}
-          >
-            {/* Prevent closing when tapping the menu */}
-            <TouchableWithoutFeedback>
-              <View className="bg-white rounded-t-3xl mx-2 mb-2 shadow-2xl overflow-hidden">
-                {/* Drag handle */}
-                <View className="items-center py-3">
-                  <View className="w-12 h-1 bg-slate-300 rounded-full" />
-                </View>
+        onClose={() => setDropdownVisible(false)}
+        selectedAppointment={selectedAppointment}
+        checkIfReminderExists={checkIfReminderExists}
+        handleSaveReminder={handleSaveReminder}
+        handleCancelAppointment={handleCancelAppointment}
+        getDoctorName={getDoctorName}
+        insets={insets}
+      />
 
-                {/* Menu header */}
-                <View className="px-6 pb-3 border-b border-slate-100">
-                  <Text className="text-lg font-semibold text-slate-800">
-                    Appointment Options
-                  </Text>
-                  <Text
-                    className="text-slate-500 text-sm mt-1"
-                    numberOfLines={1}
-                  >
-                    {selectedAppointment && getDoctorName(selectedAppointment)}
-                  </Text>
-                </View>
-
-                {/* Menu items */}
-                <View className="py-2">
-                  {/* Simple disabled version */}
-                  <TouchableOpacity
-                    onPress={() => handleSaveReminder(selectedAppointment)}
-                    className="flex-row items-center px-6 py-4 active:bg-slate-50"
-                    activeOpacity={0.6}
-                    disabled={checkIfReminderExists(selectedAppointment)}
-                  >
-                    <View
-                      className={`p-3 rounded-xl mr-4 ${
-                        checkIfReminderExists(selectedAppointment)
-                          ? "bg-emerald-100" // Green for active reminder
-                          : "bg-blue-100" // Blue for new reminder
-                      }`}
-                    >
-                      <Feather
-                        name={
-                          checkIfReminderExists(selectedAppointment)
-                            ? "check"
-                            : "bell"
-                        }
-                        size={20}
-                        color={
-                          checkIfReminderExists(selectedAppointment)
-                            ? "#059669" // Green check
-                            : "#3b82f6" // Blue bell
-                        }
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-slate-800 font-medium text-base">
-                        {checkIfReminderExists(selectedAppointment)
-                          ? "Reminder Active"
-                          : "Set Reminder"}
-                      </Text>
-                      <Text className="text-slate-500 text-sm mt-1">
-                        {checkIfReminderExists(selectedAppointment)
-                          ? "You'll be notified before appointment"
-                          : "Get notified before appointment"}
-                      </Text>
-                    </View>
-                    <Feather
-                      name="chevron-right"
-                      size={18}
-                      color={
-                        checkIfReminderExists(selectedAppointment)
-                          ? "#059669" // Green for active
-                          : "#94a3b8" // Gray for available
-                      }
-                    />
-                  </TouchableOpacity>
-
-                  {/* Cancel Appointment */}
-                  <TouchableOpacity
-                    onPress={() => handleCancelAppointment(selectedAppointment)}
-                    className="flex-row items-center px-6 py-4 active:bg-red-50"
-                    activeOpacity={0.6}
-                  >
-                    <View className="bg-red-100 p-3 rounded-xl mr-4">
-                      <Feather name="x-circle" size={20} color="#ef4444" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-red-600 font-medium text-base">
-                        Cancel Appointment
-                      </Text>
-                      <Text className="text-red-400 text-sm mt-1">
-                        Free up this time slot
-                      </Text>
-                    </View>
-                    <Feather name="chevron-right" size={18} color="#ef4444" />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Cancel button */}
-                <TouchableOpacity
-                  onPress={() => setDropdownVisible(false)}
-                  className="mx-4 my-3 bg-slate-100 py-4 rounded-xl items-center active:bg-slate-200"
-                  activeOpacity={0.7}
-                >
-                  <Text className="text-slate-600 font-semibold text-base">
-                    Close
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Main Content - REST OF YOUR JSX STAYS THE SAME */}
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -428,263 +235,81 @@ const Dashboard = ({ navigation }) => {
         }
       >
         <View className="p-4 gap-8">
-          {/* Welcome Section */}
-          <View>
-            <View className="flex-row items-center gap-3">
-              <View className="bg-cyan-500 p-3 rounded-2xl shadow-lg">
-                <Feather name="star" size={24} color="#ffffff" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-2xl font-semibold text-slate-800">
-                  Welcome, {user?.first_name || "there"}!
-                </Text>
-                <Text className="text-slate-600 mt-1">
-                  {upcomingAppointments.length > 0
-                    ? `You have ${upcomingAppointments.length} upcoming appointment${upcomingAppointments.length !== 1 ? "s" : ""}`
-                    : "No upcoming appointments scheduled"}
-                </Text>
-              </View>
-            </View>
-          </View>
+          <WelcomeSection
+            user={user}
+            upcomingAppointments={upcomingAppointments}
+          />
 
-          {/* Stats Cards */}
-          <View>
-            <View className="gap-4">
-              {/* Health Tip Card */}
-              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1 pr-3">
-                    <View className="flex-row justify-between items-center mb-2">
-                      <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                        Health Tip of the Day
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => setRandomTip(getRandomTip())}
-                      >
-                        <Feather name="refresh-cw" size={16} color="#64748b" />
-                      </TouchableOpacity>
-                    </View>
-                    <Text className="text-slate-700 leading-relaxed font-medium">
-                      {randomTip}
-                    </Text>
-                  </View>
-                  <View className="bg-blue-500 p-4 rounded-2xl shadow-md">
-                    <Feather name="heart" size={32} color="#ffffff" />
-                  </View>
-                </View>
-              </View>
+          <StatsCards
+            randomTip={randomTip}
+            setRandomTip={setRandomTip}
+            upcomingAppointments={upcomingAppointments}
+            nextAppointment={nextAppointment}
+            formatDate={formatDate}
+            formatTime={formatTime}
+            completedAppointments={completedAppointments}
+            appointments={appointments}
+          />
 
-              {/* Upcoming Appointments Card */}
-              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                      Upcoming Appointments
-                    </Text>
-                    <Text className="text-4xl font-semibold text-cyan-600 mt-2">
-                      {upcomingAppointments.length}
-                    </Text>
-                    <View className="flex-row items-center mt-2">
-                      {nextAppointment ? (
-                        <>
-                          <Feather
-                            name="trending-up"
-                            size={14}
-                            color="#059669"
-                          />
-                          <Text className="text-sm text-emerald-600 ml-1 font-medium">
-                            Next: {formatDate(nextAppointment.appointment_date)}{" "}
-                            at {formatTime(nextAppointment.schedule)}
-                          </Text>
-                        </>
-                      ) : (
-                        <Text className="text-sm text-slate-500 font-medium">
-                          No upcoming appointments
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  <View className="bg-cyan-500 p-4 rounded-2xl shadow-md">
-                    <Feather name="calendar" size={32} color="#ffffff" />
-                  </View>
-                </View>
-              </View>
-
-              {/* Health Stats Card */}
-              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1 pr-3">
-                    <Text className="text-sm font-medium text-slate-600 uppercase tracking-wide mb-2">
-                      Your Health Stats
-                    </Text>
-                    <View className="flex-row justify-between mb-3">
-                      <View>
-                        <Text className="text-2xl font-semibold text-slate-800">
-                          {completedAppointments.length}
-                        </Text>
-                        <Text className="text-slate-600 text-xs">
-                          Completed
-                        </Text>
-                      </View>
-                      <View>
-                        <Text className="text-2xl font-semibold text-slate-800">
-                          {
-                            appointments.filter((app) => app.status === 3)
-                              .length
-                          }
-                        </Text>
-                        <Text className="text-slate-600 text-xs">
-                          Cancelled
-                        </Text>
-                      </View>
-                      <View>
-                        <Text className="text-2xl font-semibold text-slate-800">
-                          {appointments.length}
-                        </Text>
-                        <Text className="text-slate-600 text-xs">Total</Text>
-                      </View>
-                    </View>
-                  </View>
-                  <View className="bg-emerald-500 p-4 rounded-2xl shadow-md">
-                    <Feather name="activity" size={32} color="#ffffff" />
-                  </View>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Upcoming Appointments */}
-          <View>
-            <Text className="text-2xl font-semibold text-slate-800 mb-6">
-              Upcoming Appointments
-            </Text>
-
-            {upcomingAppointments.length === 0 ? (
-              <View className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 items-center">
-                <View className="bg-slate-100 rounded-2xl p-6 mb-6">
-                  <Feather name="calendar" size={64} color="#9ca3af" />
-                </View>
-                <Text className="text-xl font-bold text-slate-700 mb-2">
-                  No upcoming appointments
-                </Text>
-                <Text className="text-slate-500 text-center mb-6">
-                  Schedule your next appointment to get started
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate("Clinics");
-                  }}
-                  className="flex-row items-center px-6 py-3 bg-cyan-500 rounded-xl"
-                >
-                  <Feather name="plus" size={18} color="#ffffff" />
-                  <Text className="text-white font-semibold ml-2">
-                    Schedule Now
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View className="gap-4">
-                {upcomingAppointments
-                  .slice(
-                    0,
-                    showAllAppointments ? upcomingAppointments.length : 3
-                  )
-                  .map((appointment) => (
-                    <View
-                      key={appointment.id}
-                      className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6"
-                    >
-                      {/* Your existing appointment card JSX remains the same */}
-                      {/* Doctor Info Row */}
-                      <View className="flex-row justify-between items-start mb-4">
-                        <View className="flex-1 mr-2">
-                          <Text
-                            className="font-bold text-slate-800 text-lg mb-2"
-                            numberOfLines={1}
-                          >
-                            {getDoctorName(appointment)}
-                          </Text>
-                          <View className="flex-row flex-wrap gap-2">
-                            <View className="bg-slate-200 px-3 py-1 rounded-full">
-                              <Text className="text-slate-600 text-xs font-medium">
-                                {getSpecialty(appointment.doctor)}
-                              </Text>
-                            </View>
-                            <View className="bg-slate-100 px-3 py-1 rounded-full">
-                              <Text className="text-slate-700 text-xs font-medium capitalize">
-                                Consultation
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-
-                        {/* Status & Menu */}
-                        <View className="items-end gap-2">
-                          {getStatusBadge(appointment.status)}
-                          <TouchableOpacity
-                            hitSlop={{
-                              top: 10,
-                              bottom: 10,
-                              left: 10,
-                              right: 10,
-                            }}
-                            activeOpacity={0.7}
-                            onPress={(event) =>
-                              showDropdown(appointment, event)
-                            }
-                          >
-                            <Feather
-                              name="more-vertical"
-                              size={18}
-                              color="#64748b"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-
-                      {/* Date & Time */}
-                      <View className="flex-row items-center justify-between mb-4">
-                        <View className="flex-row items-center flex-1">
-                          <Feather name="calendar" size={16} color="#64748b" />
-                          <Text className="text-slate-600 ml-2 font-medium">
-                            {formatDate(appointment.appointment_date)}
-                          </Text>
-                        </View>
-
-                        <View className="flex-row items-center">
-                          <Feather name="clock" size={16} color="#64748b" />
-                          <Text className="text-slate-600 ml-2 font-medium">
-                            {formatTime(appointment.schedule)}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-
-                {upcomingAppointments.length > 3 && (
-                  <TouchableOpacity
-                    onPress={() => setShowAllAppointments(!showAllAppointments)}
-                    className="bg-cyan-50 rounded-2xl border border-cyan-200 p-4 items-center"
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-cyan-600 font-semibold">
-                      {showAllAppointments
-                        ? "Show Less"
-                        : `View All ${upcomingAppointments.length} Appointments`}
-                    </Text>
-                    <Text className="text-cyan-500 text-sm mt-1">
-                      {showAllAppointments
-                        ? "Collapse appointment list"
-                        : "See your complete appointment schedule"}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-          </View>
+          <AppointmentsList
+            upcomingAppointments={upcomingAppointments}
+            navigation={navigation}
+            showAllAppointments={showAllAppointments}
+            setShowAllAppointments={setShowAllAppointments}
+            showDropdown={showDropdown}
+            getDoctorName={getDoctorName}
+            getSpecialty={getSpecialty}
+            formatDate={formatDate}
+            formatTime={formatTime}
+            getStatusBadge={getStatusBadge}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+};
+
+const getStatusBadge = (status) => {
+  const statusMap = {
+    0: "pending",
+    1: "scheduled",
+    2: "completed",
+    3: "cancelled",
+  };
+
+  const uiStatus = statusMap[status] || "pending";
+
+  const statusConfig = {
+    scheduled: {
+      bg: "bg-cyan-100",
+      text: "text-cyan-700",
+      label: "Scheduled",
+    },
+    pending: {
+      bg: "bg-yellow-100",
+      text: "text-yellow-700",
+      label: "Pending",
+    },
+    completed: {
+      bg: "bg-emerald-100",
+      text: "text-emerald-700",
+      label: "Completed",
+    },
+    cancelled: {
+      bg: "bg-red-100",
+      text: "text-red-700",
+      label: "Cancelled",
+    },
+  };
+
+  const config = statusConfig[uiStatus] || statusConfig.pending;
+
+  return (
+    <View className={`px-3 py-1 rounded-full ${config.bg}`}>
+      <Text className={`${config.text} text-xs font-semibold`}>
+        {config.label}
+      </Text>
+    </View>
   );
 };
 

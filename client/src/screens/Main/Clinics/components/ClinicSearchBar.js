@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons";
 
 const ClinicSearchBar = ({ searchQuery, onSearchChange, onClearSearch }) => {
   return (
-    <View className="mb-6">
+    <View className="">
       <Text className="text-lg font-semibold text-gray-900 mb-3">
         Find Clinics
       </Text>

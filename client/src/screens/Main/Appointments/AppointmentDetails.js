@@ -224,7 +224,7 @@ const AppointmentDetails = () => {
             {appointment.auto_cancelled && (
               <View className="bg-amber-50 rounded-lg p-3 border border-amber-200">
                 <Text className="text-amber-800 text-sm text-center">
-                  ⚠️ Automatically cancelled - appointment date passed
+                  Automatically cancelled - appointment date passed
                 </Text>
               </View>
             )}

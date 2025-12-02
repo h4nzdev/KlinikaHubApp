@@ -25,6 +25,7 @@ import EmptyState from "./components/common/EmptyState";
 import CategoriesGrid from "./components/CategoriesGrid";
 import ClinicList from "./components/ClinicList";
 import ClinicSearchBar from "./components/ClinicSearchBar";
+import CategoryDropdown from "./components/CategoryDropdown";
 
 const Clinics = () => {
   const navigation = useNavigation();
@@ -172,7 +173,7 @@ const Clinics = () => {
           />
 
           {/* Categories Grid */}
-          <CategoriesGrid
+          <CategoryDropdown
             categories={categories}
             selectedCategory={selectedCategory}
             onCategorySelect={handleCategorySelect}
