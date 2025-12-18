@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  TextInput,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
@@ -19,6 +20,7 @@ const Settings = () => {
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState("");
   const insets = useSafeAreaInsets();
 
   const ToggleSwitch = ({ value, onToggle, activeColor = "bg-cyan-600" }) => (
@@ -196,6 +198,22 @@ const Settings = () => {
                   Manage your data and storage preferences
                 </Text>
               </TouchableOpacity>
+
+              <View className="p-4 bg-gray-50 rounded-xl">
+                <Text className="font-medium text-gray-800 mb-2">
+                  Gemini API Key
+                </Text>
+                <TextInput
+                  value={geminiApiKey}
+                  onChangeText={setGeminiApiKey}
+                  placeholder="Enter your Gemini API key"
+                  secureTextEntry={true}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-gray-800"
+                />
+                <Text className="text-gray-600 text-sm mt-1">
+                  Required for AI chat functionality
+                </Text>
+              </View>
             </View>
           </View>
 

@@ -13,7 +13,7 @@ import { AuthenticationContext } from "../context/AuthenticationContext";
 import Toast from "react-native-toast-message";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const Header = () => {
+const Header = ({ showBackButton = false }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { user, logout } = useContext(AuthenticationContext);
   const insets = useSafeAreaInsets();
@@ -56,7 +56,20 @@ const Header = () => {
       >
         <View className="px-4 py-4">
           <View className="flex-row items-center justify-between">
-            <Text className="text-2xl font-bold text-cyan-600">KlinikaHub</Text>
+            <View className="flex-row items-center">
+              {showBackButton && navigation && (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  className="mr-4 p-2 -ml-2"
+                  activeOpacity={0.7}
+                >
+                  <Feather name="arrow-left" size={24} color="#0891b2" />
+                </TouchableOpacity>
+              )}
+              <Text className="text-2xl font-bold text-cyan-600">
+                KlinikaHub
+              </Text>
+            </View>
 
             <View className="flex-row items-center gap-4">
               {/* ✅ SAFE: Only render if navigation exists */}

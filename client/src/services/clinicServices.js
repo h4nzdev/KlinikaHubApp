@@ -15,26 +15,28 @@ const api = axios.create({
 export const clinicServices = {
   getAllClinics: async () => {
     try {
-      console.log("🔄 Fetching clinics from:", `${API_BASE_URL}/clinics`);
+      console.log(
+        "🔄 Fetching clinics (tenants) from:",
+        `${API_BASE_URL}/tenants`
+      );
 
-      // Add timeout and better error handling
-      const response = await api.get("/clinics", {
+      // Updated endpoint to match router
+      const response = await api.get("/tenants", {
         timeout: 10000,
-        validateStatus: function (status) {
-          return status >= 200 && status < 500;
-        },
+        validateStatus: (status) => status >= 200 && status < 500,
       });
 
       console.log("✅ Response status:", response.status);
       console.log("✅ Response data:", response.data);
 
-      if (!response.data.success) {
-        throw new Error(
-          response.data.message || "API returned unsuccessful response"
-        );
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data;
+      if (!data) {
+        throw new Error("Unexpected clinics response format");
       }
 
-      return response.data.data; // Make sure this matches your backend response structure
+      return data;
     } catch (error) {
       console.error("❌ Detailed clinics fetch error:", {
         message: error.message,
@@ -42,7 +44,6 @@ export const clinicServices = {
         response: error.response?.data,
       });
 
-      // More specific error messages
       if (error.code === "ECONNREFUSED") {
         throw new Error(
           "Cannot connect to server. Make sure the backend is running."
@@ -62,7 +63,8 @@ export const clinicServices = {
   getClinicById: async (id) => {
     try {
       console.log("🔄 Fetching clinic:", id);
-      const response = await api.get(`/clinics/${id}`);
+      // Updated endpoint to match router
+      const response = await api.get(`/tenants/clinics/${id}`);
       console.log("✅ Specific Clinic fetched successfully!");
       return response.data;
     } catch (error) {
@@ -72,19 +74,35 @@ export const clinicServices = {
     }
   },
 
-  getClinicsByCategory: async (category) => {
+  getClinicByName: async (name) => {
     try {
-      console.log("🔄 Fetching clinics by category:", category);
-      const response = await api.get(`/clinics/category/${category}`);
-      console.log("✅ Clinics by category fetched successfully!");
+      console.log("🔄 Fetching clinic by name:", name);
+      // New endpoint for getting clinic by name
+      const response = await api.get(`/tenants/clinics/name/${name}`);
+      console.log("✅ Clinic by name fetched successfully!");
       return response.data;
     } catch (error) {
-      console.error("❌ Clinics by category fetch error:", error.message);
+      console.error("❌ Clinic by name fetch error:", error.message);
       console.log("Full error details:", error.response?.data || error);
       throw error;
     }
   },
 
+  getClinicsByType: async (type) => {
+    try {
+      console.log("🔄 Fetching clinics by type:", type);
+      // Updated endpoint and function name
+      const response = await api.get(`/tenants/clinics/type/${type}`);
+      console.log("✅ Clinics by type fetched successfully!");
+      return response.data;
+    } catch (error) {
+      console.error("❌ Clinics by type fetch error:", error.message);
+      console.log("Full error details:", error.response?.data || error);
+      throw error;
+    }
+  },
+
+  // Keep these as they are (they're for different routes)
   getAllCategories: async () => {
     try {
       console.log("🔄 Fetching all categories");

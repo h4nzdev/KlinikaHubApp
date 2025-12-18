@@ -816,7 +816,7 @@ const Appointments = ({ navigation }) => {
                       <View className="flex-row items-center justify-between pt-3 border-t border-gray-100">
                         <View className="flex-row items-center flex-1 min-w-0 mr-3">
                           <Feather
-                            name="map-pin"
+                            name="heart"
                             size={14}
                             color="#6b7280"
                             className="flex-shrink-0"
@@ -851,39 +851,52 @@ const Appointments = ({ navigation }) => {
                       )}
 
                       {/* Action Buttons - Keep existing functionality */}
-                      <View className="flex-row justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
-                        <TouchableOpacity
-                          onPress={() => handleSaveReminder(appointment)}
-                          disabled={
-                            checkIfReminderExists(appointment) ||
-                            remindedAppointments.has(appointment.id)
-                          }
-                        >
-                          <Feather
-                            name={
-                              checkIfReminderExists(appointment)
-                                ? "check"
-                                : "bell"
-                            }
-                            size={18}
-                            color={
+                      <View className="flex-row justify-between items-center mt-4 pt-3 border-t border-gray-100">
+                        {/* Enhanced Appointment ID Badge */}
+                        <View className="bg-slate-100 border border-slate-200 rounded-lg px-3 py-1 flex-shrink-0">
+                          <View className="flex-row items-center gap-1">
+                            <Feather name="hash" size={12} color="#64748b" />
+                            <Text className="text-slate-700 text-xs font-medium">
+                              {appointment.appointment_id}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Action Buttons */}
+                        <View className="flex-row gap-3">
+                          <TouchableOpacity
+                            onPress={() => handleSaveReminder(appointment)}
+                            disabled={
                               checkIfReminderExists(appointment) ||
                               remindedAppointments.has(appointment.id)
-                                ? "#059669"
-                                : "#8b5cf6"
                             }
-                          />
-                        </TouchableOpacity>
+                          >
+                            <Feather
+                              name={
+                                checkIfReminderExists(appointment)
+                                  ? "check"
+                                  : "bell"
+                              }
+                              size={18}
+                              color={
+                                checkIfReminderExists(appointment) ||
+                                remindedAppointments.has(appointment.id)
+                                  ? "#059669"
+                                  : "#8b5cf6"
+                              }
+                            />
+                          </TouchableOpacity>
 
-                        <TouchableOpacity
-                          onPress={() => showDropdown(appointment)}
-                        >
-                          <Feather
-                            name="more-horizontal"
-                            size={18}
-                            color="#64748b"
-                          />
-                        </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => showDropdown(appointment)}
+                          >
+                            <Feather
+                              name="more-horizontal"
+                              size={18}
+                              color="#64748b"
+                            />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </TouchableOpacity>
                   );

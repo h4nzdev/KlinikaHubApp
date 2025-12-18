@@ -34,8 +34,20 @@ export const useClinics = () => {
     try {
       setError(null);
       const data = await clinicServices.getAllClinics();
-      setClinics(data);
-      setFilteredClinics(data); // Initialize filtered clinics
+
+      // Normalize tenant fields to what the UI expects
+      const normalized = data.map((clinic) => ({
+        id: clinic.id,
+        institute_name: clinic.clinic_name || clinic.institute_name || "",
+        primary_category: clinic.clinic_type || clinic.primary_category || "",
+        address: clinic.address || "",
+        mobileno: clinic.contact_number || clinic.mobileno || "",
+        working_hours: clinic.working_hours || "",
+        raw: clinic, // keep original record if needed elsewhere
+      }));
+
+      setClinics(normalized);
+      setFilteredClinics(normalized); // Initialize filtered clinics
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Failed to load clinics."

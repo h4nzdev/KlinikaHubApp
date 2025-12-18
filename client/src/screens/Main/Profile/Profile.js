@@ -20,10 +20,12 @@ import patientAuthServices from "../../../services/patientAuthServices";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 
 const Profile = () => {
   const { user, updateUser } = useContext(AuthenticationContext);
   const { appointments, loading: appointmentsLoading } = useAppointments();
+  const navigation = useNavigation();
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

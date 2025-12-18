@@ -66,14 +66,14 @@ class Appointment {
   // SQL for getting appointments with clinic and doctor details
   static getAppointmentsWithDetailsSQL() {
     return `
-      SELECT 
+      SELECT
         a.*,
-        gs.institute_name as clinic_name,
+        gs.clinic_name as clinic_name,
         s.name as doctor_name,
         s.specialties as doctor_specialties,
         s.qualification as doctor_qualification
       FROM ${this.tableName} a
-      LEFT JOIN clinics gs ON a.clinic_id = gs.id
+      LEFT JOIN tenants gs ON a.clinic_id = gs.id
       LEFT JOIN staff s ON a.doctor_id = s.id
     `;
   }
@@ -81,14 +81,14 @@ class Appointment {
   // SQL for getting appointments by patient ID with details
   static getAppointmentsByPatientIdWithDetailsSQL() {
     return `
-      SELECT 
+      SELECT
         a.*,
-        gs.institute_name as clinic_name,
+        gs.clinic_name as clinic_name,
         s.name as doctor_name,
         s.specialties as doctor_specialties,
         s.qualification as doctor_qualification
       FROM ${this.tableName} a
-      LEFT JOIN clinics gs ON a.clinic_id = gs.id
+      LEFT JOIN tenants gs ON a.clinic_id = gs.id
       LEFT JOIN staff s ON a.doctor_id = s.id
       WHERE a.patient_id = ?
       ORDER BY a.appointment_date DESC, a.created_at DESC
@@ -98,18 +98,18 @@ class Appointment {
   // SQL for getting single appointment with details
   static getAppointmentWithDetailsSQL() {
     return `
-      SELECT 
+      SELECT
         a.*,
-        gs.institute_name as clinic_name,
+        gs.clinic_name as clinic_name,
         gs.address as clinic_address,
-        gs.mobileno as clinic_phone,
+        gs.contact_number as clinic_phone,
         s.name as doctor_name,
         s.specialties as doctor_specialties,
         s.qualification as doctor_qualification,
         s.experience_years as doctor_experience,
         s.photo as doctor_photo
       FROM ${this.tableName} a
-      LEFT JOIN clinics gs ON a.clinic_id = gs.id
+      LEFT JOIN tenants gs ON a.clinic_id = gs.id
       LEFT JOIN staff s ON a.doctor_id = s.id
       WHERE a.id = ? OR a.appointment_id = ?
     `;

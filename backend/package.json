@@ -24,6 +24,7 @@
     "node-cron": "^4.2.1",
     "react-native-cloudinary": "^1.0.1",
     "sqlite3": "^5.1.7",
+    "ssh2": "^1.17.0",
     "twilio": "^5.10.3"
   },
   "devDependencies": {
