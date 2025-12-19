@@ -31,7 +31,6 @@ app.use("/api/reviews", reviewRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/tenants", tenantsRouter);
 
-
 // Health check
 app.get("/", (req, res) => {
   res.json({
